@@ -1,33 +1,62 @@
 import { InstanceBase, runEntrypoint, InstanceStatus, SomeCompanionConfigField } from '@companion-module/base'
-import { GetConfigFields, type ModuleConfig } from './config.js'
+import { GetConfigFields, type ModuleConfig, type ModuleSecrets } from './config.js'
 import { UpdateVariableDefinitions } from './variables.js'
 import { UpgradeScripts } from './upgrades.js'
 import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
+import { SpecteraApi } from './api.js'
+import { SpecteraState } from './state.js'
 
-export class ModuleInstance extends InstanceBase<ModuleConfig> {
-	config!: ModuleConfig // Setup in init()
+export class SpecteraInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
+	config!: ModuleConfig
+	secrets!: ModuleSecrets
+	api?: SpecteraApi
+	public readonly state = new SpecteraState()
 
 	constructor(internal: unknown) {
 		super(internal)
 	}
 
-	async init(config: ModuleConfig): Promise<void> {
+	async init(config: ModuleConfig, _isFirstInit: boolean, secrets: ModuleSecrets): Promise<void> {
 		this.config = config
+		this.secrets = secrets
+
+		await this.initApi()
 
 		this.updateStatus(InstanceStatus.Ok)
 
-		this.updateActions() // export actions
-		this.updateFeedbacks() // export feedbacks
-		this.updateVariableDefinitions() // export variable definitions
+		this.updateActions()
+		this.updateFeedbacks()
+		this.updateVariableDefinitions()
 	}
+
 	// When module gets deleted
 	async destroy(): Promise<void> {
 		this.log('debug', 'destroy')
+		await this.api?.disconnect()
 	}
 
-	async configUpdated(config: ModuleConfig): Promise<void> {
+	async configUpdated(config: ModuleConfig, secrets: ModuleSecrets): Promise<void> {
 		this.config = config
+		this.secrets = secrets
+
+		await this.initApi()
+	}
+
+	private async initApi(): Promise<void> {
+		if (this.config.host && this.secrets.password) {
+			this.api = new SpecteraApi(this, this.state, this.config.host, this.secrets.password)
+
+			try {
+				await this.api.performLogin()
+			} catch (err) {
+				this.log('error', `Login failed: ${err instanceof Error ? err.message : String(err)}`)
+				this.updateStatus(InstanceStatus.ConnectionFailure)
+			}
+		} else {
+			this.updateStatus(InstanceStatus.BadConfig)
+			this.log('debug', 'Missing host or password')
+		}
 	}
 
 	// Return config fields for web config
@@ -48,4 +77,4 @@ export class ModuleInstance extends InstanceBase<ModuleConfig> {
 	}
 }
 
-runEntrypoint(ModuleInstance, UpgradeScripts)
+runEntrypoint(SpecteraInstance, UpgradeScripts)
