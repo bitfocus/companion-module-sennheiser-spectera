@@ -2,6 +2,7 @@ import EventEmitter from 'events'
 import type { SpecteraInstance } from './main.js'
 import type { AudioInput, AudioOutput, RfChannel, MobileDevice, Antenna } from './types.js'
 import type { SpecteraState } from './state.js'
+import { Agent, Dispatcher } from 'undici'
 
 export class SpecteraApi extends EventEmitter {
 	private readonly host: string
@@ -10,6 +11,7 @@ export class SpecteraApi extends EventEmitter {
 	private readonly state: SpecteraState
 	private abortController: AbortController | null = null
 	private sessionUUID: string | null = null
+	private readonly dispatcher: Dispatcher
 
 	constructor(instance: SpecteraInstance, state: SpecteraState, host: string, password: string) {
 		super()
@@ -17,19 +19,24 @@ export class SpecteraApi extends EventEmitter {
 		this.state = state
 		this.host = host
 		this.password = password
+		this.dispatcher = new Agent({
+			connect: {
+				rejectUnauthorized: false,
+			},
+		})
 	}
 
-	private get authHeader(): string {
+	private getAuthHeader(): string {
 		const credentials = `controlSennheiser:${this.password}`
 		return `Basic ${Buffer.from(credentials).toString('base64')}`
 	}
 
 	async sendRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
-		const url = `https://${this.host}${path}`
+		const url = `https://${this.host}:443${path}`
 		const options: RequestInit = {
 			method,
 			headers: {
-				Authorization: this.authHeader,
+				Authorization: this.getAuthHeader(),
 				Accept: 'application/json',
 				'Content-Type': 'application/json',
 			},
@@ -40,7 +47,7 @@ export class SpecteraApi extends EventEmitter {
 		}
 
 		try {
-			const response = await fetch(url, options)
+			const response = await fetch(url, { ...options, dispatcher: this.dispatcher } as any)
 
 			if (!response.ok) {
 				const errorText = await response.text().catch(() => 'Unknown error')
@@ -117,19 +124,19 @@ export class SpecteraApi extends EventEmitter {
 			this.abortController.abort()
 		}
 		this.abortController = new AbortController()
-
-		const url = `https://${this.host}/api/ssc/state/subscriptions`
+		console.log(this.getAuthHeader())
+		const url = `https://${this.host}:443/api/ssc/state/subscriptions`
 		const options: RequestInit = {
 			method: 'GET',
 			headers: {
-				Authorization: this.authHeader,
+				Authorization: this.getAuthHeader(),
 				Accept: 'text/event-stream',
 			},
 			signal: this.abortController.signal,
 		}
 
 		try {
-			const response = await fetch(url, options)
+			const response = await fetch(url, { ...options, dispatcher: this.dispatcher } as any)
 			if (!response.ok) {
 				this.instance.log('warn', `Failed to start subscription: ${response.statusText}`)
 				throw new Error(`Failed to start subscription: ${response.statusText}`)

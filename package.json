@@ -23,7 +23,8 @@
 		"yarn": "^4"
 	},
 	"dependencies": {
-		"@companion-module/base": "~1.14.1"
+		"@companion-module/base": "~1.14.1",
+		"undici": "^7.18.0"
 	},
 	"devDependencies": {
 		"@companion-module/tools": "^2.5.0",
