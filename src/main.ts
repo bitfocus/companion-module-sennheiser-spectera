@@ -21,9 +21,9 @@ export class SpecteraInstance extends InstanceBase<ModuleConfig, ModuleSecrets> 
 		this.config = config
 		this.secrets = secrets
 
-		await this.initApi()
+		this.updateStatus(InstanceStatus.Connecting)
 
-		this.updateStatus(InstanceStatus.Ok)
+		await this.initApi()
 
 		this.updateActions()
 		this.updateFeedbacks()
@@ -49,7 +49,9 @@ export class SpecteraInstance extends InstanceBase<ModuleConfig, ModuleSecrets> 
 
 			try {
 				await this.api.performLogin()
+				this.updateStatus(InstanceStatus.Ok)
 			} catch (err) {
+				this.updateStatus(InstanceStatus.ConnectionFailure)
 				this.log('error', `Login failed: ${err instanceof Error ? err.message : String(err)}`)
 				this.updateStatus(InstanceStatus.ConnectionFailure)
 			}

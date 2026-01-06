@@ -32,7 +32,7 @@ export class SpecteraApi extends EventEmitter {
 	}
 
 	async sendRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
-		const url = `https://${this.host}:443${path}`
+		const url = `https://${this.host}:443/api${path}`
 		const options: RequestInit = {
 			method,
 			headers: {
@@ -51,23 +51,38 @@ export class SpecteraApi extends EventEmitter {
 
 			if (!response.ok) {
 				const errorText = await response.text().catch(() => 'Unknown error')
-				this.instance.log('error', `HTTP ${response.status}: ${errorText}`)
+				this.instance.log('error', `API Request failed for ${method} ${path}: HTTP ${response.status}: ${errorText}`)
+				throw new Error(`HTTP ${response.status}: ${errorText}`)
 			}
 
-			if (response.status === 204) {
+			if (response.status === 204 || response.headers.get('content-length') === '0') {
 				return {} as T
 			}
 
-			return (await response.json()) as T
+			try {
+				return (await response.json()) as T
+			} catch {
+				// If JSON parsing fails but status was OK, return empty object
+				return {} as T
+			}
 		} catch (error) {
-			this.instance.log('error', `API Request failed: ${error instanceof Error ? error.message : String(error)}`)
+			this.instance.log(
+				'error',
+				`API Request failed for ${method} ${path}: ${error instanceof Error ? error.message : String(error)}`,
+			)
 			throw error
 		}
 	}
 
 	async performLogin(): Promise<void> {
 		this.on('subscribed', () => {
-			this.setSubscriptionPaths(['/audio', '/rf', '/antennas', '/mobile-devices']).catch((err) => {
+			this.setSubscriptionPaths([
+				'/api/audio/inputs',
+				'/api/audio/outputs',
+				'/api/rf/channels',
+				'/api/rf/antennas',
+				'/api/mts/paired/all',
+			]).catch((err) => {
 				this.instance.log('error', `Failed to set subscription paths: ${err.message}`)
 			})
 		})
@@ -101,7 +116,7 @@ export class SpecteraApi extends EventEmitter {
 	async disconnect(): Promise<void> {
 		if (this.sessionUUID) {
 			try {
-				await this.sendRequest('DELETE', `/api/ssc/state/subscriptions/${this.sessionUUID}`)
+				await this.sendRequest('DELETE', `/ssc/state/subscriptions/${this.sessionUUID}`)
 			} catch (error) {
 				this.instance.log(
 					'debug',
@@ -124,7 +139,7 @@ export class SpecteraApi extends EventEmitter {
 			this.abortController.abort()
 		}
 		this.abortController = new AbortController()
-		console.log(this.getAuthHeader())
+
 		const url = `https://${this.host}:443/api/ssc/state/subscriptions`
 		const options: RequestInit = {
 			method: 'GET',
@@ -207,16 +222,15 @@ export class SpecteraApi extends EventEmitter {
 	}
 
 	private processInternalUpdate(eventType: string, data: any): void {
-		// Implementation of path-based updates moved from main.ts
-		if (eventType.startsWith('/audio/inputs/')) {
+		if (eventType.startsWith('/api/audio/inputs/')) {
 			this.state.updateAudioInput(data)
-		} else if (eventType.startsWith('/audio/outputs/')) {
+		} else if (eventType.startsWith('/api/audio/outputs/')) {
 			this.state.updateAudioOutput(data)
-		} else if (eventType.startsWith('/rf/channels/')) {
+		} else if (eventType.startsWith('/api/rf/channels/')) {
 			this.state.updateRfChannel(data)
-		} else if (eventType.startsWith('/antennas/')) {
+		} else if (eventType.startsWith('/api/rf/antennas/')) {
 			this.state.updateAntenna(data)
-		} else if (eventType.startsWith('/mobile-devices/')) {
+		} else if (eventType.startsWith('/api/mts/paired/all/')) {
 			this.state.updateMobileDevice(data)
 		}
 	}
@@ -226,26 +240,26 @@ export class SpecteraApi extends EventEmitter {
 			this.instance.log('debug', 'No active session, skipping subscription paths update')
 			return
 		}
-		await this.sendRequest('PUT', `/api/ssc/state/subscriptions/${this.sessionUUID}`, paths)
+		await this.sendRequest('PUT', `/ssc/state/subscriptions/${this.sessionUUID}/add`, paths)
 	}
 
 	async getAudioInputs(): Promise<AudioInput[]> {
-		return this.sendRequest<AudioInput[]>('GET', '/api/audio/inputs')
+		return this.sendRequest<AudioInput[]>('GET', '/audio/inputs')
 	}
 
 	async getAudioOutputs(): Promise<AudioOutput[]> {
-		return this.sendRequest<AudioOutput[]>('GET', '/api/audio/outputs')
+		return this.sendRequest<AudioOutput[]>('GET', '/audio/outputs')
 	}
 
 	async getRfChannels(): Promise<RfChannel[]> {
-		return this.sendRequest<RfChannel[]>('GET', '/api/rf/channels')
+		return this.sendRequest<RfChannel[]>('GET', '/rf/channels')
 	}
 
 	async getAntennas(): Promise<Antenna[]> {
-		return this.sendRequest<Antenna[]>('GET', '/api/antennas')
+		return this.sendRequest<Antenna[]>('GET', '/rf/antennas')
 	}
 
 	async getMobileDevices(): Promise<MobileDevice[]> {
-		return this.sendRequest<MobileDevice[]>('GET', '/api/mobile-devices')
+		return this.sendRequest<MobileDevice[]>('GET', '/mts/paired/all')
 	}
 }
