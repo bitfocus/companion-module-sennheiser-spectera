@@ -1,4 +1,19 @@
-import type { AudioInput, AudioOutput, RfChannel, Antenna, MobileDevice } from './types.js'
+import type {
+	AudioInput,
+	AudioOutput,
+	RfChannel,
+	Antenna,
+	MobileDevice,
+	HealthState,
+	PsuState,
+	TempState,
+	FanState,
+	DeviceIdentity,
+	DeviceState,
+	DeviceSite,
+	DeviceInfoState,
+} from './types.js'
+import { PsuStatus as PsuStatusEnum, TempStatus as TempStatusEnum } from './types.js'
 
 export class SpecteraState {
 	public readonly audioInputs = new Map<number, AudioInput>()
@@ -6,6 +21,12 @@ export class SpecteraState {
 	public readonly rfChannels = new Map<number, RfChannel>()
 	public readonly antennas = new Map<string, Antenna>()
 	public readonly mobileDevices = new Map<number, MobileDevice>()
+	public health: HealthState = {
+		psu: { psu1State: PsuStatusEnum.Unconnected, psu2State: PsuStatusEnum.Unconnected },
+		temp: { state: TempStatusEnum.Normal },
+		fans: {},
+	}
+	public deviceInfo: DeviceInfoState = {}
 
 	public updateAudioInput(input: AudioInput): void {
 		this.audioInputs.set(input.inputId, input)
@@ -25,6 +46,30 @@ export class SpecteraState {
 
 	public updateMobileDevice(device: MobileDevice): void {
 		this.mobileDevices.set(device.mtUid, device)
+	}
+
+	public updatePsuState(state: PsuState): void {
+		this.health.psu = state
+	}
+
+	public updateTempState(state: TempState): void {
+		this.health.temp = state
+	}
+
+	public updateFanState(fanId: string, state: FanState): void {
+		this.health.fans[fanId] = state
+	}
+
+	public updateDeviceIdentity(identity: DeviceIdentity): void {
+		this.deviceInfo.identity = identity
+	}
+
+	public updateDeviceState(state: DeviceState): void {
+		this.deviceInfo.state = state
+	}
+
+	public updateDeviceSite(site: DeviceSite): void {
+		this.deviceInfo.site = site
 	}
 
 	public removeMobileDevice(mtUid: number): void {

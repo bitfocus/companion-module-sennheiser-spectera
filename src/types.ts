@@ -119,3 +119,59 @@ export interface AudioLevels {
 	danteOut?: AudioLevel
 	updateCounter: number
 }
+
+export enum PsuStatus {
+	Connected = 'Connected',
+	Unconnected = 'Unconnected',
+	Disconnected = 'Disconnected',
+}
+
+export interface PsuState {
+	psu1State: PsuStatus
+	psu2State: PsuStatus
+}
+
+export enum TempStatus {
+	Normal = 'Normal',
+	Warning = 'Warning',
+	Critical = 'Critical',
+}
+
+export interface TempState {
+	state: TempStatus
+}
+
+export interface FanState {
+	fanId: string
+	errorState: boolean
+}
+
+export interface HealthState {
+	psu: PsuState
+	temp: TempState
+	fans: Record<string, FanState>
+}
+
+export interface DeviceIdentity {
+	product: string
+	hardwareRevision: string
+	serial: string
+	vendor: string
+}
+
+export interface DeviceState {
+	state: string
+	warnings: string[]
+}
+
+export interface DeviceSite {
+	deviceName: string
+	location: string
+	position: string
+}
+
+export interface DeviceInfoState {
+	identity?: DeviceIdentity
+	state?: DeviceState
+	site?: DeviceSite
+}

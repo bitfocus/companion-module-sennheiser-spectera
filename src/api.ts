@@ -1,6 +1,18 @@
 import EventEmitter from 'events'
 import type { SpecteraInstance } from './main.js'
-import type { AudioInput, AudioOutput, RfChannel, MobileDevice, Antenna } from './types.js'
+import type {
+	AudioInput,
+	AudioOutput,
+	RfChannel,
+	MobileDevice,
+	Antenna,
+	PsuState,
+	TempState,
+	FanState,
+	DeviceIdentity,
+	DeviceState,
+	DeviceSite,
+} from './types.js'
 import type { SpecteraState } from './state.js'
 import { Agent, Dispatcher } from 'undici'
 
@@ -82,6 +94,14 @@ export class SpecteraApi extends EventEmitter {
 				'/api/rf/channels',
 				'/api/rf/antennas',
 				'/api/mts/paired/all',
+				'/api/health/psu',
+				'/api/health/tempstateoverall',
+				'/api/health/fan/FAN_1/errorstate',
+				'/api/health/fan/FAN_2/errorstate',
+				'/api/health/fan/FAN_3/errorstate',
+				'/api/device/identity',
+				'/api/device/state',
+				'/api/device/site',
 			]).catch((err) => {
 				this.instance.log('error', `Failed to set subscription paths: ${err.message}`)
 			})
@@ -94,19 +114,36 @@ export class SpecteraApi extends EventEmitter {
 		// Usually subscribe() resolves when the request is sent, but handleSSEEvent sets the UUID
 		// To be safe, we can fetch initial data immediately
 		try {
-			const [inputs, outputs, channels, antennas, devices] = await Promise.all([
-				this.getAudioInputs(),
-				this.getAudioOutputs(),
-				this.getRfChannels(),
-				this.getAntennas(),
-				this.getMobileDevices(),
-			])
+			const [inputs, outputs, channels, antennas, devices, psu, temp, fan1, fan2, fan3, identity, state, site] =
+				await Promise.all([
+					this.getAudioInputs(),
+					this.getAudioOutputs(),
+					this.getRfChannels(),
+					this.getAntennas(),
+					this.getMobileDevices(),
+					this.getHealthPsu(),
+					this.getHealthTempOverall(),
+					this.getHealthFan('FAN_1'),
+					this.getHealthFan('FAN_2'),
+					this.getHealthFan('FAN_3'),
+					this.getDeviceIdentity(),
+					this.getDeviceState(),
+					this.getDeviceSite(),
+				])
 
 			inputs.forEach((i) => this.state.updateAudioInput(i))
 			outputs.forEach((o) => this.state.updateAudioOutput(o))
 			channels.forEach((c) => this.state.updateRfChannel(c))
 			antennas.forEach((a) => this.state.updateAntenna(a))
 			devices.forEach((d) => this.state.updateMobileDevice(d))
+			this.state.updatePsuState(psu)
+			this.state.updateTempState(temp)
+			this.state.updateFanState('FAN_1', fan1)
+			this.state.updateFanState('FAN_2', fan2)
+			this.state.updateFanState('FAN_3', fan3)
+			this.state.updateDeviceIdentity(identity)
+			this.state.updateDeviceState(state)
+			this.state.updateDeviceSite(site)
 		} catch (error) {
 			this.instance.log('error', `Initial data fetch failed: ${error instanceof Error ? error.message : String(error)}`)
 			// We don't throw here to allow the subscription to keep running if the fetch fails
@@ -232,6 +269,23 @@ export class SpecteraApi extends EventEmitter {
 			this.state.updateAntenna(data)
 		} else if (eventType.startsWith('/api/mts/paired/all/')) {
 			this.state.updateMobileDevice(data)
+		} else if (eventType === '/api/health/psu') {
+			this.state.updatePsuState(data)
+		} else if (eventType === '/api/health/tempstateoverall') {
+			this.state.updateTempState(data)
+		} else if (eventType.startsWith('/api/health/fan/')) {
+			// Extract fan ID from path: /api/health/fan/{fanId}/errorstate
+			const match = eventType.match(/\/api\/health\/fan\/(.+)\/errorstate/)
+			if (match && match[1]) {
+				const fanId = match[1]
+				this.state.updateFanState(fanId, data)
+			}
+		} else if (eventType === '/api/device/identity') {
+			this.state.updateDeviceIdentity(data)
+		} else if (eventType === '/api/device/state') {
+			this.state.updateDeviceState(data)
+		} else if (eventType === '/api/device/site') {
+			this.state.updateDeviceSite(data)
 		}
 	}
 
@@ -261,5 +315,33 @@ export class SpecteraApi extends EventEmitter {
 
 	async getMobileDevices(): Promise<MobileDevice[]> {
 		return this.sendRequest<MobileDevice[]>('GET', '/mts/paired/all')
+	}
+
+	async getHealthPsu(): Promise<PsuState> {
+		return this.sendRequest<PsuState>('GET', '/health/psu')
+	}
+
+	async getHealthTempOverall(): Promise<TempState> {
+		return this.sendRequest<TempState>('GET', '/health/tempstateoverall')
+	}
+
+	async getHealthFan(fanId: string): Promise<FanState> {
+		const errorState = await this.sendRequest<any>('GET', `/health/fan/${fanId}/errorstate`)
+		return {
+			fanId,
+			errorState: errorState.errorState ?? errorState,
+		}
+	}
+
+	async getDeviceIdentity(): Promise<DeviceIdentity> {
+		return this.sendRequest<DeviceIdentity>('GET', '/device/identity')
+	}
+
+	async getDeviceState(): Promise<DeviceState> {
+		return this.sendRequest<DeviceState>('GET', '/device/state')
+	}
+
+	async getDeviceSite(): Promise<DeviceSite> {
+		return this.sendRequest<DeviceSite>('GET', '/device/site')
 	}
 }
