@@ -1,3 +1,5 @@
+import { combineRgb } from '@companion-module/base'
+
 export function getChoicesFromEnum(enumObj: Record<string, string | number>): { id: string | number; label: string }[] {
 	const choices: { id: string | number; label: string }[] = []
 
@@ -13,4 +15,11 @@ export function getChoicesFromEnum(enumObj: Record<string, string | number>): { 
 	}
 
 	return choices
+}
+
+export const Color = {
+	Black: combineRgb(0, 0, 0),
+	White: combineRgb(255, 255, 255),
+	Red: combineRgb(255, 0, 0),
+	Green: combineRgb(0, 255, 0),
 }

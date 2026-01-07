@@ -9,9 +9,9 @@ import type {
 	PsuState,
 	TempState,
 	FanState,
-	DeviceIdentity,
-	DeviceState,
-	DeviceSite,
+	BaseStationSite,
+	BaseStationState,
+	BaseStationIdentity,
 } from './types.js'
 import type { SpecteraState } from './state.js'
 import { Agent, Dispatcher } from 'undici'
@@ -89,7 +89,7 @@ export class SpecteraApi extends EventEmitter {
 
 	async performLogin(): Promise<void> {
 		try {
-			await this.getDeviceState()
+			await this.getBaseStationState()
 		} catch (error) {
 			this.instance.log('error', `Login failed: ${error instanceof Error ? error.message : String(error)}`)
 			throw error
@@ -136,9 +136,9 @@ export class SpecteraApi extends EventEmitter {
 					this.getHealthFan('FAN_1'),
 					this.getHealthFan('FAN_2'),
 					this.getHealthFan('FAN_3'),
-					this.getDeviceIdentity(),
-					this.getDeviceState(),
-					this.getDeviceSite(),
+					this.getBaseStationIdentity(),
+					this.getBaseStationState(),
+					this.getBaseStationSite(),
 				])
 
 			inputs.forEach((i) => this.state.updateAudioInput(i))
@@ -151,9 +151,9 @@ export class SpecteraApi extends EventEmitter {
 			this.state.updateFanState('FAN_1', fan1)
 			this.state.updateFanState('FAN_2', fan2)
 			this.state.updateFanState('FAN_3', fan3)
-			this.state.updateDeviceIdentity(identity)
-			this.state.updateDeviceState(state)
-			this.state.updateDeviceSite(site)
+			this.state.updateBaseStationIdentity(identity)
+			this.state.updateBaseStationState(state)
+			this.state.updateBaseStationSite(site)
 
 			UpdateVariableDefinitions(this.instance)
 			UpdateVariableValues(this.instance)
@@ -305,11 +305,11 @@ export class SpecteraApi extends EventEmitter {
 					this.state.updateFanState(fanId, value)
 				}
 			} else if (key === '/api/device/identity') {
-				this.state.updateDeviceIdentity(value)
+				this.state.updateBaseStationIdentity(value)
 			} else if (key === '/api/device/state') {
-				this.state.updateDeviceState(value)
+				this.state.updateBaseStationState(value)
 			} else if (key === '/api/device/site') {
-				this.state.updateDeviceSite(value)
+				this.state.updateBaseStationSite(value)
 			}
 		}
 
@@ -317,7 +317,9 @@ export class SpecteraApi extends EventEmitter {
 			this.instance.log('debug', 'Structure changed, updating variable definitions')
 			UpdateVariableDefinitions(this.instance)
 		}
+		//FIXME: lazy updates for now
 		UpdateVariableValues(this.instance)
+		this.instance.checkFeedbacks()
 	}
 
 	async setSubscriptionPaths(paths: string[]): Promise<void> {
@@ -372,15 +374,15 @@ export class SpecteraApi extends EventEmitter {
 		}
 	}
 
-	async getDeviceIdentity(): Promise<DeviceIdentity> {
-		return this.sendRequest<DeviceIdentity>('GET', '/device/identity')
+	async getBaseStationIdentity(): Promise<BaseStationIdentity> {
+		return this.sendRequest<BaseStationIdentity>('GET', '/device/identity')
 	}
 
-	async getDeviceState(): Promise<DeviceState> {
-		return this.sendRequest<DeviceState>('GET', '/device/state')
+	async getBaseStationState(): Promise<BaseStationState> {
+		return this.sendRequest<BaseStationState>('GET', '/device/state')
 	}
 
-	async getDeviceSite(): Promise<DeviceSite> {
-		return this.sendRequest<DeviceSite>('GET', '/device/site')
+	async getBaseStationSite(): Promise<BaseStationSite> {
+		return this.sendRequest<BaseStationSite>('GET', '/device/site')
 	}
 }
