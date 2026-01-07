@@ -83,9 +83,25 @@ export interface MobileDeviceBase {
 	connected?: boolean
 	sleep: boolean
 	state: MtState
+	lastConnected?: string
 	batteryFillLevel?: number
 	batteryRuntime?: number
 	batteryLow?: boolean
+	version?: string
+	versionMismatch?: boolean
+	fccId?: string
+	ledBrightness?: string
+	swUpdatePossible?: boolean
+	swUpdateProgress?: number
+	micAudiolinkId?: number
+	micAudiolinkActive?: boolean
+	micTestToneEnabled?: boolean
+	micTestToneLevel?: number
+	commandState?: string
+	micLqi?: number
+	interference?: { severity: Interference }
+	dominantAntenna?: string
+	rssi?: number
 }
 
 export interface SEKDevice extends MobileDeviceBase {
@@ -94,6 +110,16 @@ export interface SEKDevice extends MobileDeviceBase {
 	headphoneBalance: number
 	micPreampGain: number
 	micLowCutHz: number
+	iemAudiolinkId?: number
+	iemAudiolinkActive?: boolean
+	headphonePlugState?: string
+	headphoneVolumeLimit?: number
+	headphoneVolumeMax?: number
+	headphoneVolumeMin?: number
+	micLineSelection?: string
+	micLineSelectionAutoValue?: string
+	cableEmulation?: string
+	iemLqi?: number
 }
 
 export interface SKMDevice extends MobileDeviceBase {
@@ -101,6 +127,14 @@ export interface SKMDevice extends MobileDeviceBase {
 	micPreampGain: number
 	micLowCutHz: number
 	commandBehavior: string
+	micModule?: string
+}
+
+export enum Interference {
+	None = 'None',
+	Low = 'Low',
+	Medium = 'Medium',
+	High = 'High',
 }
 
 export type MobileDevice = SEKDevice | SKMDevice
@@ -127,8 +161,8 @@ export enum PsuStatus {
 }
 
 export interface PsuState {
-	psu1State: PsuStatus
-	psu2State: PsuStatus
+	psu1: PsuStatus
+	psu2: PsuStatus
 }
 
 export enum TempStatus {
@@ -138,12 +172,12 @@ export enum TempStatus {
 }
 
 export interface TempState {
-	state: TempStatus
+	value: TempStatus
 }
 
 export interface FanState {
 	fanId: string
-	errorState: boolean
+	errorState: { value: boolean }
 }
 
 export interface HealthState {

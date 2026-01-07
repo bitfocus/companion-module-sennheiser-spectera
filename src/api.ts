@@ -15,6 +15,7 @@ import type {
 } from './types.js'
 import type { SpecteraState } from './state.js'
 import { Agent, Dispatcher } from 'undici'
+import { UpdateVariableDefinitions, UpdateVariableValues } from './variables.js'
 
 export class SpecteraApi extends EventEmitter {
 	private readonly host: string
@@ -144,6 +145,9 @@ export class SpecteraApi extends EventEmitter {
 			this.state.updateDeviceIdentity(identity)
 			this.state.updateDeviceState(state)
 			this.state.updateDeviceSite(site)
+
+			UpdateVariableDefinitions(this.instance)
+			UpdateVariableValues(this.instance)
 		} catch (error) {
 			this.instance.log('error', `Initial data fetch failed: ${error instanceof Error ? error.message : String(error)}`)
 			// We don't throw here to allow the subscription to keep running if the fetch fails
@@ -258,35 +262,53 @@ export class SpecteraApi extends EventEmitter {
 		}
 	}
 
-	private processInternalUpdate(eventType: string, data: any): void {
-		if (eventType.startsWith('/api/audio/inputs/')) {
-			this.state.updateAudioInput(data)
-		} else if (eventType.startsWith('/api/audio/outputs/')) {
-			this.state.updateAudioOutput(data)
-		} else if (eventType.startsWith('/api/rf/channels/')) {
-			this.state.updateRfChannel(data)
-		} else if (eventType.startsWith('/api/rf/antennas/')) {
-			this.state.updateAntenna(data)
-		} else if (eventType.startsWith('/api/mts/paired/all/')) {
-			this.state.updateMobileDevice(data)
-		} else if (eventType === '/api/health/psu') {
-			this.state.updatePsuState(data)
-		} else if (eventType === '/api/health/tempstateoverall') {
-			this.state.updateTempState(data)
-		} else if (eventType.startsWith('/api/health/fan/')) {
-			// Extract fan ID from path: /api/health/fan/{fanId}/errorstate
-			const match = eventType.match(/\/api\/health\/fan\/(.+)\/errorstate/)
-			if (match && match[1]) {
-				const fanId = match[1]
-				this.state.updateFanState(fanId, data)
+	private processInternalUpdate(_eventType: string, data: any): void {
+		let structureChanged = false
+		const keys = Object.keys(data)
+
+		for (const key of keys) {
+			const value = data[key]
+
+			if (key.startsWith('/api/audio/inputs/')) {
+				this.state.updateAudioInput(value)
+				structureChanged = true
+			} else if (key.startsWith('/api/audio/outputs/')) {
+				this.state.updateAudioOutput(value)
+				structureChanged = true
+			} else if (key.startsWith('/api/rf/channels/')) {
+				this.state.updateRfChannel(value)
+				structureChanged = true
+			} else if (key.startsWith('/api/rf/antennas/')) {
+				this.state.updateAntenna(value) // value is the antenna object
+				structureChanged = true
+			} else if (key.startsWith('/api/mts/paired/all/')) {
+				this.state.updateMobileDevice(value)
+				structureChanged = true
+			} else if (key === '/api/health/psu') {
+				this.state.updatePsuState(value)
+			} else if (key === '/api/health/tempstateoverall') {
+				this.state.updateTempState(value)
+			} else if (key.startsWith('/api/health/fan/')) {
+				// Extract fan ID from path: /api/health/fan/{fanId}/errorstate
+				const match = key.match(/\/api\/health\/fan\/(.+)\/errorstate/)
+				if (match && match[1]) {
+					const fanId = match[1]
+					this.state.updateFanState(fanId, value)
+				}
+			} else if (key === '/api/device/identity') {
+				this.state.updateDeviceIdentity(value)
+			} else if (key === '/api/device/state') {
+				this.state.updateDeviceState(value)
+			} else if (key === '/api/device/site') {
+				this.state.updateDeviceSite(value)
 			}
-		} else if (eventType === '/api/device/identity') {
-			this.state.updateDeviceIdentity(data)
-		} else if (eventType === '/api/device/state') {
-			this.state.updateDeviceState(data)
-		} else if (eventType === '/api/device/site') {
-			this.state.updateDeviceSite(data)
 		}
+
+		if (structureChanged) {
+			this.instance.log('debug', 'Structure changed, updating variable definitions')
+			UpdateVariableDefinitions(this.instance)
+		}
+		UpdateVariableValues(this.instance)
 	}
 
 	async setSubscriptionPaths(paths: string[]): Promise<void> {

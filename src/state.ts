@@ -22,8 +22,8 @@ export class SpecteraState {
 	public readonly antennas = new Map<string, Antenna>()
 	public readonly mobileDevices = new Map<number, MobileDevice>()
 	public health: HealthState = {
-		psu: { psu1State: PsuStatusEnum.Unconnected, psu2State: PsuStatusEnum.Unconnected },
-		temp: { state: TempStatusEnum.Normal },
+		psu: { psu1: PsuStatusEnum.Unconnected, psu2: PsuStatusEnum.Unconnected },
+		temp: { value: TempStatusEnum.Normal },
 		fans: {},
 	}
 	public deviceInfo: DeviceInfoState = {}
@@ -53,10 +53,11 @@ export class SpecteraState {
 	}
 
 	public updateTempState(state: TempState): void {
-		this.health.temp = state
+		this.health.temp.value = state.value
 	}
 
 	public updateFanState(fanId: string, state: FanState): void {
+		console.log(state)
 		this.health.fans[fanId] = state
 	}
 
