@@ -228,9 +228,9 @@ export interface AudioLevels {
 }
 
 export enum PsuStatus {
-	Connected = 'Connected',
-	Unconnected = 'Unconnected',
-	Disconnected = 'Disconnected',
+	Connected = 'connected',
+	Unconnected = 'unconnected',
+	Disconnected = 'disconnected',
 }
 
 export interface PsuState {

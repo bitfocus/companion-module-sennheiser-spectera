@@ -10,6 +10,8 @@ import {
 	RfState,
 	RfStateStartup,
 	TxPower,
+	PsuState,
+	PsuStatus,
 } from './types.js'
 import { getChoicesFromEnum } from './utils.js'
 import { Color } from './utils.js'
@@ -22,7 +24,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		name: 'RF Tx Power',
 		description: 'RF Tx Power',
 		defaultStyle: {
-			bgcolor: Color.Green,
+			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
 			{
@@ -53,7 +55,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		name: 'RF Frequency',
 		description: 'RF Frequency',
 		defaultStyle: {
-			bgcolor: Color.Green,
+			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
 			{
@@ -83,7 +85,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		name: 'RF Bandwidth Mode',
 		description: 'RF Bandwidth Mode',
 		defaultStyle: {
-			bgcolor: Color.Green,
+			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
 			{
@@ -114,7 +116,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		name: 'RF Restriction Violation',
 		description: 'RF Restriction Violation',
 		defaultStyle: {
-			bgcolor: Color.Red,
+			bgcolor: Color.SpecteraRed,
 		},
 		options: [
 			{
@@ -140,7 +142,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		name: 'RF State',
 		description: 'RF State',
 		defaultStyle: {
-			bgcolor: Color.Green,
+			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
 			{
@@ -171,7 +173,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		name: 'RF State on Start Up',
 		description: 'RF State on Start Up',
 		defaultStyle: {
-			bgcolor: Color.Green,
+			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
 			{
@@ -204,7 +206,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		name: 'Antenna State',
 		description: 'Antenna State',
 		defaultStyle: {
-			bgcolor: Color.Green,
+			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
 			{
@@ -232,7 +234,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		name: 'Antenna Warning High Temperature',
 		description: 'Antenna Warning High Temperature',
 		defaultStyle: {
-			bgcolor: Color.Red,
+			bgcolor: Color.SpecteraRed,
 		},
 		options: [
 			{
@@ -255,7 +257,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		name: 'Antenna Warning Packet Error',
 		description: 'Antenna Warning Packet Error',
 		defaultStyle: {
-			bgcolor: Color.Red,
+			bgcolor: Color.SpecteraRed,
 		},
 		options: [
 			{
@@ -278,7 +280,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		name: 'Antenna Identify',
 		description: 'Antenna Identify',
 		defaultStyle: {
-			bgcolor: Color.Green,
+			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
 			{
@@ -299,7 +301,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		name: 'Antenna Temperature',
 		description: 'Antenna Temperature',
 		defaultStyle: {
-			bgcolor: Color.Green,
+			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
 			{
@@ -326,7 +328,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		name: 'Antenna LED Brightness',
 		description: 'Antenna LED Brightness',
 		defaultStyle: {
-			bgcolor: Color.Green,
+			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
 			{
@@ -349,12 +351,12 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			return antennaLedBrightness === feedback.options.ledBrightness
 		},
 	}
-	feedbacks['antennaBinding'] = {
+	feedbacks['antennaBindings'] = {
 		type: 'boolean',
 		name: 'Antenna Binding',
 		description: 'Antenna Binding',
 		defaultStyle: {
-			bgcolor: Color.Green,
+			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
 			{
@@ -369,22 +371,22 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				label: 'Antenna Binding',
 				choices: getChoicesFromEnum(RFChannels),
 				default: RFChannels['RF Channel 1'],
-				id: 'binding',
+				id: 'bindings',
 			},
 		],
 		callback: async (feedback) => {
 			const antennaBinding = self.state.antennas.get(feedback.options.antenna as AntennaPortId)?.bindings[0].binding
-			return antennaBinding === feedback.options.binding
+			return antennaBinding === feedback.options.bindings
 		},
 	}
 
 	//Device Feedbacks
-	feedbacks['BaseStationInfo'] = {
+	feedbacks['baseStationState'] = {
 		type: 'boolean',
-		name: 'Basestation - State',
-		description: 'Base Station - State',
+		name: 'Base Station State',
+		description: 'Base Station State',
 		defaultStyle: {
-			bgcolor: Color.Green,
+			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
 			{
@@ -396,21 +398,45 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			},
 		],
 		callback: async (feedback) => {
-			const BaseStationInfo = self.state.basestation?.state
-			return BaseStationInfo === feedback.options.state
+			const baseStationState = self.state.basestation?.state
+			return baseStationState?.state === feedback.options.state
 		},
 	}
-	feedbacks['basestationWarning'] = {
+	feedbacks['baseStationWarnings'] = {
 		type: 'boolean',
-		name: 'Base Station - Warning',
+		name: 'Base Station - Warnings',
 		description: 'Indicates if the Base Station has any active warnings',
 		defaultStyle: {
-			bgcolor: Color.Red,
+			bgcolor: Color.SpecteraRed,
 		},
 		options: [],
 		callback: async () => {
 			const basestationWarning = self.state.basestation.state?.warnings
 			return basestationWarning !== undefined && basestationWarning.length > 0
+		},
+	}
+	feedbacks['baseStationPsu'] = {
+		type: 'boolean',
+		name: 'Base Station - PSU',
+		description: 'Indicates if the Base Station has any active PSU warnings',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'PSU',
+				choices: [
+					{ id: 'psu1', label: 'PSU 1' },
+					{ id: 'psu2', label: 'PSU 2' },
+				],
+				default: 'psu1',
+				id: 'psu',
+			},
+		],
+		callback: async (feedback) => {
+			const basestationPsu = self.state.health.psu[feedback.options.psu as keyof PsuState]
+			return basestationPsu === PsuStatus.Connected
 		},
 	}
 	self.setFeedbackDefinitions(feedbacks)

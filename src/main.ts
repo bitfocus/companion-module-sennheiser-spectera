@@ -6,6 +6,7 @@ import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
 import { SpecteraApi } from './api.js'
 import { SpecteraState } from './state.js'
+import { UpdatePresets } from './presets.js'
 
 export class SpecteraInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
 	config!: ModuleConfig
@@ -28,6 +29,7 @@ export class SpecteraInstance extends InstanceBase<ModuleConfig, ModuleSecrets> 
 		this.updateActions()
 		this.updateFeedbacks()
 		this.updateVariableDefinitions()
+		this.updatePresets()
 	}
 
 	// When module gets deleted
@@ -79,6 +81,10 @@ export class SpecteraInstance extends InstanceBase<ModuleConfig, ModuleSecrets> 
 
 	updateVariableDefinitions(): void {
 		UpdateVariableDefinitions(this)
+	}
+
+	updatePresets(): void {
+		UpdatePresets(this)
 	}
 }
 

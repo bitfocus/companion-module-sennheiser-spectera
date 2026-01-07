@@ -1,10 +1,16 @@
 import type { SpecteraInstance } from './main.js'
-import { MtType, RfState, RFChannels, RfStateStartup } from './types.js'
+import { MtType, RfState, RFChannels, RfStateStartup, PsuStatus } from './types.js'
 
 const rfStateStartupLabels: Record<RfStateStartup, string> = {
 	[RfStateStartup.Active]: 'Active',
 	[RfStateStartup.Muted]: 'Muted',
 	[RfStateStartup.LastState]: 'Last State',
+}
+
+const psuStatusLabels: Record<PsuStatus, string> = {
+	[PsuStatus.Connected]: 'Connected',
+	[PsuStatus.Unconnected]: 'Unconnected',
+	[PsuStatus.Disconnected]: 'Disconnected',
 }
 
 function sanitizeName(name: string): string {
@@ -363,8 +369,8 @@ export function UpdateVariableValues(self: SpecteraInstance): void {
 		: 'None'
 
 	// Health
-	values['health_psu_1_state'] = self.state.health.psu.psu1
-	values['health_psu_2_state'] = self.state.health.psu.psu2
+	values['health_psu_1_state'] = psuStatusLabels[self.state.health.psu.psu1]
+	values['health_psu_2_state'] = psuStatusLabels[self.state.health.psu.psu2]
 	values['health_temp_state'] = self.state.health.temp.value
 	values['health_fan_1_error'] = self.state.health.fans['FAN_1']?.errorState.value
 	values['health_fan_2_error'] = self.state.health.fans['FAN_2']?.errorState.value

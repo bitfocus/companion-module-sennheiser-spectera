@@ -20,6 +20,10 @@ export function getChoicesFromEnum(enumObj: Record<string, string | number>): { 
 export const Color = {
 	Black: combineRgb(0, 0, 0),
 	White: combineRgb(255, 255, 255),
-	Red: combineRgb(255, 0, 0),
-	Green: combineRgb(0, 255, 0),
+	SpecteraDarkGray: combineRgb(40, 41, 46),
+	SpecteraLightGray: combineRgb(46, 48, 54),
+	SpecteraRed: combineRgb(225, 82, 65),
+	SpecteraGreen: combineRgb(123, 185, 114),
+	SpecteraBlue: combineRgb(65, 148, 209),
+	SpecteraOrange: combineRgb(242, 170, 70),
 }
