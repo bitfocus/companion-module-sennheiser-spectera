@@ -1,6 +1,16 @@
 import type { SpecteraInstance } from './main.js'
 import type { CompanionActionDefinitions } from '@companion-module/base'
-import { BandwidthMode, RfChannel, RfState, RfStateStartup, TxPower } from './types.js'
+import {
+	Antenna,
+	AntennaPortId,
+	BandwidthMode,
+	LedBrightness,
+	RfChannel,
+	RFChannels,
+	RfState,
+	RfStateStartup,
+	TxPower,
+} from './types.js'
 import { getChoicesFromEnum } from './utils.js'
 
 export function UpdateActions(self: SpecteraInstance): void {
@@ -8,7 +18,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 
 	//RF Actions
 	actions['setRfChannelState'] = {
-		name: 'Set RF Channel State',
+		name: 'RF Channel - State',
 		options: [
 			{
 				type: 'dropdown',
@@ -42,7 +52,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	}
 
 	actions['setRfChannelStartupState'] = {
-		name: 'Set RF Channel Startup State',
+		name: 'RF Channel - Startup State',
 		options: [
 			{
 				type: 'dropdown',
@@ -76,7 +86,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	}
 
 	actions['rfTxPower'] = {
-		name: 'Set RF Channel TX Power',
+		name: 'RF Channel - TX Power',
 		options: [
 			{
 				type: 'dropdown',
@@ -110,7 +120,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	}
 
 	actions['rfBandwidthMode'] = {
-		name: 'Set RF Channel Bandwidth Mode',
+		name: 'RF Channel - Bandwidth Mode',
 		options: [
 			{
 				type: 'dropdown',
@@ -144,7 +154,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	}
 
 	actions['rfFrequency'] = {
-		name: 'Set RF Channel Frequency',
+		name: 'RF Channel - Frequency',
 		options: [
 			{
 				type: 'dropdown',
@@ -173,6 +183,108 @@ export function UpdateActions(self: SpecteraInstance): void {
 					rfChannelId: action.options.rfChannel as number,
 					frequency: Number(action.options.frequency) * 1000,
 				} as Partial<RfChannel>,
+			)
+		},
+	}
+
+	//Antenna Actions
+	actions['antennaLedBrightness'] = {
+		name: 'Antenna - LED Brightness',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Antenna',
+				choices: getChoicesFromEnum(AntennaPortId),
+				default: AntennaPortId.A,
+				id: 'antenna',
+			},
+			{
+				type: 'dropdown',
+				label: 'Antenna LED Brightness',
+				choices: getChoicesFromEnum(LedBrightness),
+				default: LedBrightness.Standard,
+				id: 'ledBrightness',
+			},
+		],
+		description: 'Set the Antenna LED Brightness',
+		callback: async (action) => {
+			if (!self.api) return
+			await self.api.setAntenna(
+				action.options.antenna as AntennaPortId,
+				{
+					antennaPortId: action.options.antenna as AntennaPortId,
+					ledBrightness: action.options.ledBrightness as LedBrightness,
+				} as Partial<Antenna>,
+			)
+		},
+	}
+
+	actions['antennaIdentify'] = {
+		name: 'Antenna - Identify',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Antenna',
+				choices: getChoicesFromEnum(AntennaPortId),
+				default: AntennaPortId.A,
+				id: 'antenna',
+			},
+			{
+				type: 'dropdown',
+				label: 'Antenna Identify',
+				choices: [
+					{ id: 'true', label: 'On' },
+					{ id: 'false', label: 'Off' },
+				],
+				default: 'true',
+				id: 'identify',
+			},
+		],
+		description: 'Set the Antenna Identify',
+		callback: async (action) => {
+			if (!self.api) return
+			await self.api.setAntenna(
+				action.options.antenna as AntennaPortId,
+				{
+					antennaPortId: action.options.antenna as AntennaPortId,
+					identify: action.options.identify === 'true',
+				} as Partial<Antenna>,
+			)
+		},
+	}
+
+	actions['antennaRfBinding'] = {
+		name: 'Antenna - RF Binding',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Antenna',
+				choices: getChoicesFromEnum(AntennaPortId),
+				default: AntennaPortId.A,
+				id: 'antenna',
+			},
+			{
+				type: 'dropdown',
+				label: 'Antenna RF Binding',
+				choices: getChoicesFromEnum(RFChannels),
+				default: RFChannels.Off,
+				id: 'rfChannel',
+			},
+		],
+		description: 'RF Channel',
+		callback: async (action) => {
+			if (!self.api) return
+			await self.api.setAntenna(
+				action.options.antenna as AntennaPortId,
+				{
+					antennaPortId: action.options.antenna as AntennaPortId,
+					bindings: [
+						{
+							subAntennaId: 0,
+							binding: action.options.rfChannel as RFChannels,
+						},
+					],
+				} as Partial<Antenna>,
 			)
 		},
 	}

@@ -64,6 +64,20 @@ export enum TempStatus {
 	Critical = 'Critical',
 }
 
+export enum LedBrightness {
+	Off = 'Off',
+	Dim = 'Dim',
+	Standard = 'Standard',
+	Bright = 'Bright',
+}
+
+export enum AntennaPortId {
+	A = 'a',
+	B = 'b',
+	C = 'c',
+	D = 'd',
+}
+
 // Interfaces
 export interface AudioInput {
 	inputId: number
@@ -101,7 +115,7 @@ export interface RfChannel {
 }
 
 export interface Antenna {
-	antennaPortId: string
+	antennaPortId: AntennaPortId
 	state: InstanceStatus
 	errorStateDetails?: string
 	warningHighTemperature?: boolean
@@ -110,12 +124,12 @@ export interface Antenna {
 	type: string
 	version?: string
 	identify: boolean
-	ledBrightness: string
+	ledBrightness: LedBrightness
 	bindings: AntennaBinding[]
 }
 
 export interface AntennaBinding {
-	subAntennaId: string
+	subAntennaId: number
 	binding: RFChannels
 	mismatch: boolean
 }
@@ -139,7 +153,7 @@ export interface MobileDeviceBase {
 	version?: string
 	versionMismatch?: boolean
 	fccId?: string
-	ledBrightness?: string
+	ledBrightness?: LedBrightness
 	swUpdatePossible?: boolean
 	swUpdateProgress?: number
 	micAudiolinkId?: number

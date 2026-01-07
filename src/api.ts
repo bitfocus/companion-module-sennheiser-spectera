@@ -348,6 +348,10 @@ export class SpecteraApi extends EventEmitter {
 		return this.sendRequest<Antenna[]>('GET', '/rf/antennas')
 	}
 
+	async setAntenna(antennaPortId: string, state: Partial<Antenna>): Promise<void> {
+		await this.sendRequest('PUT', `/rf/antennas/${antennaPortId}`, state)
+	}
+
 	async getMobileDevices(): Promise<MobileDevice[]> {
 		return this.sendRequest<MobileDevice[]>('GET', '/mts/paired/all')
 	}
