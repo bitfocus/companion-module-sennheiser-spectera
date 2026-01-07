@@ -1,5 +1,11 @@
 import type { SpecteraInstance } from './main.js'
-import { MtType, RfState, AntennaBindingEnum } from './types.js'
+import { MtType, RfState, RFChannels, RfStateStartup } from './types.js'
+
+const rfStateStartupLabels: Record<RfStateStartup, string> = {
+	[RfStateStartup.Active]: 'Active',
+	[RfStateStartup.Muted]: 'Muted',
+	[RfStateStartup.LastState]: 'Last State',
+}
 
 function sanitizeName(name: string): string {
 	return name.replace(/[^a-zA-Z0-9_-]/g, '_')
@@ -380,7 +386,9 @@ export function UpdateVariableValues(self: SpecteraInstance): void {
 		values[`rf_channel_${displayId}_bandwidth_mode`] = channel.bandwidthMode
 		values[`rf_channel_${displayId}_rf_restriction_violation`] = channel.rfRestrictionViolation
 		values[`rf_channel_${displayId}_state`] = channel.rfState === RfState.Active ? 'Active' : 'Muted'
-		values[`rf_channel_${displayId}_startup_state`] = channel.rfStateOnStartup === RfState.Active ? 'Active' : 'Muted'
+		values[`rf_channel_${displayId}_startup_state`] = channel.rfStateOnStartup
+			? rfStateStartupLabels[channel.rfStateOnStartup]
+			: 'Unknown'
 	}
 
 	// Antennas
@@ -397,9 +405,8 @@ export function UpdateVariableValues(self: SpecteraInstance): void {
 		values[`antenna_${port}_identify`] = antenna.identify
 		values[`antenna_${port}_led_brightness`] = antenna.ledBrightness
 		const binding = antenna.bindings[0]?.binding
-		values[`antenna_${port}_bindings`] = binding
-			? AntennaBindingEnum[binding as keyof typeof AntennaBindingEnum]
-			: 'None'
+		const bindingLabel = Object.keys(RFChannels).find((key) => RFChannels[key as keyof typeof RFChannels] === binding)
+		values[`antenna_${port}_bindings`] = bindingLabel ?? 'None'
 		values[`antenna_${port}_mismatch`] = antenna.bindings[0]?.mismatch
 	}
 

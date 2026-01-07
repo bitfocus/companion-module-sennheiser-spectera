@@ -1,8 +1,33 @@
-export type Frequency = number
-
+// Enums
 export enum RfState {
 	Active = 'RfActive',
 	Muted = 'RfMuted',
+}
+
+export enum RfStateStartup {
+	Active = 'RfActive',
+	Muted = 'RfMuted',
+	LastState = 'RfLastState',
+}
+
+export enum RFChannels {
+	Off = 'Off',
+	'RF Channel 1' = 'RfChannel0',
+	'RF Channel 2' = 'RfChannel1',
+}
+
+export enum TxPower {
+	'10 Mw' = 10,
+	'20 Mw' = 20,
+	'30 Mw' = 30,
+	'50 Mw' = 50,
+	'100 Mw' = 100,
+}
+
+export enum BandwidthMode {
+	'6 MHz' = 6000,
+	'8 MHz' = 8000,
+	'10 MHz' = 10000,
 }
 
 export enum InstanceStatus {
@@ -33,6 +58,13 @@ export enum InputSource {
 	Madi2 = 'madi2',
 }
 
+export enum TempStatus {
+	Normal = 'Normal',
+	Warning = 'Warning',
+	Critical = 'Critical',
+}
+
+// Interfaces
 export interface AudioInput {
 	inputId: number
 	iemAudiolinkId: number
@@ -50,12 +82,22 @@ export interface AudioOutput {
 
 export interface RfChannel {
 	rfChannelId: number
-	txPower: number
-	frequency: Frequency
-	bandwidthMode: number
+	txPower: TxPower
+	/**
+	 * Frequency in kHz.
+	 * Min: 10000, Max: 10000000, Step: 1000.
+	 * Default: 474000.
+	 */
+	frequency: number
+	/**
+	 * Bandwidth of the modulated signal in kHz.
+	 * Limited to country specific license.
+	 * Values: 6000 (6 MHz), 8000 (8 MHz), 10000 (10 MHz)
+	 */
+	bandwidthMode: BandwidthMode
 	rfRestrictionViolation?: boolean
 	rfState: RfState
-	rfStateOnStartup?: string
+	rfStateOnStartup?: RfStateStartup
 }
 
 export interface Antenna {
@@ -74,14 +116,8 @@ export interface Antenna {
 
 export interface AntennaBinding {
 	subAntennaId: string
-	binding: AntennaBindingEnum
+	binding: RFChannels
 	mismatch: boolean
-}
-
-export enum AntennaBindingEnum {
-	RfChannel0 = 'RF Channel 1',
-	RfChannel1 = 'RF Channel 2',
-	Off = 'Off',
 }
 
 export interface MobileDeviceBase {
@@ -176,12 +212,6 @@ export enum PsuStatus {
 export interface PsuState {
 	psu1: PsuStatus
 	psu2: PsuStatus
-}
-
-export enum TempStatus {
-	Normal = 'Normal',
-	Warning = 'Warning',
-	Critical = 'Critical',
 }
 
 export interface TempState {

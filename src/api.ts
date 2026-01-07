@@ -340,6 +340,10 @@ export class SpecteraApi extends EventEmitter {
 		return this.sendRequest<RfChannel[]>('GET', '/rf/channels')
 	}
 
+	async setRfChannel(channelId: string, state: Partial<RfChannel>): Promise<void> {
+		await this.sendRequest('PUT', `/rf/channels/${channelId}`, state)
+	}
+
 	async getAntennas(): Promise<Antenna[]> {
 		return this.sendRequest<Antenna[]>('GET', '/rf/antennas')
 	}
