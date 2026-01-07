@@ -57,7 +57,6 @@ export class SpecteraState {
 	}
 
 	public updateFanState(fanId: string, state: FanState): void {
-		console.log(state)
 		this.health.fans[fanId] = state
 	}
 

@@ -88,6 +88,15 @@ export class SpecteraApi extends EventEmitter {
 	}
 
 	async performLogin(): Promise<void> {
+		try {
+			await this.getDeviceState()
+		} catch (error) {
+			this.instance.log('error', `Login failed: ${error instanceof Error ? error.message : String(error)}`)
+			throw error
+		}
+	}
+
+	async startMonitoring(): Promise<void> {
 		this.on('subscribed', () => {
 			this.setSubscriptionPaths([
 				'/api/audio/inputs',
