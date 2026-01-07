@@ -288,7 +288,7 @@ export class SpecteraApi extends EventEmitter {
 				this.state.updateRfChannel(value)
 				structureChanged = true
 			} else if (key.startsWith('/api/rf/antennas/')) {
-				this.state.updateAntenna(value) // value is the antenna object
+				this.state.updateAntenna(value)
 				structureChanged = true
 			} else if (key.startsWith('/api/mts/paired/all/')) {
 				this.state.updateMobileDevice(value)

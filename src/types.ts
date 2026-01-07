@@ -69,6 +69,19 @@ export interface Antenna {
 	version?: string
 	identify: boolean
 	ledBrightness: string
+	bindings: AntennaBinding[]
+}
+
+export interface AntennaBinding {
+	subAntennaId: string
+	binding: AntennaBindingEnum
+	mismatch: boolean
+}
+
+export enum AntennaBindingEnum {
+	RfChannel0 = 'RF Channel 1',
+	RfChannel1 = 'RF Channel 2',
+	Off = 'Off',
 }
 
 export interface MobileDeviceBase {

@@ -1,5 +1,5 @@
 import type { SpecteraInstance } from './main.js'
-import { MtType, RfState } from './types.js'
+import { MtType, RfState, AntennaBindingEnum } from './types.js'
 
 function sanitizeName(name: string): string {
 	return name.replace(/[^a-zA-Z0-9_-]/g, '_')
@@ -126,6 +126,14 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 				variableId: `antenna_${port}_led_brightness`,
 				name: `Antenna ${antenna.antennaPortId} - LED Brightness`,
 			},
+			{
+				variableId: `antenna_${port}_bindings`,
+				name: `Antenna ${antenna.antennaPortId} - Bindings`,
+			},
+			{
+				variableId: `antenna_${port}_mismatch`,
+				name: `Antenna ${antenna.antennaPortId} - Mismatch`,
+			},
 		)
 	}
 
@@ -134,12 +142,48 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 		const name = sanitizeName(device.name)
 		variables.push(
 			{
+				variableId: `mobile_device_${name}_mt_uid`,
+				name: `Mobile Device ${device.name} - MT UID`,
+			},
+			{
+				variableId: `mobile_device_${name}_mt_type`,
+				name: `Mobile Device ${device.name} - MT Type`,
+			},
+			{
+				variableId: `mobile_device_${name}_frequency_range`,
+				name: `Mobile Device ${device.name} - Frequency Range`,
+			},
+			{
+				variableId: `mobile_device_${name}_rf_channel_id`,
+				name: `Mobile Device ${device.name} - RF Channel ID`,
+			},
+			{
+				variableId: `mobile_device_${name}_identify`,
+				name: `Mobile Device ${device.name} - Identify`,
+			},
+			{
+				variableId: `mobile_device_${name}_reverse_identify`,
+				name: `Mobile Device ${device.name} - Reverse Identify`,
+			},
+			{
+				variableId: `mobile_device_${name}_serial`,
+				name: `Mobile Device ${device.name} - Serial`,
+			},
+			{
 				variableId: `mobile_device_${name}_connected`,
 				name: `Mobile Device ${device.name} - Connected`,
 			},
 			{
+				variableId: `mobile_device_${name}_sleep`,
+				name: `Mobile Device ${device.name} - Sleep`,
+			},
+			{
 				variableId: `mobile_device_${name}_state`,
 				name: `Mobile Device ${device.name} - State`,
+			},
+			{
+				variableId: `mobile_device_${name}_last_connected`,
+				name: `Mobile Device ${device.name} - Last Connected`,
 			},
 			{
 				variableId: `mobile_device_${name}_battery_level`,
@@ -352,12 +396,25 @@ export function UpdateVariableValues(self: SpecteraInstance): void {
 		values[`antenna_${port}_version`] = antenna.version
 		values[`antenna_${port}_identify`] = antenna.identify
 		values[`antenna_${port}_led_brightness`] = antenna.ledBrightness
+		const binding = antenna.bindings[0]?.binding
+		values[`antenna_${port}_bindings`] = binding
+			? AntennaBindingEnum[binding as keyof typeof AntennaBindingEnum]
+			: 'None'
+		values[`antenna_${port}_mismatch`] = antenna.bindings[0]?.mismatch
 	}
 
 	// Mobile Devices
 	for (const device of self.state.mobileDevices.values()) {
 		const name = sanitizeName(device.name)
+		values[`mobile_device_${name}_mt_uid`] = device.mtUid
+		values[`mobile_device_${name}_mt_type`] = device.type
+		values[`mobile_device_${name}_frequency_range`] = device.frequencyRange
+		values[`mobile_device_${name}_rf_channel_id`] = device.rfChannelId
+		values[`mobile_device_${name}_identify`] = device.identify
+		values[`mobile_device_${name}_reverse_identify`] = device.reverseIdentify
+		values[`mobile_device_${name}_serial`] = device.serial
 		values[`mobile_device_${name}_connected`] = device.connected
+		values[`mobile_device_${name}_sleep`] = device.sleep
 		values[`mobile_device_${name}_state`] = device.state
 		values[`mobile_device_${name}_battery_level`] = device.batteryFillLevel === -1 ? 'OFF' : device.batteryFillLevel
 		values[`mobile_device_${name}_battery_runtime`] = device.batteryRuntime === -1 ? 'OFF' : device.batteryRuntime
