@@ -8,10 +8,10 @@ import type {
 	PsuState,
 	TempState,
 	FanState,
-	DeviceIdentity,
-	DeviceState,
-	DeviceSite,
-	DeviceInfoState,
+	BaseStationInfo,
+	BaseStationSite,
+	BaseStationState,
+	BaseStationIdentity,
 } from './types.js'
 import { PsuStatus as PsuStatusEnum, TempStatus as TempStatusEnum } from './types.js'
 
@@ -26,7 +26,7 @@ export class SpecteraState {
 		temp: { value: TempStatusEnum.Normal },
 		fans: {},
 	}
-	public deviceInfo: DeviceInfoState = {}
+	public basestation: BaseStationInfo = {}
 
 	public updateAudioInput(input: AudioInput): void {
 		this.audioInputs.set(input.inputId, input)
@@ -60,16 +60,16 @@ export class SpecteraState {
 		this.health.fans[fanId] = state
 	}
 
-	public updateDeviceIdentity(identity: DeviceIdentity): void {
-		this.deviceInfo.identity = identity
+	public updateBaseStationIdentity(info: BaseStationIdentity): void {
+		this.basestation.identity = info
 	}
 
-	public updateDeviceState(state: DeviceState): void {
-		this.deviceInfo.state = state
+	public updateBaseStationState(state: BaseStationState): void {
+		this.basestation.state = state
 	}
 
-	public updateDeviceSite(site: DeviceSite): void {
-		this.deviceInfo.site = site
+	public updateBaseStationSite(site: BaseStationSite): void {
+		this.basestation.site = site
 	}
 
 	public removeMobileDevice(mtUid: number): void {

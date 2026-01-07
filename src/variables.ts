@@ -21,6 +21,7 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 		{ variableId: 'basestation_model', name: 'Basestation - Product Model' },
 		{ variableId: 'basestation_serial', name: 'Basestation - Serial Number' },
 		{ variableId: 'basestation_version', name: 'Basestation - Version' },
+		{ variableId: 'basestation_warnings', name: 'Basestation - Warnings' },
 
 		// Health
 		{ variableId: 'health_psu_1_state', name: 'PSU 1 - State' },
@@ -67,7 +68,7 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 			},
 			{
 				variableId: `rf_channel_${displayId}_frequency`,
-				name: `RF Channel ${displayId} - Frequency`,
+				name: `RF Channel ${displayId} - Frequency (MHz)`,
 			},
 			{
 				variableId: `rf_channel_${displayId}_bandwidth_mode`,
@@ -350,13 +351,16 @@ export function UpdateVariableValues(self: SpecteraInstance): void {
 	const values: Record<string, string | number | boolean | undefined> = {}
 
 	// Basestation Info
-	values['basestation_state'] = self.state.deviceInfo.state?.state
-	values['basestation_name'] = self.state.deviceInfo.site?.deviceName
-	values['basestation_location'] = self.state.deviceInfo.site?.location
-	values['basestation_position'] = self.state.deviceInfo.site?.position
-	values['basestation_model'] = self.state.deviceInfo.identity?.product
-	values['basestation_serial'] = self.state.deviceInfo.identity?.serial
-	values['basestation_version'] = self.state.deviceInfo.identity?.hardwareRevision
+	values['basestation_state'] = self.state.basestation.state?.state
+	values['basestation_name'] = self.state.basestation.site?.deviceName
+	values['basestation_location'] = self.state.basestation.site?.location
+	values['basestation_position'] = self.state.basestation.site?.position
+	values['basestation_model'] = self.state.basestation.identity?.product
+	values['basestation_serial'] = self.state.basestation.identity?.serial
+	values['basestation_version'] = self.state.basestation.identity?.hardwareRevision
+	values['basestation_warnings'] = self.state.basestation.state?.warnings?.length
+		? self.state.basestation.state?.warnings?.join(', ')
+		: 'None'
 
 	// Health
 	values['health_psu_1_state'] = self.state.health.psu.psu1
@@ -382,7 +386,7 @@ export function UpdateVariableValues(self: SpecteraInstance): void {
 	for (const channel of self.state.rfChannels.values()) {
 		const displayId = channel.rfChannelId + 1
 		values[`rf_channel_${displayId}_tx_power`] = channel.txPower
-		values[`rf_channel_${displayId}_frequency`] = channel.frequency
+		values[`rf_channel_${displayId}_frequency`] = channel.frequency / 1000
 		values[`rf_channel_${displayId}_bandwidth_mode`] = channel.bandwidthMode
 		values[`rf_channel_${displayId}_rf_restriction_violation`] = channel.rfRestrictionViolation
 		values[`rf_channel_${displayId}_state`] = channel.rfState === RfState.Active ? 'Active' : 'Muted'

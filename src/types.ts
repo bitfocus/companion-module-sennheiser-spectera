@@ -30,12 +30,22 @@ export enum BandwidthMode {
 	'10 MHz' = 10000,
 }
 
-export enum InstanceStatus {
+export enum DeviceStatus {
 	Unconnected = 'Unconnected',
 	Connected = 'Connected',
 	Updating = 'Updating',
 	Initialized = 'Initialized',
 	Error = 'Error',
+}
+
+export enum BaseStationStatus {
+	Initializing = 'Initializing',
+	Normal = 'Normal',
+	FactoryReset = 'FactoryReset',
+	Standby = 'Standby',
+	Cooldown = 'Cooldown',
+	Warmup = 'Warmup',
+	CriticalFailure = 'CriticalFailure',
 }
 
 export enum MtState {
@@ -116,7 +126,7 @@ export interface RfChannel {
 
 export interface Antenna {
 	antennaPortId: AntennaPortId
-	state: InstanceStatus
+	state: DeviceStatus
 	errorStateDetails?: string
 	warningHighTemperature?: boolean
 	warningPacketError?: boolean
@@ -243,26 +253,26 @@ export interface HealthState {
 	fans: Record<string, FanState>
 }
 
-export interface DeviceIdentity {
+export interface BaseStationIdentity {
 	product: string
 	hardwareRevision: string
 	serial: string
 	vendor: string
 }
 
-export interface DeviceState {
-	state: string
+export interface BaseStationState {
+	state: BaseStationStatus
 	warnings: string[]
 }
 
-export interface DeviceSite {
+export interface BaseStationSite {
 	deviceName: string
 	location: string
 	position: string
 }
 
-export interface DeviceInfoState {
-	identity?: DeviceIdentity
-	state?: DeviceState
-	site?: DeviceSite
+export interface BaseStationInfo {
+	identity?: BaseStationIdentity
+	state?: BaseStationState
+	site?: BaseStationSite
 }
