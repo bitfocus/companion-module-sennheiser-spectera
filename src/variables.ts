@@ -19,15 +19,15 @@ function sanitizeName(name: string): string {
 
 export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 	const variables: { variableId: string; name: string }[] = [
-		// Basestation Info
-		{ variableId: 'basestation_state', name: 'Basestation - State' },
-		{ variableId: 'basestation_name', name: 'Basestation - Name' },
-		{ variableId: 'basestation_location', name: 'Basestation - Location' },
-		{ variableId: 'basestation_position', name: 'Basestation - Position' },
-		{ variableId: 'basestation_model', name: 'Basestation - Product Model' },
-		{ variableId: 'basestation_serial', name: 'Basestation - Serial Number' },
-		{ variableId: 'basestation_version', name: 'Basestation - Version' },
-		{ variableId: 'basestation_warnings', name: 'Basestation - Warnings' },
+		// Base Station Info
+		{ variableId: 'base_station_state', name: 'Base Station - State' },
+		{ variableId: 'base_station_name', name: 'Base Station - Name' },
+		{ variableId: 'base_station_location', name: 'Base Station - Location' },
+		{ variableId: 'base_station_position', name: 'Base Station - Position' },
+		{ variableId: 'base_station_model', name: 'Base Station - Product Model' },
+		{ variableId: 'base_station_serial', name: 'Base Station - Serial Number' },
+		{ variableId: 'base_station_version', name: 'Base Station - Version' },
+		{ variableId: 'base_station_warnings', name: 'Base Station - Warnings' },
 
 		// Health
 		{ variableId: 'health_psu_1_state', name: 'PSU 1 - State' },
@@ -95,57 +95,57 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 		)
 	}
 
-	// Antennas
+	// DADs
 	for (const antenna of self.state.antennas.values()) {
 		const port = sanitizeName(antenna.antennaPortId)
 		variables.push(
 			{
-				variableId: `antenna_${port}_state`,
-				name: `Antenna ${antenna.antennaPortId} - State`,
+				variableId: `dad_${port}_state`,
+				name: `DAD ${antenna.antennaPortId} - State`,
 			},
 			{
-				variableId: `antenna_${port}_type`,
-				name: `Antenna ${antenna.antennaPortId} - Type`,
+				variableId: `dad_${port}_type`,
+				name: `DAD ${antenna.antennaPortId} - Type`,
 			},
 			{
-				variableId: `antenna_${port}_error_details`,
-				name: `Antenna ${antenna.antennaPortId} - Error Details`,
+				variableId: `dad_${port}_error_details`,
+				name: `DAD ${antenna.antennaPortId} - Error Details`,
 			},
 			{
-				variableId: `antenna_${port}_high_temp_warning`,
-				name: `Antenna ${antenna.antennaPortId} - High Temperature Warning`,
+				variableId: `dad_${port}_high_temp_warning`,
+				name: `DAD ${antenna.antennaPortId} - High Temperature Warning`,
 			},
 			{
-				variableId: `antenna_${port}_packet_error_warning`,
-				name: `Antenna ${antenna.antennaPortId} - Packet Error Warning`,
+				variableId: `dad_${port}_packet_error_warning`,
+				name: `DAD ${antenna.antennaPortId} - Packet Error Warning`,
 			},
 			{
-				variableId: `antenna_${port}_temperature`,
-				name: `Antenna ${antenna.antennaPortId} - Temperature`,
+				variableId: `dad_${port}_temperature`,
+				name: `DAD ${antenna.antennaPortId} - Temperature`,
 			},
 			{
-				variableId: `antenna_${port}_type`,
-				name: `Antenna ${antenna.antennaPortId} - Type`,
+				variableId: `dad_${port}_type`,
+				name: `DAD ${antenna.antennaPortId} - Type`,
 			},
 			{
-				variableId: `antenna_${port}_version`,
-				name: `Antenna ${antenna.antennaPortId} - Version`,
+				variableId: `dad_${port}_version`,
+				name: `DAD ${antenna.antennaPortId} - Version`,
 			},
 			{
-				variableId: `antenna_${port}_identify`,
-				name: `Antenna ${antenna.antennaPortId} - Identify`,
+				variableId: `dad_${port}_identify`,
+				name: `DAD ${antenna.antennaPortId} - Identify`,
 			},
 			{
-				variableId: `antenna_${port}_led_brightness`,
-				name: `Antenna ${antenna.antennaPortId} - LED Brightness`,
+				variableId: `dad_${port}_led_brightness`,
+				name: `DAD ${antenna.antennaPortId} - LED Brightness`,
 			},
 			{
-				variableId: `antenna_${port}_bindings`,
-				name: `Antenna ${antenna.antennaPortId} - Bindings`,
+				variableId: `dad_${port}_bindings`,
+				name: `DAD ${antenna.antennaPortId} - Bindings`,
 			},
 			{
-				variableId: `antenna_${port}_mismatch`,
-				name: `Antenna ${antenna.antennaPortId} - Mismatch`,
+				variableId: `dad_${port}_mismatch`,
+				name: `DAD ${antenna.antennaPortId} - Mismatch`,
 			},
 		)
 	}
@@ -153,122 +153,127 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 	// Mobile Devices
 	for (const device of self.state.mobileDevices.values()) {
 		const name = sanitizeName(device.name)
+		const type = device.type
+		const serial = device.serial
+
+		const deviceVariableId = `${type}_${name}_${serial}`
+		const deviceVariableLabel = `${type} - ${device.name} (${serial})`
 		variables.push(
 			{
-				variableId: `mobile_device_${name}_mt_uid`,
-				name: `Mobile Device ${device.name} - MT UID`,
+				variableId: `${deviceVariableId}_mt_uid`,
+				name: `${deviceVariableLabel} - MT UID`,
 			},
 			{
-				variableId: `mobile_device_${name}_mt_type`,
-				name: `Mobile Device ${device.name} - MT Type`,
+				variableId: `${deviceVariableId}_mt_type`,
+				name: `${deviceVariableLabel} - MT Type`,
 			},
 			{
-				variableId: `mobile_device_${name}_frequency_range`,
-				name: `Mobile Device ${device.name} - Frequency Range`,
+				variableId: `${deviceVariableId}_frequency_range`,
+				name: `${deviceVariableLabel} - Frequency Range`,
 			},
 			{
-				variableId: `mobile_device_${name}_rf_channel_id`,
-				name: `Mobile Device ${device.name} - RF Channel ID`,
+				variableId: `${deviceVariableId}_rf_channel_id`,
+				name: `${deviceVariableLabel} - RF Channel ID`,
 			},
 			{
-				variableId: `mobile_device_${name}_identify`,
-				name: `Mobile Device ${device.name} - Identify`,
+				variableId: `${deviceVariableId}_identify`,
+				name: `${deviceVariableLabel} - Identify`,
 			},
 			{
-				variableId: `mobile_device_${name}_reverse_identify`,
-				name: `Mobile Device ${device.name} - Reverse Identify`,
+				variableId: `${deviceVariableId}_reverse_identify`,
+				name: `${deviceVariableLabel} - Reverse Identify`,
 			},
 			{
-				variableId: `mobile_device_${name}_serial`,
-				name: `Mobile Device ${device.name} - Serial`,
+				variableId: `${deviceVariableId}_serial`,
+				name: `${deviceVariableLabel} - Serial`,
 			},
 			{
-				variableId: `mobile_device_${name}_connected`,
-				name: `Mobile Device ${device.name} - Connected`,
+				variableId: `${deviceVariableId}_connected`,
+				name: `${deviceVariableLabel} - Connected`,
 			},
 			{
-				variableId: `mobile_device_${name}_sleep`,
-				name: `Mobile Device ${device.name} - Sleep`,
+				variableId: `${deviceVariableId}_sleep`,
+				name: `${deviceVariableLabel} - Sleep`,
 			},
 			{
-				variableId: `mobile_device_${name}_state`,
-				name: `Mobile Device ${device.name} - State`,
+				variableId: `${deviceVariableId}_state`,
+				name: `${deviceVariableLabel} - State`,
 			},
 			{
-				variableId: `mobile_device_${name}_last_connected`,
-				name: `Mobile Device ${device.name} - Last Connected`,
+				variableId: `${deviceVariableId}_last_connected`,
+				name: `${deviceVariableLabel} - Last Connected`,
 			},
 			{
-				variableId: `mobile_device_${name}_battery_level`,
-				name: `Mobile Device ${device.name} - Battery Level`,
+				variableId: `${deviceVariableId}_battery_level`,
+				name: `${deviceVariableLabel} - Battery Level`,
 			},
 			{
-				variableId: `mobile_device_${name}_battery_runtime`,
-				name: `Mobile Device ${device.name} - Battery Runtime`,
+				variableId: `${deviceVariableId}_battery_runtime`,
+				name: `${deviceVariableLabel} - Battery Runtime`,
 			},
 			{
-				variableId: `mobile_device_${name}_battery_low`,
-				name: `Mobile Device ${device.name} - Battery Low`,
+				variableId: `${deviceVariableId}_battery_low`,
+				name: `${deviceVariableLabel} - Battery Low`,
 			},
 			{
-				variableId: `mobile_device_${name}_version`,
-				name: `Mobile Device ${device.name} - Version`,
+				variableId: `${deviceVariableId}_version`,
+				name: `${deviceVariableLabel} - Version`,
 			},
 			{
-				variableId: `mobile_device_${name}_version_mismatch`,
-				name: `Mobile Device ${device.name} - Version Mismatch`,
+				variableId: `${deviceVariableId}_version_mismatch`,
+				name: `${deviceVariableLabel} - Version Mismatch`,
 			},
 			{
-				variableId: `mobile_device_${name}_fcc_id`,
-				name: `Mobile Device ${device.name} - FCC ID`,
+				variableId: `${deviceVariableId}_fcc_id`,
+				name: `${deviceVariableLabel} - FCC ID`,
 			},
 			{
-				variableId: `mobile_device_${name}_led_brightness`,
-				name: `Mobile Device ${device.name} - LED Brightness`,
+				variableId: `${deviceVariableId}_led_brightness`,
+				name: `${deviceVariableLabel} - LED Brightness`,
 			},
 			{
-				variableId: `mobile_device_${name}_sw_update_possible`,
-				name: `Mobile Device ${device.name} - SW Update Possible`,
+				variableId: `${deviceVariableId}_sw_update_possible`,
+				name: `${deviceVariableLabel} - SW Update Possible`,
 			},
 			{
-				variableId: `mobile_device_${name}_sw_update_progress`,
-				name: `Mobile Device ${device.name} - SW Update Progress`,
+				variableId: `${deviceVariableId}_sw_update_progress`,
+				name: `${deviceVariableLabel} - SW Update Progress`,
 			},
 			{
-				variableId: `mobile_device_${name}_mic_audiolink_id`,
-				name: `Mobile Device ${device.name} - Mic AudioLink ID`,
+				variableId: `${deviceVariableId}_mic_audiolink_id`,
+				name: `${deviceVariableLabel} - Mic AudioLink ID`,
 			},
 			{
-				variableId: `mobile_device_${name}_mic_audiolink_active`,
-				name: `Mobile Device ${device.name} - Mic AudioLink Active`,
+				variableId: `${deviceVariableId}_mic_audiolink_active`,
+				name: `${deviceVariableLabel} - Mic AudioLink Active`,
 			},
 			{
-				variableId: `mobile_device_${name}_mic_test_tone_enabled`,
-				name: `Mobile Device ${device.name} - Mic Test Tone Enabled`,
+				variableId: `${deviceVariableId}_mic_test_tone_enabled`,
+				name: `${deviceVariableLabel} - Mic Test Tone Enabled`,
 			},
 			{
-				variableId: `mobile_device_${name}_mic_test_tone_level`,
-				name: `Mobile Device ${device.name} - Mic Test Tone Level`,
+				variableId: `${deviceVariableId}_mic_test_tone_level`,
+				name: `${deviceVariableLabel} - Mic Test Tone Level`,
 			},
 			{
-				variableId: `mobile_device_${name}_command_state`,
-				name: `Mobile Device ${device.name} - Command State`,
+				variableId: `${deviceVariableId}_command_state`,
+				name: `${deviceVariableLabel} - Command State`,
 			},
 			{
-				variableId: `mobile_device_${name}_mic_lqi`,
-				name: `Mobile Device ${device.name} - Mic LQI`,
+				variableId: `${deviceVariableId}_mic_lqi`,
+				name: `${deviceVariableLabel} - Mic LQI`,
 			},
 			{
-				variableId: `mobile_device_${name}_interference`,
-				name: `Mobile Device ${device.name} - Interference`,
+				variableId: `${deviceVariableId}_interference`,
+				name: `${deviceVariableLabel} - Interference`,
 			},
 			{
-				variableId: `mobile_device_${name}_dominant_antenna`,
-				name: `Mobile Device ${device.name} - Dominant Antenna`,
+				variableId: `${deviceVariableId}_dominant_antenna`,
+				name: `${deviceVariableLabel} - Dominant Antenna`,
 			},
 			{
-				variableId: `mobile_device_${name}_rssi`,
-				name: `Mobile Device ${device.name} - RSSI`,
+				variableId: `${deviceVariableId}_rssi`,
+				name: `${deviceVariableLabel} - RSSI`,
 			},
 		)
 
@@ -276,75 +281,75 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 		if (device.type === MtType.SEK) {
 			variables.push(
 				{
-					variableId: `mobile_device_${name}_headphone_volume`,
-					name: `Mobile Device ${device.name} - Headphone Volume`,
+					variableId: `${deviceVariableId}_headphone_volume`,
+					name: `${deviceVariableLabel} - Headphone Volume`,
 				},
 				{
-					variableId: `mobile_device_${name}_headphone_balance`,
-					name: `Mobile Device ${device.name} - Headphone Balance`,
+					variableId: `${deviceVariableId}_headphone_balance`,
+					name: `${deviceVariableLabel} - Headphone Balance`,
 				},
 				{
-					variableId: `mobile_device_${name}_mic_preamp_gain`,
-					name: `Mobile Device ${device.name} - Mic Preamp Gain`,
+					variableId: `${deviceVariableId}_mic_preamp_gain`,
+					name: `${deviceVariableLabel} - Mic Preamp Gain`,
 				},
 				{
-					variableId: `mobile_device_${name}_mic_lowcut_hz`,
-					name: `Mobile Device ${device.name} - Mic Lowcut Hz`,
+					variableId: `${deviceVariableId}_mic_lowcut_hz`,
+					name: `${deviceVariableLabel} - Mic Lowcut Hz`,
 				},
 				{
-					variableId: `mobile_device_${name}_iem_audiolink_id`,
-					name: `Mobile Device ${device.name} - IEM AudioLink ID`,
+					variableId: `${deviceVariableId}_iem_audiolink_id`,
+					name: `${deviceVariableLabel} - IEM AudioLink ID`,
 				},
 				{
-					variableId: `mobile_device_${name}_iem_audiolink_active`,
-					name: `Mobile Device ${device.name} - IEM AudioLink Active`,
+					variableId: `${deviceVariableId}_iem_audiolink_active`,
+					name: `${deviceVariableLabel} - IEM AudioLink Active`,
 				},
 				{
-					variableId: `mobile_device_${name}_headphone_plug_state`,
-					name: `Mobile Device ${device.name} - Headphone Plug State`,
+					variableId: `${deviceVariableId}_headphone_plug_state`,
+					name: `${deviceVariableLabel} - Headphone Plug State`,
 				},
 				{
-					variableId: `mobile_device_${name}_headphone_volume_max`,
-					name: `Mobile Device ${device.name} - Headphone Volume Max`,
+					variableId: `${deviceVariableId}_headphone_volume_max`,
+					name: `${deviceVariableLabel} - Headphone Volume Max`,
 				},
 				{
-					variableId: `mobile_device_${name}_headphone_volume_min`,
-					name: `Mobile Device ${device.name} - Headphone Volume Min`,
+					variableId: `${deviceVariableId}_headphone_volume_min`,
+					name: `${deviceVariableLabel} - Headphone Volume Min`,
 				},
 				{
-					variableId: `mobile_device_${name}_mic_line_selection`,
-					name: `Mobile Device ${device.name} - Mic/Line Selection`,
+					variableId: `${deviceVariableId}_mic_line_selection`,
+					name: `${deviceVariableLabel} - Mic/Line Selection`,
 				},
 				{
-					variableId: `mobile_device_${name}_mic_line_selection_auto_value`,
-					name: `Mobile Device ${device.name} - Mic/Line Selection Auto Value`,
+					variableId: `${deviceVariableId}_mic_line_selection_auto_value`,
+					name: `${deviceVariableLabel} - Mic/Line Selection Auto Value`,
 				},
 				{
-					variableId: `mobile_device_${name}_cable_emulation`,
-					name: `Mobile Device ${device.name} - Cable Emulation`,
+					variableId: `${deviceVariableId}_cable_emulation`,
+					name: `${deviceVariableLabel} - Cable Emulation`,
 				},
 				{
-					variableId: `mobile_device_${name}_iem_lqi`,
-					name: `Mobile Device ${device.name} - IEM LQI`,
+					variableId: `${deviceVariableId}_iem_lqi`,
+					name: `${deviceVariableLabel} - IEM LQI`,
 				},
 			)
 		} else if (device.type === MtType.SKM) {
 			variables.push(
 				{
-					variableId: `mobile_device_${name}_mic_preamp_gain`,
-					name: `Mobile Device ${device.name} - Mic Preamp Gain`,
+					variableId: `${deviceVariableId}_mic_preamp_gain`,
+					name: `${deviceVariableLabel} - Mic Preamp Gain`,
 				},
 				{
-					variableId: `mobile_device_${name}_mic_lowcut_hz`,
-					name: `Mobile Device ${device.name} - Mic Lowcut Hz`,
+					variableId: `${deviceVariableId}_mic_lowcut_hz`,
+					name: `${deviceVariableLabel} - Mic Lowcut Hz`,
 				},
 				{
-					variableId: `mobile_device_${name}_command_behavior`,
-					name: `Mobile Device ${device.name} - Command Behavior`,
+					variableId: `${deviceVariableId}_command_behavior`,
+					name: `${deviceVariableLabel} - Command Behavior`,
 				},
 				{
-					variableId: `mobile_device_${name}_mic_module`,
-					name: `Mobile Device ${device.name} - Mic Module`,
+					variableId: `${deviceVariableId}_mic_module`,
+					name: `${deviceVariableLabel} - Mic Module`,
 				},
 			)
 		}
@@ -356,15 +361,15 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 export function UpdateVariableValues(self: SpecteraInstance): void {
 	const values: Record<string, string | number | boolean | undefined> = {}
 
-	// Basestation Info
-	values['basestation_state'] = self.state.basestation.state?.state
-	values['basestation_name'] = self.state.basestation.site?.deviceName
-	values['basestation_location'] = self.state.basestation.site?.location
-	values['basestation_position'] = self.state.basestation.site?.position
-	values['basestation_model'] = self.state.basestation.identity?.product
-	values['basestation_serial'] = self.state.basestation.identity?.serial
-	values['basestation_version'] = self.state.basestation.identity?.hardwareRevision
-	values['basestation_warnings'] = self.state.basestation.state?.warnings?.length
+	// Base Station Info
+	values['base_station_state'] = self.state.basestation.state?.state
+	values['base_station_name'] = self.state.basestation.site?.deviceName
+	values['base_station_location'] = self.state.basestation.site?.location
+	values['base_station_position'] = self.state.basestation.site?.position
+	values['base_station_model'] = self.state.basestation.identity?.product
+	values['base_station_serial'] = self.state.basestation.identity?.serial
+	values['base_station_version'] = self.state.basestation.identity?.hardwareRevision
+	values['base_station_warnings'] = self.state.basestation.state?.warnings?.length
 		? self.state.basestation.state?.warnings?.join(', ')
 		: 'None'
 
@@ -404,73 +409,77 @@ export function UpdateVariableValues(self: SpecteraInstance): void {
 	// Antennas
 	for (const antenna of self.state.antennas.values()) {
 		const port = sanitizeName(antenna.antennaPortId)
-		values[`antenna_${port}_state`] = antenna.state
-		values[`antenna_${port}_type`] = antenna.type
-		values[`antenna_${port}_error_details`] = antenna.errorStateDetails
-		values[`antenna_${port}_high_temp_warning`] = antenna.warningHighTemperature
-		values[`antenna_${port}_packet_error_warning`] = antenna.warningPacketError
-		values[`antenna_${port}_temperature`] = antenna.temperature
-		values[`antenna_${port}_type`] = antenna.type
-		values[`antenna_${port}_version`] = antenna.version
-		values[`antenna_${port}_identify`] = antenna.identify
-		values[`antenna_${port}_led_brightness`] = antenna.ledBrightness
+		values[`dad_${port}_state`] = antenna.state
+		values[`dad_${port}_type`] = antenna.type
+		values[`dad_${port}_error_details`] = antenna.errorStateDetails
+		values[`dad_${port}_high_temp_warning`] = antenna.warningHighTemperature
+		values[`dad_${port}_packet_error_warning`] = antenna.warningPacketError
+		values[`dad_${port}_temperature`] = antenna.temperature
+		values[`dad_${port}_type`] = antenna.type
+		values[`dad_${port}_version`] = antenna.version
+		values[`dad_${port}_identify`] = antenna.identify
+		values[`dad_${port}_led_brightness`] = antenna.ledBrightness
 		const binding = antenna.bindings[0]?.binding
 		const bindingLabel = Object.keys(RFChannels).find((key) => RFChannels[key as keyof typeof RFChannels] === binding)
-		values[`antenna_${port}_bindings`] = bindingLabel ?? 'None'
-		values[`antenna_${port}_mismatch`] = antenna.bindings[0]?.mismatch
+		values[`dad_${port}_bindings`] = bindingLabel ?? 'None'
+		values[`dad_${port}_mismatch`] = antenna.bindings[0]?.mismatch
 	}
 
 	// Mobile Devices
 	for (const device of self.state.mobileDevices.values()) {
 		const name = sanitizeName(device.name)
-		values[`mobile_device_${name}_mt_uid`] = device.mtUid
-		values[`mobile_device_${name}_mt_type`] = device.type
-		values[`mobile_device_${name}_frequency_range`] = device.frequencyRange
-		values[`mobile_device_${name}_rf_channel_id`] = device.rfChannelId
-		values[`mobile_device_${name}_identify`] = device.identify
-		values[`mobile_device_${name}_reverse_identify`] = device.reverseIdentify
-		values[`mobile_device_${name}_serial`] = device.serial
-		values[`mobile_device_${name}_connected`] = device.connected
-		values[`mobile_device_${name}_sleep`] = device.sleep
-		values[`mobile_device_${name}_state`] = device.state
-		values[`mobile_device_${name}_battery_level`] = device.batteryFillLevel === -1 ? 'OFF' : device.batteryFillLevel
-		values[`mobile_device_${name}_battery_runtime`] = device.batteryRuntime === -1 ? 'OFF' : device.batteryRuntime
-		values[`mobile_device_${name}_battery_low`] = device.batteryLow
-		values[`mobile_device_${name}_version`] = device.version
-		values[`mobile_device_${name}_version_mismatch`] = device.versionMismatch
-		values[`mobile_device_${name}_fcc_id`] = device.fccId
-		values[`mobile_device_${name}_led_brightness`] = device.ledBrightness
-		values[`mobile_device_${name}_sw_update_possible`] = device.swUpdatePossible
-		values[`mobile_device_${name}_sw_update_progress`] = device.swUpdateProgress
-		values[`mobile_device_${name}_mic_audiolink_id`] = device.micAudiolinkId
-		values[`mobile_device_${name}_mic_audiolink_active`] = device.micAudiolinkActive
-		values[`mobile_device_${name}_mic_test_tone_enabled`] = device.micTestToneEnabled
-		values[`mobile_device_${name}_mic_test_tone_level`] = device.micTestToneLevel
-		values[`mobile_device_${name}_command_state`] = device.commandState
-		values[`mobile_device_${name}_mic_lqi`] = device.micLqi
-		values[`mobile_device_${name}_interference`] = device.interference?.severity
-		values[`mobile_device_${name}_dominant_antenna`] = device.dominantAntenna
-		values[`mobile_device_${name}_rssi`] = device.rssi
+		const type = device.type
+		const serial = device.serial
+
+		const deviceVariableId = `${type}_${name}_${serial}`
+		values[`${deviceVariableId}_mt_uid`] = device.mtUid
+		values[`${deviceVariableId}_mt_type`] = device.type
+		values[`${deviceVariableId}_frequency_range`] = device.frequencyRange
+		values[`${deviceVariableId}_rf_channel_id`] = device.rfChannelId
+		values[`${deviceVariableId}_identify`] = device.identify
+		values[`${deviceVariableId}_reverse_identify`] = device.reverseIdentify
+		values[`${deviceVariableId}_serial`] = device.serial
+		values[`${deviceVariableId}_connected`] = device.connected
+		values[`${deviceVariableId}_sleep`] = device.sleep
+		values[`${deviceVariableId}_state`] = device.state
+		values[`${deviceVariableId}_battery_level`] = device.batteryFillLevel === -1 ? 'OFF' : device.batteryFillLevel
+		values[`${deviceVariableId}_battery_runtime`] = device.batteryRuntime === -1 ? 'OFF' : device.batteryRuntime
+		values[`${deviceVariableId}_battery_low`] = device.batteryLow
+		values[`${deviceVariableId}_version`] = device.version
+		values[`${deviceVariableId}_version_mismatch`] = device.versionMismatch
+		values[`${deviceVariableId}_fcc_id`] = device.fccId
+		values[`${deviceVariableId}_led_brightness`] = device.ledBrightness
+		values[`${deviceVariableId}_sw_update_possible`] = device.swUpdatePossible
+		values[`${deviceVariableId}_sw_update_progress`] = device.swUpdateProgress
+		values[`${deviceVariableId}_mic_audiolink_id`] = device.micAudiolinkId
+		values[`${deviceVariableId}_mic_audiolink_active`] = device.micAudiolinkActive
+		values[`${deviceVariableId}_mic_test_tone_enabled`] = device.micTestToneEnabled
+		values[`${deviceVariableId}_mic_test_tone_level`] = device.micTestToneLevel
+		values[`${deviceVariableId}_command_state`] = device.commandState
+		values[`${deviceVariableId}_mic_lqi`] = device.micLqi
+		values[`${deviceVariableId}_interference`] = device.interference?.severity
+		values[`${deviceVariableId}_dominant_antenna`] = device.dominantAntenna
+		values[`${deviceVariableId}_rssi`] = device.rssi
 
 		if (device.type === MtType.SEK) {
-			values[`mobile_device_${name}_headphone_volume`] = device.headphoneVolume
-			values[`mobile_device_${name}_headphone_balance`] = device.headphoneBalance
-			values[`mobile_device_${name}_mic_preamp_gain`] = device.micPreampGain
-			values[`mobile_device_${name}_mic_lowcut_hz`] = device.micLowCutHz
-			values[`mobile_device_${name}_iem_audiolink_id`] = device.iemAudiolinkId
-			values[`mobile_device_${name}_iem_audiolink_active`] = device.iemAudiolinkActive
-			values[`mobile_device_${name}_headphone_plug_state`] = device.headphonePlugState
-			values[`mobile_device_${name}_headphone_volume_max`] = device.headphoneVolumeMax
-			values[`mobile_device_${name}_headphone_volume_min`] = device.headphoneVolumeMin
-			values[`mobile_device_${name}_mic_line_selection`] = device.micLineSelection
-			values[`mobile_device_${name}_mic_line_selection_auto_value`] = device.micLineSelectionAutoValue
-			values[`mobile_device_${name}_cable_emulation`] = device.cableEmulation
-			values[`mobile_device_${name}_iem_lqi`] = device.iemLqi
+			values[`${deviceVariableId}_headphone_volume`] = device.headphoneVolume
+			values[`${deviceVariableId}_headphone_balance`] = device.headphoneBalance
+			values[`${deviceVariableId}_mic_preamp_gain`] = device.micPreampGain
+			values[`${deviceVariableId}_mic_lowcut_hz`] = device.micLowCutHz
+			values[`${deviceVariableId}_iem_audiolink_id`] = device.iemAudiolinkId
+			values[`${deviceVariableId}_iem_audiolink_active`] = device.iemAudiolinkActive
+			values[`${deviceVariableId}_headphone_plug_state`] = device.headphonePlugState
+			values[`${deviceVariableId}_headphone_volume_max`] = device.headphoneVolumeMax
+			values[`${deviceVariableId}_headphone_volume_min`] = device.headphoneVolumeMin
+			values[`${deviceVariableId}_mic_line_selection`] = device.micLineSelection
+			values[`${deviceVariableId}_mic_line_selection_auto_value`] = device.micLineSelectionAutoValue
+			values[`${deviceVariableId}_cable_emulation`] = device.cableEmulation
+			values[`${deviceVariableId}_iem_lqi`] = device.iemLqi
 		} else if (device.type === MtType.SKM) {
-			values[`mobile_device_${name}_mic_preamp_gain`] = device.micPreampGain
-			values[`mobile_device_${name}_mic_lowcut_hz`] = device.micLowCutHz
-			values[`mobile_device_${name}_command_behavior`] = device.commandBehavior
-			values[`mobile_device_${name}_mic_module`] = device.micModule
+			values[`${deviceVariableId}_mic_preamp_gain`] = device.micPreampGain
+			values[`${deviceVariableId}_mic_lowcut_hz`] = device.micLowCutHz
+			values[`${deviceVariableId}_command_behavior`] = device.commandBehavior
+			values[`${deviceVariableId}_mic_module`] = device.micModule
 		}
 	}
 

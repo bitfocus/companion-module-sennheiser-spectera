@@ -18,7 +18,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 
 	//RF Actions
 	actions['setRfChannelState'] = {
-		name: 'RF Channel - State',
+		name: 'RF - State',
 		options: [
 			{
 				type: 'dropdown',
@@ -52,7 +52,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	}
 
 	actions['setRfChannelStartupState'] = {
-		name: 'RF Channel - Startup State',
+		name: 'RF - Startup State',
 		options: [
 			{
 				type: 'dropdown',
@@ -86,7 +86,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	}
 
 	actions['rfTxPower'] = {
-		name: 'RF Channel - TX Power',
+		name: 'RF - TX Power',
 		options: [
 			{
 				type: 'dropdown',
@@ -100,7 +100,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			},
 			{
 				type: 'dropdown',
-				label: 'RF Channel TX Power',
+				label: 'TX Power',
 				choices: getChoicesFromEnum(TxPower),
 				default: 10,
 				id: 'txPower',
@@ -120,7 +120,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	}
 
 	actions['rfBandwidthMode'] = {
-		name: 'RF Channel - Bandwidth Mode',
+		name: 'RF - Bandwidth Mode',
 		options: [
 			{
 				type: 'dropdown',
@@ -134,7 +134,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			},
 			{
 				type: 'dropdown',
-				label: 'RF Channel Bandwidth Mode',
+				label: 'Bandwidth Mode',
 				choices: getChoicesFromEnum(BandwidthMode),
 				default: BandwidthMode['6 MHz'],
 				id: 'bandwidthMode',
@@ -154,7 +154,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	}
 
 	actions['rfFrequency'] = {
-		name: 'RF Channel - Frequency',
+		name: 'RF - Frequency',
 		options: [
 			{
 				type: 'dropdown',
@@ -168,7 +168,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			},
 			{
 				type: 'textinput',
-				label: 'RF Channel Frequency (MHz)',
+				label: 'Frequency (MHz)',
 				default: '474',
 				id: 'frequency',
 				useVariables: true,
@@ -187,51 +187,51 @@ export function UpdateActions(self: SpecteraInstance): void {
 		},
 	}
 
-	//Antenna Actions
-	actions['antennaLedBrightness'] = {
-		name: 'Antenna - LED Brightness',
+	//DAD Actions
+	actions['dadLedBrightness'] = {
+		name: 'DAD - LED Brightness',
 		options: [
 			{
 				type: 'dropdown',
-				label: 'Antenna',
+				label: 'DAD',
 				choices: getChoicesFromEnum(AntennaPortId),
 				default: AntennaPortId.A,
-				id: 'antenna',
+				id: 'dad',
 			},
 			{
 				type: 'dropdown',
-				label: 'Antenna LED Brightness',
+				label: 'LED Brightness',
 				choices: getChoicesFromEnum(LedBrightness),
 				default: LedBrightness.Standard,
 				id: 'ledBrightness',
 			},
 		],
-		description: 'Set the Antenna LED Brightness',
+		description: 'Set the DAD LED Brightness',
 		callback: async (action) => {
 			if (!self.api) return
 			await self.api.setAntenna(
-				action.options.antenna as AntennaPortId,
+				action.options.dad as AntennaPortId,
 				{
-					antennaPortId: action.options.antenna as AntennaPortId,
+					antennaPortId: action.options.dad as AntennaPortId,
 					ledBrightness: action.options.ledBrightness as LedBrightness,
 				} as Partial<Antenna>,
 			)
 		},
 	}
 
-	actions['antennaIdentify'] = {
-		name: 'Antenna - Identify',
+	actions['dadIdentify'] = {
+		name: 'DAD - Identify',
 		options: [
 			{
 				type: 'dropdown',
-				label: 'Antenna',
+				label: 'DAD',
 				choices: getChoicesFromEnum(AntennaPortId),
 				default: AntennaPortId.A,
-				id: 'antenna',
+				id: 'dad',
 			},
 			{
 				type: 'dropdown',
-				label: 'Antenna Identify',
+				label: 'Identify',
 				choices: [
 					{ id: 'true', label: 'On' },
 					{ id: 'false', label: 'Off' },
@@ -240,44 +240,44 @@ export function UpdateActions(self: SpecteraInstance): void {
 				id: 'identify',
 			},
 		],
-		description: 'Set the Antenna Identify',
+		description: 'Set the DAD Identify',
 		callback: async (action) => {
 			if (!self.api) return
 			await self.api.setAntenna(
-				action.options.antenna as AntennaPortId,
+				action.options.dad as AntennaPortId,
 				{
-					antennaPortId: action.options.antenna as AntennaPortId,
+					antennaPortId: action.options.dad as AntennaPortId,
 					identify: action.options.identify === 'true',
 				} as Partial<Antenna>,
 			)
 		},
 	}
 
-	actions['antennaRfBinding'] = {
-		name: 'Antenna - RF Binding',
+	actions['dadRfBinding'] = {
+		name: 'DAD - RF Channel',
 		options: [
 			{
 				type: 'dropdown',
-				label: 'Antenna',
+				label: 'DAD',
 				choices: getChoicesFromEnum(AntennaPortId),
 				default: AntennaPortId.A,
-				id: 'antenna',
+				id: 'dad',
 			},
 			{
 				type: 'dropdown',
-				label: 'Antenna RF Binding',
+				label: 'RF Channel',
 				choices: getChoicesFromEnum(RFChannels),
 				default: RFChannels.Off,
 				id: 'rfChannel',
 			},
 		],
-		description: 'RF Channel',
+		description: 'Set the DAD RF Channel',
 		callback: async (action) => {
 			if (!self.api) return
 			await self.api.setAntenna(
-				action.options.antenna as AntennaPortId,
+				action.options.dad as AntennaPortId,
 				{
-					antennaPortId: action.options.antenna as AntennaPortId,
+					antennaPortId: action.options.dad as AntennaPortId,
 					bindings: [
 						{
 							subAntennaId: 0,

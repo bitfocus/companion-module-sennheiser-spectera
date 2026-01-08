@@ -5,24 +5,24 @@ import { RFChannels, AntennaPortId, BaseStationStatus, DeviceStatus } from './ty
 
 export function UpdatePresets(self: SpecteraInstance): void {
 	const presets: CompanionPresetDefinitions = {}
-	//Antennas
-	for (const antenna of Object.keys(AntennaPortId)) {
-		const port = antenna.toLowerCase()
-		presets[`antenna_${port}_header`] = {
+	//DADs
+	for (const dad of Object.keys(AntennaPortId)) {
+		const port = dad.toLowerCase()
+		presets[`dad${port}Header`] = {
 			type: 'text',
-			category: 'Antennas',
-			name: `Antenna ${antenna}`,
+			category: 'DAD',
+			name: `DAD ${dad}`,
 			text: '',
 		}
-		presets[`antenna_${antenna}_state`] = {
+		presets[`dad${port}State`] = {
 			type: 'button',
-			category: 'Antennas',
-			name: `Antenna ${antenna} State`,
+			category: 'DAD',
+			name: `DAD ${dad} State`,
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `ANTENNA ${antenna}\\n\\n$(spectera:antenna_${port}_state)`,
-				size: 12,
+				text: `DAD ${dad}\\n\\n$(spectera:dad_${port}_state)`,
+				size: 11,
 				show_topbar: false,
 			},
 			steps: [
@@ -34,27 +34,64 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			feedbacks: [
 				...Object.values(DeviceStatus).map((state) => {
 					return {
-						feedbackId: 'antennaState',
+						feedbackId: 'dadState',
 						options: {
-							antenna: port,
+							dad: port,
 							state: state,
 						},
 						style: {
-							bgcolor: state === DeviceStatus.Connected ? Color.SpecteraGreen : Color.SpecteraRed,
+							bgcolor: state === DeviceStatus.Initialized ? Color.SpecteraGreen : Color.SpecteraRed,
 						},
 					}
 				}),
 			],
 		}
-		presets[`antenna_${antenna}_bindings`] = {
+		presets[`dad${port}Identify`] = {
 			type: 'button',
-			category: 'Antennas',
-			name: `Antenna ${antenna} Bindings`,
+			category: 'DAD',
+			name: `DAD ${dad} Identify`,
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `ANTENNA ${antenna}\\n\\n$(spectera:antenna_${port}_bindings)`,
-				size: 12,
+				text: `DAD ${dad}\\nIDENTIFY`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [
+						{
+							actionId: 'dadIdentify',
+							options: {
+								dad: port,
+								identify: 'true',
+							},
+						},
+					],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'dadIdenitify',
+					options: {
+						dad: port,
+					},
+					style: {
+						bgcolor: Color.SpecteraBlue,
+					},
+				},
+			],
+		}
+		presets[`dad${port}Bindings`] = {
+			type: 'button',
+			category: 'DAD',
+			name: `DAD ${dad} Bindings`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `DAD ${dad}\\n\\n$(spectera:dad_${port}_bindings)`,
+				size: 11,
 				show_topbar: false,
 			},
 			steps: [
@@ -65,11 +102,135 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			],
 			feedbacks: [
 				{
-					feedbackId: 'antennaBindings',
+					feedbackId: 'dadBindings',
+					options: {
+						dad: port,
+						bindings: RFChannels['Off'],
+					},
+					style: {
+						bgcolor: Color.SpecteraRed,
+					},
+				},
+				{
+					feedbackId: 'dadBindings',
 					isInverted: true,
 					options: {
-						antenna: port,
+						dad: port,
 						bindings: RFChannels['Off'],
+					},
+					style: {
+						bgcolor: Color.SpecteraGreen,
+					},
+				},
+			],
+		}
+		presets[`dad${port}BindingSetOff`] = {
+			type: 'button',
+			category: 'DAD',
+			name: `DAD ${dad} Binding Set`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `DAD ${dad}\\nto\\nOFF`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [
+						{
+							actionId: 'dadRfBinding',
+							options: {
+								dad: port,
+								rfChannel: RFChannels['Off'],
+							},
+						},
+					],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'dadBindings',
+					options: {
+						dad: port,
+						bindings: RFChannels['Off'],
+					},
+					style: {
+						bgcolor: Color.SpecteraRed,
+					},
+				},
+			],
+		}
+		presets[`dad${port}BindingSetRF1`] = {
+			type: 'button',
+			category: 'DAD',
+			name: `DAD ${dad} Binding Set`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `DAD ${dad}\nto\\nRF 1`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [
+						{
+							actionId: 'dadRfBinding',
+							options: {
+								dad: port,
+								rfChannel: RFChannels['RF Channel 1'],
+							},
+						},
+					],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'dadBindings',
+					options: {
+						dad: port,
+						bindings: RFChannels['RF Channel 1'],
+					},
+					style: {
+						bgcolor: Color.SpecteraGreen,
+					},
+				},
+			],
+		}
+		presets[`dad${port}BindingSetRF2`] = {
+			type: 'button',
+			category: 'DAD',
+			name: `DAD ${dad} Binding Set`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `DAD ${dad}\\nto\\nRF 2`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [
+						{
+							actionId: 'dadRfBinding',
+							options: {
+								dad: port,
+								rfChannel: RFChannels['RF Channel 2'],
+							},
+						},
+					],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'dadBindings',
+					options: {
+						dad: port,
+						bindings: RFChannels['RF Channel 2'],
 					},
 					style: {
 						bgcolor: Color.SpecteraGreen,
@@ -93,7 +254,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 		style: {
 			bgcolor: Color.Black,
 			color: Color.White,
-			text: 'SPECTERA STATUS\\n\\n$(spectera:basestation_state)',
+			text: 'SPECTERA STATUS\\n\\n$(spectera:base_station_state)',
 			size: 12,
 			show_topbar: false,
 		},
@@ -124,7 +285,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 		style: {
 			bgcolor: Color.Black,
 			color: Color.White,
-			text: 'SPECTERA WARNINGS\\n\\n$(spectera:basestation_warnings)',
+			text: 'SPECTERA WARNINGS\\n\\n$(spectera:base_station_warnings)',
 			size: 12,
 			show_topbar: false,
 		},
@@ -158,7 +319,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			bgcolor: Color.Black,
 			color: Color.White,
 			text: 'SPECTERA PSU 1\n\n$(spectera:health_psu_1_state)',
-			size: 12,
+			size: 11,
 			show_topbar: false,
 		},
 		steps: [
@@ -197,7 +358,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			bgcolor: Color.Black,
 			color: Color.White,
 			text: 'SPECTERA PSU 2\n\n$(spectera:health_psu_2_state)',
-			size: 12,
+			size: 11,
 			show_topbar: false,
 		},
 		steps: [

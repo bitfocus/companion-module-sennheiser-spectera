@@ -21,8 +21,8 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 
 	feedbacks['rfTxPower'] = {
 		type: 'boolean',
-		name: 'RF Tx Power',
-		description: 'RF Tx Power',
+		name: 'RF - Tx Power',
+		description: 'RF - Tx Power',
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
 		},
@@ -39,7 +39,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			},
 			{
 				type: 'dropdown',
-				label: 'RF Tx Power',
+				label: 'Tx Power',
 				choices: getChoicesFromEnum(TxPower),
 				default: TxPower['10 Mw'],
 				id: 'rfTxPower',
@@ -52,8 +52,8 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 	}
 	feedbacks['rfFrequency'] = {
 		type: 'boolean',
-		name: 'RF Frequency',
-		description: 'RF Frequency',
+		name: 'RF - Frequency',
+		description: 'RF - Frequency',
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
 		},
@@ -82,8 +82,8 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 	}
 	feedbacks['rfBandwidthMode'] = {
 		type: 'boolean',
-		name: 'RF Bandwidth Mode',
-		description: 'RF Bandwidth Mode',
+		name: 'RF - Bandwidth Mode',
+		description: 'RF - Bandwidth Mode',
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
 		},
@@ -100,7 +100,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			},
 			{
 				type: 'dropdown',
-				label: 'RF Bandwidth Mode',
+				label: 'Bandwidth Mode',
 				choices: getChoicesFromEnum(BandwidthMode),
 				default: BandwidthMode['6 MHz'],
 				id: 'rfBandwidthMode',
@@ -113,8 +113,8 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 	}
 	feedbacks['rfRestrictionViolation'] = {
 		type: 'boolean',
-		name: 'RF Restriction Violation',
-		description: 'RF Restriction Violation',
+		name: 'RF - Restriction Violation',
+		description: 'RF - Restriction Violation',
 		defaultStyle: {
 			bgcolor: Color.SpecteraRed,
 		},
@@ -139,8 +139,8 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 	}
 	feedbacks['rfState'] = {
 		type: 'boolean',
-		name: 'RF State',
-		description: 'RF State',
+		name: 'RF - State',
+		description: 'RF - State',
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
 		},
@@ -157,7 +157,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			},
 			{
 				type: 'dropdown',
-				label: 'RF State',
+				label: 'State',
 				choices: getChoicesFromEnum(RfState),
 				default: RfState.Active,
 				id: 'state',
@@ -170,8 +170,8 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 	}
 	feedbacks['rfStateOnStartup'] = {
 		type: 'boolean',
-		name: 'RF State on Start Up',
-		description: 'RF State on Start Up',
+		name: 'RF - State on Start Up',
+		description: 'RF - State on Start Up',
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
 		},
@@ -188,7 +188,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			},
 			{
 				type: 'dropdown',
-				label: 'RF State on Start Up',
+				label: 'State on Start Up',
 				choices: getChoicesFromEnum(RfStateStartup),
 				default: RfStateStartup.Active,
 				id: 'stateOnStartup',
@@ -201,115 +201,115 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 	}
 
 	//Antenna Feedbacks
-	feedbacks['antennaState'] = {
+	feedbacks['dadState'] = {
 		type: 'boolean',
-		name: 'Antenna State',
-		description: 'Antenna State',
+		name: 'DAD - State',
+		description: 'DAD - State',
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
 			{
 				type: 'dropdown',
-				label: 'Antenna',
+				label: 'DAD',
 				choices: getChoicesFromEnum(AntennaPortId),
 				default: AntennaPortId.A,
-				id: 'antenna',
+				id: 'dad',
 			},
 			{
 				type: 'dropdown',
-				label: 'Antenna State',
+				label: 'State',
 				choices: getChoicesFromEnum(DeviceStatus),
 				default: DeviceStatus.Connected,
 				id: 'state',
 			},
 		],
 		callback: async (feedback) => {
-			const antennaState = self.state.antennas.get(feedback.options.antenna as AntennaPortId)?.state
+			const antennaState = self.state.antennas.get(feedback.options.dad as AntennaPortId)?.state
 			return antennaState === feedback.options.state
 		},
 	}
-	feedbacks['antennaWarningHighTemperature'] = {
+	feedbacks['dadWarningHighTemperature'] = {
 		type: 'boolean',
-		name: 'Antenna Warning High Temperature',
-		description: 'Antenna Warning High Temperature',
+		name: 'DAD - Warning High Temperature',
+		description: 'DAD - Warning High Temperature',
 		defaultStyle: {
 			bgcolor: Color.SpecteraRed,
 		},
 		options: [
 			{
 				type: 'dropdown',
-				label: 'Antenna',
+				label: 'DAD',
 				choices: getChoicesFromEnum(AntennaPortId),
 				default: AntennaPortId.A,
-				id: 'antenna',
+				id: 'dad',
 			},
 		],
 		callback: async (feedback) => {
 			const antennaWarningHighTemperature = self.state.antennas.get(
-				feedback.options.antenna as AntennaPortId,
+				feedback.options.dad as AntennaPortId,
 			)?.warningHighTemperature
 			return antennaWarningHighTemperature === true
 		},
 	}
-	feedbacks['antennaWarningPacketError'] = {
+	feedbacks['dadWarningPacketError'] = {
 		type: 'boolean',
-		name: 'Antenna Warning Packet Error',
-		description: 'Antenna Warning Packet Error',
+		name: 'DAD - Warning Packet Error',
+		description: 'DAD - Warning Packet Error',
 		defaultStyle: {
 			bgcolor: Color.SpecteraRed,
 		},
 		options: [
 			{
 				type: 'dropdown',
-				label: 'Antenna',
+				label: 'DAD',
 				choices: getChoicesFromEnum(AntennaPortId),
 				default: AntennaPortId.A,
-				id: 'antenna',
+				id: 'dad',
 			},
 		],
 		callback: async (feedback) => {
 			const antennaWarningPacketError = self.state.antennas.get(
-				feedback.options.antenna as AntennaPortId,
+				feedback.options.dad as AntennaPortId,
 			)?.warningPacketError
 			return antennaWarningPacketError === true
 		},
 	}
-	feedbacks['antennaIdenitify'] = {
+	feedbacks['dadIdenitify'] = {
 		type: 'boolean',
-		name: 'Antenna Identify',
-		description: 'Antenna Identify',
+		name: 'DAD - Identify',
+		description: 'DAD - Identify',
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
 			{
 				type: 'dropdown',
-				label: 'Antenna',
+				label: 'DAD',
 				choices: getChoicesFromEnum(AntennaPortId),
 				default: AntennaPortId.A,
-				id: 'antenna',
+				id: 'dad',
 			},
 		],
 		callback: async (feedback) => {
-			const antennaIdenitify = self.state.antennas.get(feedback.options.antenna as AntennaPortId)?.identify
+			const antennaIdenitify = self.state.antennas.get(feedback.options.dad as AntennaPortId)?.identify
 			return antennaIdenitify === true
 		},
 	}
-	feedbacks['antennaTemperature'] = {
+	feedbacks['dadTemperature'] = {
 		type: 'boolean',
-		name: 'Antenna Temperature',
-		description: 'Antenna Temperature',
+		name: 'DAD - Temperature',
+		description: 'DAD - Temperature',
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
 			{
 				type: 'dropdown',
-				label: 'Antenna',
+				label: 'DAD',
 				choices: getChoicesFromEnum(AntennaPortId),
 				default: AntennaPortId.A,
-				id: 'antenna',
+				id: 'dad',
 			},
 			{
 				type: 'textinput',
@@ -319,63 +319,63 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			},
 		],
 		callback: async (feedback) => {
-			const antennaTemperature = self.state.antennas.get(feedback.options.antenna as AntennaPortId)?.temperature
+			const antennaTemperature = self.state.antennas.get(feedback.options.dad as AntennaPortId)?.temperature
 			return antennaTemperature === feedback.options.temperature
 		},
 	}
-	feedbacks['antennaLedBrightness'] = {
+	feedbacks['dadLedBrightness'] = {
 		type: 'boolean',
-		name: 'Antenna LED Brightness',
-		description: 'Antenna LED Brightness',
+		name: 'DAD - LED Brightness',
+		description: 'DAD - LED Brightness',
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
 			{
 				type: 'dropdown',
-				label: 'Antenna',
+				label: 'DAD',
 				choices: getChoicesFromEnum(AntennaPortId),
 				default: AntennaPortId.A,
-				id: 'antenna',
+				id: 'dad',
 			},
 			{
 				type: 'dropdown',
-				label: 'Antenna LED Brightness',
+				label: 'LED Brightness',
 				choices: getChoicesFromEnum(LedBrightness),
 				default: LedBrightness.Standard,
 				id: 'ledBrightness',
 			},
 		],
 		callback: async (feedback) => {
-			const antennaLedBrightness = self.state.antennas.get(feedback.options.antenna as AntennaPortId)?.ledBrightness
+			const antennaLedBrightness = self.state.antennas.get(feedback.options.dad as AntennaPortId)?.ledBrightness
 			return antennaLedBrightness === feedback.options.ledBrightness
 		},
 	}
-	feedbacks['antennaBindings'] = {
+	feedbacks['dadBindings'] = {
 		type: 'boolean',
-		name: 'Antenna Binding',
-		description: 'Antenna Binding',
+		name: 'DAD - RF Channel',
+		description: 'DAD - RF Channel',
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
 			{
 				type: 'dropdown',
-				label: 'Antenna',
+				label: 'DAD',
 				choices: getChoicesFromEnum(AntennaPortId),
 				default: AntennaPortId.A,
-				id: 'antenna',
+				id: 'dad',
 			},
 			{
 				type: 'dropdown',
-				label: 'Antenna Binding',
+				label: 'RF Channel',
 				choices: getChoicesFromEnum(RFChannels),
 				default: RFChannels['RF Channel 1'],
 				id: 'bindings',
 			},
 		],
 		callback: async (feedback) => {
-			const antennaBinding = self.state.antennas.get(feedback.options.antenna as AntennaPortId)?.bindings[0].binding
+			const antennaBinding = self.state.antennas.get(feedback.options.dad as AntennaPortId)?.bindings[0].binding
 			return antennaBinding === feedback.options.bindings
 		},
 	}
