@@ -1,4 +1,17 @@
 import type { SpecteraInstance } from './main.js'
+import type {
+	AudioInput,
+	AudioOutput,
+	RfChannel,
+	Antenna,
+	MobileDevice,
+	PsuState,
+	TempState,
+	FanState,
+	BaseStationIdentity,
+	BaseStationState,
+	BaseStationSite,
+} from './types.js'
 import { MtType, RfState, RFChannels, RfStateStartup, PsuStatus } from './types.js'
 
 const rfStateStartupLabels: Record<RfStateStartup, string> = {
@@ -358,130 +371,205 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 	self.setVariableDefinitions(variables)
 }
 
+export function getAudioInputVariables(input: AudioInput): Record<string, any> {
+	return {
+		[`audio_input_${input.inputId}_source`]: input.source,
+		[`audio_input_${input.inputId}_name`]: input.name,
+		[`audio_input_${input.inputId}_iem_link_id`]: input.iemAudiolinkId,
+	}
+}
+
+export function getAudioOutputVariables(output: AudioOutput): Record<string, any> {
+	return {
+		[`audio_output_${output.outputId}_mic_link`]: output.micAudiolinkId,
+	}
+}
+
+export function getRfChannelVariables(channel: RfChannel): Record<string, any> {
+	const displayId = channel.rfChannelId + 1
+	return {
+		[`rf_channel_${displayId}_tx_power`]: channel.txPower,
+		[`rf_channel_${displayId}_frequency`]: channel.frequency / 1000,
+		[`rf_channel_${displayId}_bandwidth_mode`]: channel.bandwidthMode,
+		[`rf_channel_${displayId}_rf_restriction_violation`]: channel.rfRestrictionViolation,
+		[`rf_channel_${displayId}_state`]: channel.rfState === RfState.Active ? 'Active' : 'Muted',
+		[`rf_channel_${displayId}_startup_state`]: channel.rfStateOnStartup
+			? rfStateStartupLabels[channel.rfStateOnStartup]
+			: 'Unknown',
+	}
+}
+
+export function getAntennaVariables(antenna: Antenna): Record<string, any> {
+	const port = sanitizeName(antenna.antennaPortId)
+	const binding = antenna.bindings[0]?.binding
+	const bindingLabel = Object.keys(RFChannels).find((key) => RFChannels[key as keyof typeof RFChannels] === binding)
+
+	return {
+		[`dad_${port}_state`]: antenna.state,
+		[`dad_${port}_type`]: antenna.type,
+		[`dad_${port}_error_details`]: antenna.errorStateDetails,
+		[`dad_${port}_high_temp_warning`]: antenna.warningHighTemperature,
+		[`dad_${port}_packet_error_warning`]: antenna.warningPacketError,
+		[`dad_${port}_temperature`]: antenna.temperature,
+		[`dad_${port}_version`]: antenna.version,
+		[`dad_${port}_identify`]: antenna.identify,
+		[`dad_${port}_led_brightness`]: antenna.ledBrightness,
+		[`dad_${port}_bindings`]: bindingLabel ?? 'None',
+		[`dad_${port}_mismatch`]: antenna.bindings[0]?.mismatch,
+	}
+}
+
+export function getMobileDeviceVariables(device: MobileDevice): Record<string, any> {
+	const name = sanitizeName(device.name)
+	const type = device.type
+	const serial = device.serial
+	const deviceVariableId = `${type}_${name}_${serial}`
+
+	const variables: Record<string, any> = {
+		[`${deviceVariableId}_mt_uid`]: device.mtUid,
+		[`${deviceVariableId}_mt_type`]: device.type,
+		[`${deviceVariableId}_frequency_range`]: device.frequencyRange,
+		[`${deviceVariableId}_rf_channel_id`]: device.rfChannelId,
+		[`${deviceVariableId}_identify`]: device.identify,
+		[`${deviceVariableId}_reverse_identify`]: device.reverseIdentify,
+		[`${deviceVariableId}_serial`]: device.serial,
+		[`${deviceVariableId}_connected`]: device.connected,
+		[`${deviceVariableId}_sleep`]: device.sleep,
+		[`${deviceVariableId}_state`]: device.state,
+		[`${deviceVariableId}_battery_level`]: device.batteryFillLevel === -1 ? 'OFF' : device.batteryFillLevel,
+		[`${deviceVariableId}_battery_runtime`]: device.batteryRuntime === -1 ? 'OFF' : device.batteryRuntime,
+		[`${deviceVariableId}_battery_low`]: device.batteryLow,
+		[`${deviceVariableId}_version`]: device.version,
+		[`${deviceVariableId}_version_mismatch`]: device.versionMismatch,
+		[`${deviceVariableId}_fcc_id`]: device.fccId,
+		[`${deviceVariableId}_led_brightness`]: device.ledBrightness,
+		[`${deviceVariableId}_sw_update_possible`]: device.swUpdatePossible,
+		[`${deviceVariableId}_sw_update_progress`]: device.swUpdateProgress,
+		[`${deviceVariableId}_mic_audiolink_id`]: device.micAudiolinkId,
+		[`${deviceVariableId}_mic_audiolink_active`]: device.micAudiolinkActive,
+		[`${deviceVariableId}_mic_test_tone_enabled`]: device.micTestToneEnabled,
+		[`${deviceVariableId}_mic_test_tone_level`]: device.micTestToneLevel,
+		[`${deviceVariableId}_command_state`]: device.commandState,
+		[`${deviceVariableId}_mic_lqi`]: device.micLqi,
+		[`${deviceVariableId}_interference`]: device.interference?.severity,
+		[`${deviceVariableId}_dominant_antenna`]: device.dominantAntenna,
+		[`${deviceVariableId}_rssi`]: device.rssi,
+	}
+
+	if (device.type === MtType.SEK) {
+		variables[`${deviceVariableId}_headphone_volume`] = device.headphoneVolume
+		variables[`${deviceVariableId}_headphone_balance`] = device.headphoneBalance
+		variables[`${deviceVariableId}_mic_preamp_gain`] = device.micPreampGain
+		variables[`${deviceVariableId}_mic_lowcut_hz`] = device.micLowCutHz
+		variables[`${deviceVariableId}_iem_audiolink_id`] = device.iemAudiolinkId
+		variables[`${deviceVariableId}_iem_audiolink_active`] = device.iemAudiolinkActive
+		variables[`${deviceVariableId}_headphone_plug_state`] = device.headphonePlugState
+		variables[`${deviceVariableId}_headphone_volume_max`] = device.headphoneVolumeMax
+		variables[`${deviceVariableId}_headphone_volume_min`] = device.headphoneVolumeMin
+		variables[`${deviceVariableId}_mic_line_selection`] = device.micLineSelection
+		variables[`${deviceVariableId}_mic_line_selection_auto_value`] = device.micLineSelectionAutoValue
+		variables[`${deviceVariableId}_cable_emulation`] = device.cableEmulation
+		variables[`${deviceVariableId}_iem_lqi`] = device.iemLqi
+	} else if (device.type === MtType.SKM) {
+		variables[`${deviceVariableId}_mic_preamp_gain`] = device.micPreampGain
+		variables[`${deviceVariableId}_mic_lowcut_hz`] = device.micLowCutHz
+		variables[`${deviceVariableId}_command_behavior`] = device.commandBehavior
+		variables[`${deviceVariableId}_mic_module`] = device.micModule
+	}
+
+	return variables
+}
+
+export function getPsuVariables(state: PsuState): Record<string, any> {
+	return {
+		health_psu_1_state: psuStatusLabels[state.psu1],
+		health_psu_2_state: psuStatusLabels[state.psu2],
+	}
+}
+
+export function getTempVariables(state: TempState): Record<string, any> {
+	return {
+		health_temp_state: state.value,
+	}
+}
+
+export function getFanVariables(fanId: string, state: FanState): Record<string, any> {
+	const fanNumber = fanId.split('_')[1]
+	return {
+		[`health_fan_${fanNumber}_error`]: state.errorState.value,
+	}
+}
+
+export function getBaseStationIdentityVariables(identity: BaseStationIdentity): Record<string, any> {
+	return {
+		base_station_model: identity.product,
+		base_station_serial: identity.serial,
+		base_station_version: identity.hardwareRevision,
+	}
+}
+
+export function getBaseStationStateVariables(state: BaseStationState): Record<string, any> {
+	return {
+		base_station_state: state.state,
+		base_station_warnings: state.warnings?.length ? state.warnings.join(', ') : 'None',
+	}
+}
+
+export function getBaseStationSiteVariables(site: BaseStationSite): Record<string, any> {
+	return {
+		base_station_name: site.deviceName,
+		base_station_location: site.location,
+		base_station_position: site.position,
+	}
+}
+
 export function UpdateVariableValues(self: SpecteraInstance): void {
-	const values: Record<string, string | number | boolean | undefined> = {}
+	let values: Record<string, string | number | boolean | undefined> = {}
 
 	// Base Station Info
-	values['base_station_state'] = self.state.basestation.state?.state
-	values['base_station_name'] = self.state.basestation.site?.deviceName
-	values['base_station_location'] = self.state.basestation.site?.location
-	values['base_station_position'] = self.state.basestation.site?.position
-	values['base_station_model'] = self.state.basestation.identity?.product
-	values['base_station_serial'] = self.state.basestation.identity?.serial
-	values['base_station_version'] = self.state.basestation.identity?.hardwareRevision
-	values['base_station_warnings'] = self.state.basestation.state?.warnings?.length
-		? self.state.basestation.state?.warnings?.join(', ')
-		: 'None'
+	if (self.state.basestation.state) {
+		values = { ...values, ...getBaseStationStateVariables(self.state.basestation.state) }
+	}
+	if (self.state.basestation.site) {
+		values = { ...values, ...getBaseStationSiteVariables(self.state.basestation.site) }
+	}
+	if (self.state.basestation.identity) {
+		values = { ...values, ...getBaseStationIdentityVariables(self.state.basestation.identity) }
+	}
 
 	// Health
-	values['health_psu_1_state'] = psuStatusLabels[self.state.health.psu.psu1]
-	values['health_psu_2_state'] = psuStatusLabels[self.state.health.psu.psu2]
-	values['health_temp_state'] = self.state.health.temp.value
-	values['health_fan_1_error'] = self.state.health.fans['FAN_1']?.errorState.value
-	values['health_fan_2_error'] = self.state.health.fans['FAN_2']?.errorState.value
-	values['health_fan_3_error'] = self.state.health.fans['FAN_3']?.errorState.value
+	values = { ...values, ...getPsuVariables(self.state.health.psu) }
+	values = { ...values, ...getTempVariables(self.state.health.temp) }
+	for (const [fanId, fanState] of Object.entries(self.state.health.fans)) {
+		if (fanState) {
+			values = { ...values, ...getFanVariables(fanId, fanState) }
+		}
+	}
 
 	// Audio Inputs
 	for (const input of self.state.audioInputs.values()) {
-		values[`audio_input_${input.inputId}_source`] = input.source
-		values[`audio_input_${input.inputId}_name`] = input.name
-		values[`audio_input_${input.inputId}_iem_link_id`] = input.iemAudiolinkId
+		values = { ...values, ...getAudioInputVariables(input) }
 	}
 
 	// Audio Outputs
 	for (const output of self.state.audioOutputs.values()) {
-		values[`audio_output_${output.outputId}_mic_link`] = output.micAudiolinkId
+		values = { ...values, ...getAudioOutputVariables(output) }
 	}
 
 	// RF Channels
 	for (const channel of self.state.rfChannels.values()) {
-		const displayId = channel.rfChannelId + 1
-		values[`rf_channel_${displayId}_tx_power`] = channel.txPower
-		values[`rf_channel_${displayId}_frequency`] = channel.frequency / 1000
-		values[`rf_channel_${displayId}_bandwidth_mode`] = channel.bandwidthMode
-		values[`rf_channel_${displayId}_rf_restriction_violation`] = channel.rfRestrictionViolation
-		values[`rf_channel_${displayId}_state`] = channel.rfState === RfState.Active ? 'Active' : 'Muted'
-		values[`rf_channel_${displayId}_startup_state`] = channel.rfStateOnStartup
-			? rfStateStartupLabels[channel.rfStateOnStartup]
-			: 'Unknown'
+		values = { ...values, ...getRfChannelVariables(channel) }
 	}
 
 	// Antennas
 	for (const antenna of self.state.antennas.values()) {
-		const port = sanitizeName(antenna.antennaPortId)
-		values[`dad_${port}_state`] = antenna.state
-		values[`dad_${port}_type`] = antenna.type
-		values[`dad_${port}_error_details`] = antenna.errorStateDetails
-		values[`dad_${port}_high_temp_warning`] = antenna.warningHighTemperature
-		values[`dad_${port}_packet_error_warning`] = antenna.warningPacketError
-		values[`dad_${port}_temperature`] = antenna.temperature
-		values[`dad_${port}_type`] = antenna.type
-		values[`dad_${port}_version`] = antenna.version
-		values[`dad_${port}_identify`] = antenna.identify
-		values[`dad_${port}_led_brightness`] = antenna.ledBrightness
-		const binding = antenna.bindings[0]?.binding
-		const bindingLabel = Object.keys(RFChannels).find((key) => RFChannels[key as keyof typeof RFChannels] === binding)
-		values[`dad_${port}_bindings`] = bindingLabel ?? 'None'
-		values[`dad_${port}_mismatch`] = antenna.bindings[0]?.mismatch
+		values = { ...values, ...getAntennaVariables(antenna) }
 	}
 
 	// Mobile Devices
 	for (const device of self.state.mobileDevices.values()) {
-		const name = sanitizeName(device.name)
-		const type = device.type
-		const serial = device.serial
-
-		const deviceVariableId = `${type}_${name}_${serial}`
-		values[`${deviceVariableId}_mt_uid`] = device.mtUid
-		values[`${deviceVariableId}_mt_type`] = device.type
-		values[`${deviceVariableId}_frequency_range`] = device.frequencyRange
-		values[`${deviceVariableId}_rf_channel_id`] = device.rfChannelId
-		values[`${deviceVariableId}_identify`] = device.identify
-		values[`${deviceVariableId}_reverse_identify`] = device.reverseIdentify
-		values[`${deviceVariableId}_serial`] = device.serial
-		values[`${deviceVariableId}_connected`] = device.connected
-		values[`${deviceVariableId}_sleep`] = device.sleep
-		values[`${deviceVariableId}_state`] = device.state
-		values[`${deviceVariableId}_battery_level`] = device.batteryFillLevel === -1 ? 'OFF' : device.batteryFillLevel
-		values[`${deviceVariableId}_battery_runtime`] = device.batteryRuntime === -1 ? 'OFF' : device.batteryRuntime
-		values[`${deviceVariableId}_battery_low`] = device.batteryLow
-		values[`${deviceVariableId}_version`] = device.version
-		values[`${deviceVariableId}_version_mismatch`] = device.versionMismatch
-		values[`${deviceVariableId}_fcc_id`] = device.fccId
-		values[`${deviceVariableId}_led_brightness`] = device.ledBrightness
-		values[`${deviceVariableId}_sw_update_possible`] = device.swUpdatePossible
-		values[`${deviceVariableId}_sw_update_progress`] = device.swUpdateProgress
-		values[`${deviceVariableId}_mic_audiolink_id`] = device.micAudiolinkId
-		values[`${deviceVariableId}_mic_audiolink_active`] = device.micAudiolinkActive
-		values[`${deviceVariableId}_mic_test_tone_enabled`] = device.micTestToneEnabled
-		values[`${deviceVariableId}_mic_test_tone_level`] = device.micTestToneLevel
-		values[`${deviceVariableId}_command_state`] = device.commandState
-		values[`${deviceVariableId}_mic_lqi`] = device.micLqi
-		values[`${deviceVariableId}_interference`] = device.interference?.severity
-		values[`${deviceVariableId}_dominant_antenna`] = device.dominantAntenna
-		values[`${deviceVariableId}_rssi`] = device.rssi
-
-		if (device.type === MtType.SEK) {
-			values[`${deviceVariableId}_headphone_volume`] = device.headphoneVolume
-			values[`${deviceVariableId}_headphone_balance`] = device.headphoneBalance
-			values[`${deviceVariableId}_mic_preamp_gain`] = device.micPreampGain
-			values[`${deviceVariableId}_mic_lowcut_hz`] = device.micLowCutHz
-			values[`${deviceVariableId}_iem_audiolink_id`] = device.iemAudiolinkId
-			values[`${deviceVariableId}_iem_audiolink_active`] = device.iemAudiolinkActive
-			values[`${deviceVariableId}_headphone_plug_state`] = device.headphonePlugState
-			values[`${deviceVariableId}_headphone_volume_max`] = device.headphoneVolumeMax
-			values[`${deviceVariableId}_headphone_volume_min`] = device.headphoneVolumeMin
-			values[`${deviceVariableId}_mic_line_selection`] = device.micLineSelection
-			values[`${deviceVariableId}_mic_line_selection_auto_value`] = device.micLineSelectionAutoValue
-			values[`${deviceVariableId}_cable_emulation`] = device.cableEmulation
-			values[`${deviceVariableId}_iem_lqi`] = device.iemLqi
-		} else if (device.type === MtType.SKM) {
-			values[`${deviceVariableId}_mic_preamp_gain`] = device.micPreampGain
-			values[`${deviceVariableId}_mic_lowcut_hz`] = device.micLowCutHz
-			values[`${deviceVariableId}_command_behavior`] = device.commandBehavior
-			values[`${deviceVariableId}_mic_module`] = device.micModule
-		}
+		values = { ...values, ...getMobileDeviceVariables(device) }
 	}
-
+	console.log(values)
 	self.setVariableValues(values)
 }

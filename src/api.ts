@@ -16,6 +16,20 @@ import type {
 import type { SpecteraState } from './state.js'
 import { Agent, Dispatcher } from 'undici'
 import { UpdateVariableDefinitions, UpdateVariableValues } from './variables.js'
+import {
+	StateMap,
+	RfChannelStateMap,
+	AntennaStateMap,
+	AudioInputStateMap,
+	AudioOutputStateMap,
+	MobileDeviceStateMap,
+	PsuStateMap,
+	TempStateMap,
+	FanStateMap,
+	BaseStationIdentityMap,
+	BaseStationStateMap,
+	BaseStationSiteMap,
+} from './state_maps.js'
 
 export class SpecteraApi extends EventEmitter {
 	private readonly host: string
@@ -25,6 +39,7 @@ export class SpecteraApi extends EventEmitter {
 	private abortController: AbortController | null = null
 	private sessionUUID: string | null = null
 	private readonly dispatcher: Dispatcher
+	private variableCache: Record<string, string | number | boolean | undefined> = {}
 
 	constructor(instance: SpecteraInstance, state: SpecteraState, host: string, password: string) {
 		super()
@@ -271,45 +286,144 @@ export class SpecteraApi extends EventEmitter {
 		}
 	}
 
+	private handleStateUpdate<T>(
+		idPrefix: string,
+		oldState: T | undefined,
+		newState: T,
+		map: StateMap<T>,
+		changedVariables: Record<string, any>,
+		feedbacksToCheck: Set<string>,
+	) {
+		const keysToCheck = oldState
+			? (Object.keys(newState as object) as (keyof T)[])
+			: (Object.keys(map as object) as (keyof T)[])
+
+		for (const key of keysToCheck) {
+			const entry = map[key]
+			if (!entry) continue
+
+			const newValue = newState[key]
+
+			if (!oldState || oldState[key] !== newValue) {
+				if (entry.feedback) feedbacksToCheck.add(entry.feedback)
+
+				if (entry.variable && entry.valueFn) {
+					// Handle absolute vs relative variable names logic if needed, but usually we pass prefix
+					const fullVarName = `${idPrefix}${entry.variable}`
+					const val = entry.valueFn(newValue, newState)
+					if (this.variableCache[fullVarName] !== val) {
+						changedVariables[fullVarName] = val
+						this.variableCache[fullVarName] = val
+					}
+				}
+			}
+		}
+	}
+
 	private processInternalUpdate(_eventType: string, data: any): void {
 		let structureChanged = false
 		const keys = Object.keys(data)
+		const changedVariables: Record<string, string | number | boolean | undefined> = {}
+		const feedbacksToCheck = new Set<string>()
 
 		for (const key of keys) {
 			const value = data[key]
 
 			if (key.startsWith('/api/audio/inputs/')) {
+				const oldState = this.state.audioInputs.get(value.inputId)
 				this.state.updateAudioInput(value)
-				structureChanged = true
+				this.handleStateUpdate(
+					`audio_input_${value.inputId}_`,
+					oldState,
+					value,
+					AudioInputStateMap,
+					changedVariables,
+					feedbacksToCheck,
+				)
+				structureChanged = !oldState
 			} else if (key.startsWith('/api/audio/outputs/')) {
+				const oldState = this.state.audioOutputs.get(value.outputId)
 				this.state.updateAudioOutput(value)
-				structureChanged = true
+				this.handleStateUpdate(
+					`audio_output_${value.outputId}_`,
+					oldState,
+					value,
+					AudioOutputStateMap,
+					changedVariables,
+					feedbacksToCheck,
+				)
+				structureChanged = !oldState
 			} else if (key.startsWith('/api/rf/channels/')) {
+				const oldState = this.state.rfChannels.get(value.rfChannelId)
 				this.state.updateRfChannel(value)
-				structureChanged = true
+				const displayId = value.rfChannelId + 1
+				this.handleStateUpdate(
+					`rf_channel_${displayId}_`,
+					oldState,
+					value,
+					RfChannelStateMap,
+					changedVariables,
+					feedbacksToCheck,
+				)
+				structureChanged = !oldState
 			} else if (key.startsWith('/api/rf/antennas/')) {
-				this.state.updateAntenna(value)
-				structureChanged = true
+				const oldState = this.state.antennas.get(value.antennaPortId)
+				this.state.updateAntenna(value) // Note: value needs to be compatible with Antenna interface
+				// The API returns the object with antennaPortId.
+				// sanitizeName is needed for prefix.
+				const port = value.antennaPortId.replace(/[^a-zA-Z0-9_-]/g, '_')
+				this.handleStateUpdate(`dad_${port}_`, oldState, value, AntennaStateMap, changedVariables, feedbacksToCheck)
+				structureChanged = !oldState
 			} else if (key.startsWith('/api/mts/paired/all/')) {
+				const oldState = this.state.mobileDevices.get(value.mtUid)
 				this.state.updateMobileDevice(value)
-				structureChanged = true
+				const name = value.name.replace(/[^a-zA-Z0-9_-]/g, '_')
+				const type = value.type
+				const serial = value.serial
+				const prefix = `${type}_${name}_${serial}_`
+				this.handleStateUpdate(prefix, oldState as any, value, MobileDeviceStateMap, changedVariables, feedbacksToCheck)
+				structureChanged = !oldState
 			} else if (key === '/api/health/psu') {
+				const oldState = { ...this.state.health.psu } // Clone old state
 				this.state.updatePsuState(value)
+				this.handleStateUpdate('', oldState, value, PsuStateMap, changedVariables, feedbacksToCheck)
 			} else if (key === '/api/health/tempstateoverall') {
+				const oldState = { ...this.state.health.temp }
 				this.state.updateTempState(value)
+				this.handleStateUpdate('', oldState, value, TempStateMap, changedVariables, feedbacksToCheck)
 			} else if (key.startsWith('/api/health/fan/')) {
 				// Extract fan ID from path: /api/health/fan/{fanId}/errorstate
 				const match = key.match(/\/api\/health\/fan\/(.+)\/errorstate/)
 				if (match && match[1]) {
 					const fanId = match[1]
-					this.state.updateFanState(fanId, value)
+					const oldState = this.state.health.fans[fanId]
+					const fanState: FanState = {
+						fanId,
+						errorState: value.errorState ?? value,
+					}
+					this.state.updateFanState(fanId, fanState)
+					const fanNumber = fanId.split('_')[1]
+					this.handleStateUpdate(
+						`health_fan_${fanNumber}_`,
+						oldState,
+						fanState,
+						FanStateMap,
+						changedVariables,
+						feedbacksToCheck,
+					)
 				}
 			} else if (key === '/api/device/identity') {
+				const oldState = this.state.basestation.identity ? { ...this.state.basestation.identity } : undefined
 				this.state.updateBaseStationIdentity(value)
+				this.handleStateUpdate('', oldState, value, BaseStationIdentityMap, changedVariables, feedbacksToCheck)
 			} else if (key === '/api/device/state') {
+				const oldState = this.state.basestation.state ? { ...this.state.basestation.state } : undefined
 				this.state.updateBaseStationState(value)
+				this.handleStateUpdate('', oldState, value, BaseStationStateMap, changedVariables, feedbacksToCheck)
 			} else if (key === '/api/device/site') {
+				const oldState = this.state.basestation.site ? { ...this.state.basestation.site } : undefined
 				this.state.updateBaseStationSite(value)
+				this.handleStateUpdate('', oldState, value, BaseStationSiteMap, changedVariables, feedbacksToCheck)
 			}
 		}
 
@@ -317,9 +431,15 @@ export class SpecteraApi extends EventEmitter {
 			this.instance.log('debug', 'Structure changed, updating variable definitions')
 			UpdateVariableDefinitions(this.instance)
 		}
-		//FIXME: lazy updates for now
-		UpdateVariableValues(this.instance)
-		this.instance.checkFeedbacks()
+
+		if (Object.keys(changedVariables).length > 0) {
+			this.instance.setVariableValues(changedVariables)
+			console.log('Changed variables:', changedVariables)
+		}
+
+		if (feedbacksToCheck.size > 0) {
+			this.instance.checkFeedbacks(...Array.from(feedbacksToCheck))
+		}
 	}
 
 	async setSubscriptionPaths(paths: string[]): Promise<void> {
