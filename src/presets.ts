@@ -1,7 +1,11 @@
 import { CompanionPresetDefinitions } from '@companion-module/base'
 import { SpecteraInstance } from './main.js'
 import { Color } from './utils.js'
-import { RFChannels, AntennaPortId, BaseStationStatus, DeviceStatus } from './types.js'
+import { RFChannels, AntennaPortId, BaseStationStatus, DeviceStatus, RfState, MtType } from './types.js'
+
+function sanitizeName(name: string): string {
+	return name.replace(/[^a-zA-Z0-9_-]/g, '_')
+}
 
 export function UpdatePresets(self: SpecteraInstance): void {
 	const presets: CompanionPresetDefinitions = {}
@@ -10,13 +14,13 @@ export function UpdatePresets(self: SpecteraInstance): void {
 		const port = dad.toLowerCase()
 		presets[`dad${port}Header`] = {
 			type: 'text',
-			category: 'DAD',
+			category: 'DADs',
 			name: `DAD ${dad}`,
 			text: '',
 		}
 		presets[`dad${port}State`] = {
 			type: 'button',
-			category: 'DAD',
+			category: 'DADs',
 			name: `DAD ${dad} State`,
 			style: {
 				bgcolor: Color.Black,
@@ -48,7 +52,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 		}
 		presets[`dad${port}Identify`] = {
 			type: 'button',
-			category: 'DAD',
+			category: 'DADs',
 			name: `DAD ${dad} Identify`,
 			style: {
 				bgcolor: Color.Black,
@@ -85,7 +89,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 		}
 		presets[`dad${port}Bindings`] = {
 			type: 'button',
-			category: 'DAD',
+			category: 'DADs',
 			name: `DAD ${dad} Bindings`,
 			style: {
 				bgcolor: Color.Black,
@@ -126,7 +130,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 		}
 		presets[`dad${port}BindingSetOff`] = {
 			type: 'button',
-			category: 'DAD',
+			category: 'DADs',
 			name: `DAD ${dad} Binding Set`,
 			style: {
 				bgcolor: Color.Black,
@@ -164,7 +168,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 		}
 		presets[`dad${port}BindingSetRF1`] = {
 			type: 'button',
-			category: 'DAD',
+			category: 'DADs',
 			name: `DAD ${dad} Binding Set`,
 			style: {
 				bgcolor: Color.Black,
@@ -202,7 +206,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 		}
 		presets[`dad${port}BindingSetRF2`] = {
 			type: 'button',
-			category: 'DAD',
+			category: 'DADs',
 			name: `DAD ${dad} Binding Set`,
 			style: {
 				bgcolor: Color.Black,
@@ -237,6 +241,311 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					},
 				},
 			],
+		}
+	}
+
+	//RF Channels
+	for (const channelName of Object.keys(RFChannels)) {
+		const channelId = RFChannels[channelName as keyof typeof RFChannels]
+		if (channelId === RFChannels.Off) continue
+
+		const channelIndex = channelId === RFChannels['RF Channel 1'] ? 0 : 1
+		const channelLabel = channelName
+
+		presets[`rf${channelIndex}Header`] = {
+			type: 'text',
+			category: 'RF Channels',
+			name: `${channelLabel}`,
+			text: '',
+		}
+
+		presets[`rf${channelIndex}StateInfo`] = {
+			type: 'button',
+			category: 'RF Channels',
+			name: `${channelLabel} State Info`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `${channelLabel}\\nSTATE\\n$(spectera:rf_channel_${channelIndex + 1}_state)`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'rfState',
+					options: {
+						rfChannel: channelIndex,
+						state: RfState.Active,
+					},
+					style: {
+						bgcolor: Color.SpecteraGreen,
+					},
+				},
+				{
+					feedbackId: 'rfState',
+					options: {
+						rfChannel: channelIndex,
+						state: RfState.Muted,
+					},
+					style: {
+						bgcolor: Color.SpecteraRed,
+					},
+				},
+			],
+		}
+
+		presets[`rf${channelIndex}FrequencyInfo`] = {
+			type: 'button',
+			category: 'RF Channels',
+			name: `${channelLabel} Frequency`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `${channelLabel}\\nFREQ\\n$(spectera:rf_channel_${channelIndex + 1}_frequency) MHz`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [],
+					up: [],
+				},
+			],
+			feedbacks: [],
+		}
+
+		presets[`rf${channelIndex}TxPowerInfo`] = {
+			type: 'button',
+			category: 'RF Channels',
+			name: `${channelLabel} TX Power`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `${channelLabel}\\nTX POWER\\n$(spectera:rf_channel_${channelIndex + 1}_tx_power) mW EIRP`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [],
+					up: [],
+				},
+			],
+			feedbacks: [],
+		}
+
+		presets[`rf${channelIndex}RestrictionViolationInfo`] = {
+			type: 'button',
+			category: 'RF Channels',
+			name: `${channelLabel} Restriction Violation`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `${channelLabel}\\nViolation\\n$(spectera:rf_channel_${channelIndex + 1}_rf_restriction_violation)`,
+				size: 10,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'rfRestrictionViolation',
+					options: {
+						rfChannel: channelIndex,
+					},
+					style: {
+						bgcolor: Color.SpecteraRed,
+					},
+				},
+			],
+		}
+
+		presets[`rf${channelIndex}SetActive`] = {
+			type: 'button',
+			category: 'RF Channels',
+			name: `${channelLabel} ACTIVE`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `${channelLabel}\\nACTIVE`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [
+						{
+							actionId: 'setRfChannelState',
+							options: {
+								rfChannel: channelIndex,
+								state: RfState.Active,
+							},
+						},
+					],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'rfState',
+					options: {
+						rfChannel: channelIndex,
+						state: RfState.Active,
+					},
+					style: {
+						bgcolor: Color.SpecteraGreen,
+					},
+				},
+			],
+		}
+
+		presets[`rf${channelIndex}SetMuted`] = {
+			type: 'button',
+			category: 'RF Channels',
+			name: `${channelLabel} MUTE`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `${channelLabel}\\nMUTE`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [
+						{
+							actionId: 'setRfChannelState',
+							options: {
+								rfChannel: channelIndex,
+								state: RfState.Muted,
+							},
+						},
+					],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'rfState',
+					options: {
+						rfChannel: channelIndex,
+						state: RfState.Muted,
+					},
+					style: {
+						bgcolor: Color.SpecteraRed,
+					},
+				},
+			],
+		}
+	}
+
+	//Mobile Devices
+	console.log(self.state.mobileDevices)
+	for (const device of self.state.mobileDevices.values()) {
+		console.log(device)
+		const name = sanitizeName(device.name)
+		const type = device.type
+		const serial = device.serial
+		const deviceVariableId = `${type}_${name}_${serial}`
+		const category = device.type === MtType.SEK ? 'SEK' : 'SKM'
+
+		presets[`${deviceVariableId}_Header`] = {
+			type: 'text',
+			category: category,
+			name: `${device.name} (${serial})`,
+			text: '',
+		}
+
+		presets[`${deviceVariableId}_Battery`] = {
+			type: 'button',
+			category: category,
+			name: `${device.name} Battery`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `BATTERY\\n$(spectera:${deviceVariableId}_battery_level)%\\n$(spectera:${deviceVariableId}_battery_runtime)min`,
+				size: 10,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [],
+					up: [],
+				},
+			],
+			feedbacks: [],
+		}
+
+		presets[`${deviceVariableId}_Connection`] = {
+			type: 'button',
+			category: category,
+			name: `${device.name} Connection`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `STATE\\n$(spectera:${deviceVariableId}_state)`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [],
+					up: [],
+				},
+			],
+			feedbacks: [],
+		}
+
+		if (device.type === MtType.SEK) {
+			presets[`${deviceVariableId}_HeadphoneVolume`] = {
+				type: 'button',
+				category: category,
+				name: `${device.name} Headphone Vol`,
+				style: {
+					bgcolor: Color.Black,
+					color: Color.White,
+					text: `PHONES VOL\\n$(spectera:${deviceVariableId}_headphone_volume)dB`,
+					size: 11,
+					show_topbar: false,
+				},
+				steps: [
+					{
+						down: [],
+						up: [],
+					},
+				],
+				feedbacks: [],
+			}
+		}
+
+		presets[`${deviceVariableId}_Gain`] = {
+			type: 'button',
+			category: category,
+			name: `${device.name} Gain`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `PREAMP GAIN\\n$(spectera:${deviceVariableId}_mic_preamp_gain)dB`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [],
+					up: [],
+				},
+			],
+			feedbacks: [],
 		}
 	}
 
@@ -388,6 +697,61 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				},
 			},
 		],
+	}
+
+	presets['baseStationTempHeader'] = {
+		type: 'text',
+		category: 'Base Station',
+		name: 'Temperature Status',
+		text: '',
+	}
+	presets['baseStationTemp'] = {
+		type: 'button',
+		category: 'Base Station',
+		name: 'Base Station Temperature',
+		style: {
+			bgcolor: Color.Black,
+			color: Color.White,
+			text: 'TEMP\\n$(spectera:health_temp_state)',
+			size: 11,
+			show_topbar: false,
+		},
+		steps: [
+			{
+				down: [],
+				up: [],
+			},
+		],
+		feedbacks: [],
+	}
+
+	presets['baseStationFanHeader'] = {
+		type: 'text',
+		category: 'Base Station',
+		name: 'Fan Status',
+		text: '',
+	}
+
+	for (let i = 1; i <= 3; i++) {
+		presets[`baseStationFan${i}`] = {
+			type: 'button',
+			category: 'Base Station',
+			name: `Base Station Fan ${i}`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `FAN ${i}\\n$(spectera:health_fan_${i}_error)`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [],
+					up: [],
+				},
+			],
+			feedbacks: [],
+		}
 	}
 	self.setPresetDefinitions(presets)
 }
