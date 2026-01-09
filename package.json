@@ -24,7 +24,7 @@
 	},
 	"dependencies": {
 		"@companion-module/base": "~1.14.1",
-		"undici": "^7.16.0"
+		"undici": "^7.18.2"
 	},
 	"devDependencies": {
 		"@companion-module/tools": "^2.5.0",
@@ -35,7 +35,7 @@
 		"prettier": "^3.7.4",
 		"rimraf": "^6.1.2",
 		"typescript": "~5.9.3",
-		"typescript-eslint": "^8.51.0"
+		"typescript-eslint": "^8.52.0"
 	},
 	"prettier": "@companion-module/tools/.prettierrc.json",
 	"lint-staged": {
