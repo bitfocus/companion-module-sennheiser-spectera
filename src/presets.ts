@@ -461,19 +461,19 @@ export function UpdatePresets(self: SpecteraInstance): void {
 
 		presets[`${deviceVariableId}_Header`] = {
 			type: 'text',
-			category: category,
+			category: `${category}s`,
 			name: `${device.name} (${serial})`,
 			text: '',
 		}
 
 		presets[`${deviceVariableId}_Battery`] = {
 			type: 'button',
-			category: category,
+			category: `${category}s`,
 			name: `${device.name} Battery`,
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `BATTERY\\n$(spectera:${deviceVariableId}_battery_level)%\\n$(spectera:${deviceVariableId}_battery_runtime)min`,
+				text: `${device.name}\\nBATTERY\\n$(spectera:${deviceVariableId}_battery_level)%\\n$(spectera:${deviceVariableId}_battery_runtime)min`,
 				size: 10,
 				show_topbar: false,
 			},
@@ -483,17 +483,27 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					up: [],
 				},
 			],
-			feedbacks: [],
+			feedbacks: [
+				{
+					feedbackId: 'mobileDeviceBatteryLow',
+					options: {
+						mtUid: device.mtUid,
+					},
+					style: {
+						bgcolor: Color.SpecteraRed,
+					},
+				},
+			],
 		}
 
 		presets[`${deviceVariableId}_Connection`] = {
 			type: 'button',
-			category: category,
+			category: `${category}s`,
 			name: `${device.name} Connection`,
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `STATE\\n$(spectera:${deviceVariableId}_state)`,
+				text: `${device.name}\\nSTATE\\n$(spectera:${deviceVariableId}_state)`,
 				size: 11,
 				show_topbar: false,
 			},
@@ -503,18 +513,28 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					up: [],
 				},
 			],
-			feedbacks: [],
+			feedbacks: [
+				{
+					feedbackId: 'mobileDeviceConnected',
+					options: {
+						mtUid: device.mtUid,
+					},
+					style: {
+						bgcolor: Color.SpecteraGreen,
+					},
+				},
+			],
 		}
 
 		if (device.type === MtType.SEK) {
 			presets[`${deviceVariableId}_HeadphoneVolume`] = {
 				type: 'button',
-				category: category,
+				category: `${category}s`,
 				name: `${device.name} Headphone Vol`,
 				style: {
 					bgcolor: Color.Black,
 					color: Color.White,
-					text: `PHONES VOL\\n$(spectera:${deviceVariableId}_headphone_volume)dB`,
+					text: `${device.name}\\nPHONES VOL\\n$(spectera:${deviceVariableId}_headphone_volume)dB`,
 					size: 11,
 					show_topbar: false,
 				},
@@ -530,12 +550,12 @@ export function UpdatePresets(self: SpecteraInstance): void {
 
 		presets[`${deviceVariableId}_Gain`] = {
 			type: 'button',
-			category: category,
+			category: `${category}s`,
 			name: `${device.name} Gain`,
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `PREAMP GAIN\\n$(spectera:${deviceVariableId}_mic_preamp_gain)dB`,
+				text: `${device.name}\\nPREAMP GAIN\\n$(spectera:${deviceVariableId}_mic_preamp_gain)dB`,
 				size: 11,
 				show_topbar: false,
 			},

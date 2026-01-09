@@ -17,6 +17,7 @@ import type { SpecteraState } from './state.js'
 import { Agent, Dispatcher } from 'undici'
 import { UpdateVariableDefinitions, UpdateVariableValues } from './variables.js'
 import { UpdatePresets } from './presets.js'
+import { UpdateFeedbacks } from './feedbacks.js'
 import {
 	StateMap,
 	RfChannelStateMap,
@@ -174,6 +175,7 @@ export class SpecteraApi extends EventEmitter {
 			UpdateVariableDefinitions(this.instance)
 			UpdateVariableValues(this.instance)
 			UpdatePresets(this.instance)
+			UpdateFeedbacks(this.instance)
 		} catch (error) {
 			this.instance.log('error', `Initial data fetch failed: ${error instanceof Error ? error.message : String(error)}`)
 			// We don't throw here to allow the subscription to keep running if the fetch fails
@@ -433,6 +435,7 @@ export class SpecteraApi extends EventEmitter {
 			this.instance.log('debug', 'Structure changed, updating variable definitions')
 			UpdateVariableDefinitions(this.instance)
 			UpdatePresets(this.instance)
+			UpdateFeedbacks(this.instance)
 		}
 
 		if (Object.keys(changedVariables).length > 0) {

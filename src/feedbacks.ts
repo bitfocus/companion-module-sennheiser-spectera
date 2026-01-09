@@ -12,6 +12,9 @@ import {
 	TxPower,
 	PsuState,
 	PsuStatus,
+	MtState,
+	MtType,
+	Interference,
 } from './types.js'
 import { getChoicesFromEnum } from './utils.js'
 import { Color } from './utils.js'
@@ -380,7 +383,213 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		},
 	}
 
-	//Device Feedbacks
+	//Mobile Device Feedbacks
+	const mobileDeviceChoices = Array.from(self.state.mobileDevices.values()).map((device) => ({
+		id: device.mtUid,
+		label: `${device.name} (${device.serial})`,
+	}))
+
+	feedbacks['mobileDeviceIdentify'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Identify',
+		description: 'Indicates if the mobile device is identifying',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				choices: mobileDeviceChoices,
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			return device?.identify === true
+		},
+	}
+
+	feedbacks['mobileDeviceReverseIdentify'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Reverse Identify',
+		description: 'Indicates if the mobile device is reverse identifying',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				choices: mobileDeviceChoices,
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			return device?.reverseIdentify === true
+		},
+	}
+
+	feedbacks['mobileDeviceConnected'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Connected',
+		description: 'Indicates if the mobile device is connected',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				choices: mobileDeviceChoices,
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			return device?.connected === true
+		},
+	}
+
+	feedbacks['mobileDeviceState'] = {
+		type: 'boolean',
+		name: 'Mobile Device - State',
+		description: 'Check the state of the mobile device',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				choices: mobileDeviceChoices,
+			},
+			{
+				type: 'dropdown',
+				label: 'State',
+				id: 'state',
+				default: MtState.Connected,
+				choices: getChoicesFromEnum(MtState),
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			return device?.state === feedback.options.state
+		},
+	}
+
+	feedbacks['mobileDeviceBatteryLow'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Battery Low',
+		description: 'Indicates if the mobile device battery is low',
+		defaultStyle: {
+			bgcolor: Color.SpecteraRed,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				choices: mobileDeviceChoices,
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			return device?.batteryLow === true
+		},
+	}
+
+	feedbacks['mobileDeviceInterference'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Interference',
+		description: 'Check for interference severity on the mobile device',
+		defaultStyle: {
+			bgcolor: Color.SpecteraRed,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				choices: mobileDeviceChoices,
+			},
+			{
+				type: 'dropdown',
+				label: 'Severity',
+				id: 'severity',
+				default: Interference.High,
+				choices: getChoicesFromEnum(Interference),
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			return device?.interference?.severity === feedback.options.severity
+		},
+	}
+
+	feedbacks['mobileDeviceDominantAntenna'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Dominant Antenna',
+		description: 'Check the dominant antenna of the mobile device',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				choices: mobileDeviceChoices,
+			},
+			{
+				type: 'dropdown',
+				label: 'Antenna',
+				id: 'antenna',
+				default: AntennaPortId.A,
+				choices: getChoicesFromEnum(AntennaPortId),
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			return device?.dominantAntenna === feedback.options.antenna
+		},
+	}
+
+	feedbacks['mobileDeviceHeadphonePlugState'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Headphone Plugged',
+		description: 'Indicates if the headphone is plugged in (SEK only)',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				choices: mobileDeviceChoices,
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			if (device?.type === MtType.SEK) {
+				return device.headphonePlugState === 'Plugged'
+			}
+			return false
+		},
+	}
+
+	//Base Station Feedbacks
 	feedbacks['baseStationState'] = {
 		type: 'boolean',
 		name: 'Base Station State',
