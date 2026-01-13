@@ -388,7 +388,7 @@ export class SpecteraApi extends EventEmitter {
 				const serial = value.serial
 				const prefix = `${type}_${name}_${serial}_`
 				this.handleStateUpdate(prefix, oldState as any, value, MobileDeviceStateMap, changedVariables, feedbacksToCheck)
-				structureChanged = !oldState
+				structureChanged = !oldState || oldState.name !== value.name
 			} else if (key === '/api/health/psu') {
 				const oldState = { ...this.state.health.psu } // Clone old state
 				this.state.updatePsuState(value)
@@ -439,6 +439,7 @@ export class SpecteraApi extends EventEmitter {
 			UpdatePresets(this.instance)
 			UpdateFeedbacks(this.instance)
 			UpdateActions(this.instance)
+			UpdateVariableValues(this.instance)
 		}
 
 		if (Object.keys(changedVariables).length > 0) {
