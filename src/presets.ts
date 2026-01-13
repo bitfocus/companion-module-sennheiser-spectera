@@ -450,9 +450,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 	}
 
 	//Mobile Devices
-	console.log(self.state.mobileDevices)
 	for (const device of self.state.mobileDevices.values()) {
-		console.log(device)
 		const name = sanitizeName(device.name)
 		const type = device.type
 		const serial = device.serial

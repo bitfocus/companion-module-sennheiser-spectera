@@ -570,6 +570,5 @@ export function UpdateVariableValues(self: SpecteraInstance): void {
 	for (const device of self.state.mobileDevices.values()) {
 		values = { ...values, ...getMobileDeviceVariables(device) }
 	}
-	console.log(values)
 	self.setVariableValues(values)
 }

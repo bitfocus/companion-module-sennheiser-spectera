@@ -4,14 +4,17 @@ import {
 	Antenna,
 	AntennaPortId,
 	BandwidthMode,
+	CableEmulation,
 	LedBrightness,
+	MobileDevice,
+	MtType,
 	RfChannel,
 	RFChannels,
 	RfState,
 	RfStateStartup,
 	TxPower,
 } from './types.js'
-import { getChoicesFromEnum } from './utils.js'
+import { getChoicesFromEnum, getMobileDeviceChoices } from './utils.js'
 
 export function UpdateActions(self: SpecteraInstance): void {
 	const actions: CompanionActionDefinitions = {}
@@ -285,6 +288,336 @@ export function UpdateActions(self: SpecteraInstance): void {
 						},
 					],
 				} as Partial<Antenna>,
+			)
+		},
+	}
+
+	//Mobile Device Actions
+	const mobileDeviceChoices = getMobileDeviceChoices(self.state)
+	const sekMobileDeviceChoices = getMobileDeviceChoices(self.state, MtType.SEK)
+
+	actions['mobileDeviceRfChannelId'] = {
+		name: 'Mobile Device - RF Channel',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				choices: mobileDeviceChoices,
+			},
+			{
+				type: 'dropdown',
+				label: 'RF Channel',
+				choices: [
+					{ label: 'Off', id: -1 },
+					{ label: 'RF Channel 1', id: 0 },
+					{ label: 'RF Channel 2', id: 1 },
+				],
+				default: 0,
+				id: 'rfChannel',
+			},
+		],
+		description: 'Set the RF Channel for a Mobile Device',
+		callback: async (action) => {
+			if (!self.api) return
+			const rfChannelId = action.options.rfChannel === -1 ? undefined : (action.options.rfChannel as number)
+			await self.api.setMobileDevice(
+				action.options.mtUid as number,
+				{
+					rfChannelId,
+				} as Partial<MobileDevice>,
+			)
+		},
+	}
+
+	actions['mobileDeviceIdentify'] = {
+		name: 'Mobile Device - Identify',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				choices: mobileDeviceChoices,
+			},
+			{
+				type: 'dropdown',
+				label: 'Identify',
+				choices: [
+					{ id: 'true', label: 'On' },
+					{ id: 'false', label: 'Off' },
+				],
+				default: 'true',
+				id: 'identify',
+			},
+		],
+		description: 'Set Identify for a Mobile Device',
+		callback: async (action) => {
+			if (!self.api) return
+			await self.api.setMobileDevice(
+				action.options.mtUid as number,
+				{
+					identify: action.options.identify === 'true',
+				} as Partial<MobileDevice>,
+			)
+		},
+	}
+
+	actions['mobileDeviceLedBrightness'] = {
+		name: 'Mobile Device - LED Brightness',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				choices: mobileDeviceChoices,
+			},
+			{
+				type: 'dropdown',
+				label: 'LED Brightness',
+				choices: getChoicesFromEnum(LedBrightness),
+				default: LedBrightness.Standard,
+				id: 'ledBrightness',
+			},
+		],
+		description: 'Set LED Brightness for a Mobile Device',
+		callback: async (action) => {
+			if (!self.api) return
+			await self.api.setMobileDevice(
+				action.options.mtUid as number,
+				{
+					ledBrightness: action.options.ledBrightness as LedBrightness,
+				} as Partial<MobileDevice>,
+			)
+		},
+	}
+
+	actions['mobileDeviceHeadphoneVolume'] = {
+		name: 'Mobile Device - Headphone Volume',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				choices: sekMobileDeviceChoices,
+			},
+			{
+				type: 'textinput',
+				label: 'Volume (0-100)',
+				default: '50',
+				id: 'volume',
+				useVariables: true,
+			},
+		],
+		description: 'Set Headphone Volume for a SEK Device',
+		callback: async (action) => {
+			if (!self.api) return
+			const volume = Number(await self.parseVariablesInString(action.options.volume as string))
+			await self.api.setMobileDevice(
+				action.options.mtUid as number,
+				{
+					headphoneVolume: volume,
+				} as Partial<MobileDevice>,
+			)
+		},
+	}
+
+	actions['mobileDeviceHeadphoneBalance'] = {
+		name: 'Mobile Device - Headphone Balance',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				choices: sekMobileDeviceChoices,
+			},
+			{
+				type: 'textinput',
+				label: 'Balance (-100 to 100)',
+				default: '0',
+				id: 'balance',
+				useVariables: true,
+			},
+		],
+		description: 'Set Headphone Balance for a SEK Device',
+		callback: async (action) => {
+			if (!self.api) return
+			const balance = Number(await self.parseVariablesInString(action.options.balance as string))
+			await self.api.setMobileDevice(
+				action.options.mtUid as number,
+				{
+					headphoneBalance: balance,
+				} as Partial<MobileDevice>,
+			)
+		},
+	}
+
+	actions['mobileDeviceMicPreampGain'] = {
+		name: 'Mobile Device - Mic Preamp Gain',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				choices: mobileDeviceChoices,
+			},
+			{
+				type: 'textinput',
+				label: 'Gain (dB)',
+				default: '0',
+				id: 'gain',
+				useVariables: true,
+			},
+		],
+		description: 'Set Mic Preamp Gain for a Mobile Device',
+		callback: async (action) => {
+			if (!self.api) return
+			const gain = Number(await self.parseVariablesInString(action.options.gain as string))
+			await self.api.setMobileDevice(
+				action.options.mtUid as number,
+				{
+					micPreampGain: gain,
+				} as Partial<MobileDevice>,
+			)
+		},
+	}
+
+	actions['mobileDeviceMicLowCutHz'] = {
+		name: 'Mobile Device - Mic Low Cut Hz',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				choices: mobileDeviceChoices,
+			},
+			{
+				type: 'textinput',
+				label: 'Frequency (Hz)',
+				default: '0',
+				id: 'frequency',
+				useVariables: true,
+			},
+		],
+		description: 'Set Mic Low Cut Frequency for a Mobile Device',
+		callback: async (action) => {
+			if (!self.api) return
+			const frequency = Number(await self.parseVariablesInString(action.options.frequency as string))
+			await self.api.setMobileDevice(
+				action.options.mtUid as number,
+				{
+					micLowCutHz: frequency,
+				} as Partial<MobileDevice>,
+			)
+		},
+	}
+
+	actions['mobileDeviceCableEmulation'] = {
+		name: 'Mobile Device - Cable Emulation',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				choices: sekMobileDeviceChoices,
+			},
+			{
+				type: 'dropdown',
+				label: 'Cable Emulation',
+				choices: getChoicesFromEnum(CableEmulation),
+				default: CableEmulation.Off,
+				id: 'cableEmulation',
+			},
+		],
+		description: 'Set Cable Emulation for a SEK Device',
+		callback: async (action) => {
+			if (!self.api) return
+			await self.api.setMobileDevice(
+				action.options.mtUid as number,
+				{
+					cableEmulation: action.options.cableEmulation as CableEmulation,
+				} as Partial<MobileDevice>,
+			)
+		},
+	}
+
+	actions['mobileDeviceMicLineSelection'] = {
+		name: 'Mobile Device - Mic/Line Selection',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				choices: sekMobileDeviceChoices,
+			},
+			{
+				type: 'dropdown',
+				label: 'Mode',
+				choices: [
+					{ id: 'Mic', label: 'Mic' },
+					{ id: 'Line', label: 'Line' },
+					{ id: 'Auto', label: 'Auto' },
+				],
+				default: 'Auto',
+				id: 'mode',
+			},
+		],
+		description: 'Set Mic/Line Selection for a SEK Device',
+		callback: async (action) => {
+			if (!self.api) return
+			// Assuming literal string 'Mic' | 'Line' | 'Auto'
+			// User request mentioned "micLineSelection?: string" in type definition
+			await self.api.setMobileDevice(
+				action.options.mtUid as number,
+				{
+					micLineSelection: action.options.mode as string,
+				} as Partial<MobileDevice>,
+			)
+		},
+	}
+
+	actions['mobileDeviceMicTestTone'] = {
+		name: 'Mobile Device - Mic Test Tone',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				choices: mobileDeviceChoices,
+			},
+			{
+				type: 'checkbox',
+				label: 'Enable',
+				default: false,
+				id: 'enable',
+			},
+			{
+				type: 'textinput',
+				label: 'Level (dB)',
+				default: '-20',
+				id: 'level',
+				useVariables: true,
+			},
+		],
+		description: 'Set Mic Test Tone for a Mobile Device',
+		callback: async (action) => {
+			if (!self.api) return
+			const level = Number(await self.parseVariablesInString(action.options.level as string))
+			await self.api.setMobileDevice(
+				action.options.mtUid as number,
+				{
+					micTestToneEnabled: action.options.enable as boolean,
+					micTestToneLevel: level,
+				} as Partial<MobileDevice>,
 			)
 		},
 	}

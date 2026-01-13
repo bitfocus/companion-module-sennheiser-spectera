@@ -191,7 +191,7 @@ export interface SEKDevice extends MobileDeviceBase {
 	headphoneVolumeMin?: number
 	micLineSelection?: string
 	micLineSelectionAutoValue?: string
-	cableEmulation?: string
+	cableEmulation?: CableEmulation
 	iemLqi?: number
 }
 
@@ -201,6 +201,13 @@ export interface SKMDevice extends MobileDeviceBase {
 	micLowCutHz: number
 	commandBehavior: string
 	micModule?: string
+}
+
+export enum CableEmulation {
+	Off = 'Off',
+	Short = 'Short',
+	Mid = 'Mid',
+	Long = 'Long',
 }
 
 export enum Interference {

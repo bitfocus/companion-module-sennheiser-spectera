@@ -6,6 +6,7 @@ import {
 	DeviceStatus,
 	LedBrightness,
 	BaseStationStatus,
+	CableEmulation,
 	RFChannels,
 	RfState,
 	RfStateStartup,
@@ -16,7 +17,7 @@ import {
 	MtType,
 	Interference,
 } from './types.js'
-import { getChoicesFromEnum } from './utils.js'
+import { getChoicesFromEnum, getMobileDeviceChoices } from './utils.js'
 import { Color } from './utils.js'
 
 export function UpdateFeedbacks(self: SpecteraInstance): void {
@@ -384,10 +385,8 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 	}
 
 	//Mobile Device Feedbacks
-	const mobileDeviceChoices = Array.from(self.state.mobileDevices.values()).map((device) => ({
-		id: device.mtUid,
-		label: `${device.name} (${device.serial})`,
-	}))
+	const mobileDeviceChoices = getMobileDeviceChoices(self.state)
+	const sekMobileDeviceChoices = getMobileDeviceChoices(self.state, MtType.SEK)
 
 	feedbacks['mobileDeviceIdentify'] = {
 		type: 'boolean',
@@ -401,7 +400,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				type: 'dropdown',
 				label: 'Mobile Device',
 				id: 'mtUid',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				default: mobileDeviceChoices[0].id,
 				choices: mobileDeviceChoices,
 			},
 		],
@@ -423,7 +422,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				type: 'dropdown',
 				label: 'Mobile Device',
 				id: 'mtUid',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				default: mobileDeviceChoices[0].id,
 				choices: mobileDeviceChoices,
 			},
 		],
@@ -445,7 +444,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				type: 'dropdown',
 				label: 'Mobile Device',
 				id: 'mtUid',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				default: mobileDeviceChoices[0].id,
 				choices: mobileDeviceChoices,
 			},
 		],
@@ -467,7 +466,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				type: 'dropdown',
 				label: 'Mobile Device',
 				id: 'mtUid',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				default: mobileDeviceChoices[0].id,
 				choices: mobileDeviceChoices,
 			},
 			{
@@ -496,7 +495,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				type: 'dropdown',
 				label: 'Mobile Device',
 				id: 'mtUid',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				default: mobileDeviceChoices[0].id,
 				choices: mobileDeviceChoices,
 			},
 		],
@@ -518,7 +517,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				type: 'dropdown',
 				label: 'Mobile Device',
 				id: 'mtUid',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				default: mobileDeviceChoices[0].id,
 				choices: mobileDeviceChoices,
 			},
 			{
@@ -547,7 +546,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				type: 'dropdown',
 				label: 'Mobile Device',
 				id: 'mtUid',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				default: mobileDeviceChoices[0].id,
 				choices: mobileDeviceChoices,
 			},
 			{
@@ -576,8 +575,8 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				type: 'dropdown',
 				label: 'Mobile Device',
 				id: 'mtUid',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
-				choices: mobileDeviceChoices,
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				choices: sekMobileDeviceChoices,
 			},
 		],
 		callback: async (feedback) => {
@@ -648,5 +647,595 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			return basestationPsu === PsuStatus.Connected
 		},
 	}
+	feedbacks['mobileDeviceFrequencyRange'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Frequency Range',
+		description: 'Check the frequency range of the mobile device',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices[0].id,
+				choices: mobileDeviceChoices,
+			},
+			{
+				type: 'textinput',
+				label: 'Frequency Range',
+				id: 'range',
+				default: '',
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			return device?.frequencyRange === feedback.options.range
+		},
+	}
+
+	feedbacks['mobileDeviceRfChannelId'] = {
+		type: 'boolean',
+		name: 'Mobile Device - RF Channel ID',
+		description: 'Check the RF Channel ID of the mobile device',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices[0].id,
+				choices: mobileDeviceChoices,
+			},
+			{
+				type: 'dropdown',
+				label: 'RF Channel',
+				choices: [
+					{ label: 'Off', id: -1 },
+					{ label: 'RF Channel 1', id: 0 },
+					{ label: 'RF Channel 2', id: 1 },
+				], // Assuming 0-indexed plus 'off' or similar logic?
+				// The user type has optional number. If it's optional, maybe it can be undefined.
+				// For now let's assume we match against specific IDs.
+				default: 0,
+				id: 'rfChannelId',
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			const rfChannelId = feedback.options.rfChannelId === -1 ? undefined : (feedback.options.rfChannelId as number)
+			return device?.rfChannelId === rfChannelId
+		},
+	}
+
+	feedbacks['mobileDeviceSleep'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Sleep',
+		description: 'Indicates if the mobile device is sleeping',
+		defaultStyle: {
+			bgcolor: Color.SpecteraBlue,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices[0].id,
+				choices: mobileDeviceChoices,
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			return device?.sleep === true
+		},
+	}
+
+	feedbacks['mobileDeviceBatteryLevel'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Battery Level',
+		description: 'Check if battery level is below a threshold',
+		defaultStyle: {
+			bgcolor: Color.SpecteraRed,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices[0].id,
+				choices: mobileDeviceChoices,
+			},
+			{
+				type: 'number',
+				label: 'Threshold (%)',
+				id: 'threshold',
+				default: 10,
+				min: 0,
+				max: 100,
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid)) // get device
+			const level = device?.batteryFillLevel
+			return level !== undefined && level <= (feedback.options.threshold as number)
+		},
+	}
+
+	feedbacks['mobileDeviceBatteryRuntime'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Battery Runtime',
+		description: 'Check if battery runtime is below a threshold',
+		defaultStyle: {
+			bgcolor: Color.SpecteraRed,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices[0].id,
+				choices: mobileDeviceChoices,
+			},
+			{
+				type: 'number',
+				label: 'Threshold (minutes)',
+				id: 'threshold',
+				default: 30,
+				min: 0,
+				max: 10000,
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			const runtime = device?.batteryRuntime
+			return runtime !== undefined && runtime <= (feedback.options.threshold as number)
+		},
+	}
+
+	feedbacks['mobileDeviceLedBrightness'] = {
+		type: 'boolean',
+		name: 'Mobile Device - LED Brightness',
+		description: 'Check LED Brightness',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices[0].id,
+				choices: mobileDeviceChoices,
+			},
+			{
+				type: 'dropdown',
+				label: 'Brightness',
+				id: 'brightness',
+				default: LedBrightness.Standard,
+				choices: getChoicesFromEnum(LedBrightness),
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			return device?.ledBrightness === feedback.options.brightness
+		},
+	}
+
+	feedbacks['mobileDeviceMicAudiolinkId'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Mic Audio Link ID',
+		description: 'Check Mic Audio Link ID',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices[0].id,
+				choices: mobileDeviceChoices,
+			},
+			{
+				type: 'number',
+				label: 'Audio Link ID',
+				id: 'audioLinkId',
+				default: 0,
+				min: 0,
+				max: 65535,
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			return device?.micAudiolinkId === feedback.options.audioLinkId
+		},
+	}
+
+	feedbacks['mobileDeviceMicAudiolinkActive'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Mic Audio Link Active',
+		description: 'Check if Mic Audio Link is Active',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices[0].id,
+				choices: mobileDeviceChoices,
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			return device?.micAudiolinkActive === true
+		},
+	}
+
+	feedbacks['mobileDeviceMicTestToneEnabled'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Mic Test Tone Enabled',
+		description: 'Check if Mic Test Tone is Enabled',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices[0].id,
+				choices: mobileDeviceChoices,
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			return device?.micTestToneEnabled === true
+		},
+	}
+
+	feedbacks['mobileDeviceMicTestToneLevel'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Mic Test Tone Level',
+		description: 'Check Mic Test Tone Level',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices[0].id,
+				choices: mobileDeviceChoices,
+			},
+			{
+				type: 'textinput',
+				label: 'Level (dB)',
+				id: 'level',
+				default: '-20',
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			return device?.micTestToneLevel === Number(feedback.options.level)
+		},
+	}
+
+	feedbacks['mobileDeviceHeadphoneVolume'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Headphone Volume',
+		description: 'Check Headphone Volume (SEK only)',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				choices: sekMobileDeviceChoices,
+			},
+			{
+				type: 'textinput',
+				label: 'Volume (0-100)',
+				id: 'volume',
+				default: '50',
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			if (device?.type === MtType.SEK) {
+				return device.headphoneVolume === Number(feedback.options.volume)
+			}
+			return false
+		},
+	}
+
+	feedbacks['mobileDeviceHeadphoneBalance'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Headphone Balance',
+		description: 'Check Headphone Balance (SEK only)',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				choices: sekMobileDeviceChoices,
+			},
+			{
+				type: 'textinput',
+				label: 'Balance (-100 to 100)',
+				id: 'balance',
+				default: '0',
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			if (device?.type === MtType.SEK) {
+				return device.headphoneBalance === Number(feedback.options.balance)
+			}
+			return false
+		},
+	}
+
+	feedbacks['mobileDeviceMicPreampGain'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Mic Preamp Gain',
+		description: 'Check Mic Preamp Gain',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices[0].id,
+				choices: mobileDeviceChoices,
+			},
+			{
+				type: 'textinput',
+				label: 'Gain (dB)',
+				id: 'gain',
+				default: '0',
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			// Type check for property access if strict, but ignoring for now as shared prop in practice
+			return (device as any)?.micPreampGain === Number(feedback.options.gain)
+		},
+	}
+
+	feedbacks['mobileDeviceMicLowCutHz'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Mic Low Cut Hz',
+		description: 'Check Mic Low Cut Frequency',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices[0].id,
+				choices: mobileDeviceChoices,
+			},
+			{
+				type: 'textinput',
+				label: 'Frequency (Hz)',
+				id: 'frequency',
+				default: '0',
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			return (device as any)?.micLowCutHz === Number(feedback.options.frequency)
+		},
+	}
+
+	feedbacks['mobileDeviceHeadphoneVolumeLimit'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Headphone Volume Limit',
+		description: 'Check Headphone Volume Limit (SEK only)',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				choices: sekMobileDeviceChoices,
+			},
+			{
+				type: 'textinput',
+				label: 'Limit',
+				id: 'limit',
+				default: '0',
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			if (device?.type === MtType.SEK) {
+				return device.headphoneVolumeLimit === Number(feedback.options.limit)
+			}
+			return false
+		},
+	}
+
+	feedbacks['mobileDeviceHeadphoneVolumeMax'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Headphone Volume Max',
+		description: 'Check Headphone Volume Max (SEK only)',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				choices: sekMobileDeviceChoices,
+			},
+			{
+				type: 'textinput',
+				label: 'Max',
+				id: 'max',
+				default: '0',
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			if (device?.type === MtType.SEK) {
+				return device.headphoneVolumeMax === Number(feedback.options.max)
+			}
+			return false
+		},
+	}
+
+	feedbacks['mobileDeviceHeadphoneVolumeMin'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Headphone Volume Min',
+		description: 'Check Headphone Volume Min (SEK only)',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				choices: sekMobileDeviceChoices,
+			},
+			{
+				type: 'textinput',
+				label: 'Min',
+				id: 'min',
+				default: '0',
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			if (device?.type === MtType.SEK) {
+				return device.headphoneVolumeMin === Number(feedback.options.min)
+			}
+			return false
+		},
+	}
+
+	feedbacks['mobileDeviceMicLineSelection'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Mic/Line Selection',
+		description: 'Check Mic/Line Selection (SEK only)',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				choices: sekMobileDeviceChoices,
+			},
+			{
+				type: 'dropdown',
+				label: 'Selection',
+				id: 'selection',
+				default: 'Auto',
+				choices: [
+					{ id: 'Mic', label: 'Mic' },
+					{ id: 'Line', label: 'Line' },
+					{ id: 'Auto', label: 'Auto' },
+				], // Assuming these strings
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			if (device?.type === MtType.SEK) {
+				return device.micLineSelection === feedback.options.selection
+			}
+			return false
+		},
+	}
+
+	feedbacks['mobileDeviceMicLineSelectionAutoValue'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Mic/Line Auto Value',
+		description: 'Check Mic/Line Auto Value (SEK only)',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				choices: sekMobileDeviceChoices,
+			},
+			{
+				type: 'textinput',
+				label: 'Auto Value',
+				id: 'autoValue',
+				default: '',
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			if (device?.type === MtType.SEK) {
+				return device.micLineSelectionAutoValue === feedback.options.autoValue
+			}
+			return false
+		},
+	}
+
+	feedbacks['mobileDeviceCableEmulation'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Cable Emulation',
+		description: 'Check Cable Emulation (SEK only)',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				choices: sekMobileDeviceChoices,
+			},
+			{
+				type: 'dropdown',
+				label: 'Emulation',
+				id: 'emulation',
+				default: CableEmulation.Off,
+				choices: getChoicesFromEnum(CableEmulation),
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			if (device?.type === MtType.SEK) {
+				return device.cableEmulation === feedback.options.emulation
+			}
+			return false
+		},
+	}
+
 	self.setFeedbackDefinitions(feedbacks)
 }
