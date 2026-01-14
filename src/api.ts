@@ -6,6 +6,7 @@ import type {
 	RfChannel,
 	MobileDevice,
 	Antenna,
+	AudioLink,
 	PsuState,
 	TempState,
 	FanState,
@@ -119,6 +120,7 @@ export class SpecteraApi extends EventEmitter {
 			this.setSubscriptionPaths([
 				'/api/audio/inputs',
 				'/api/audio/outputs',
+				'/api/audio/links',
 				'/api/rf/channels',
 				'/api/rf/antennas',
 				'/api/mts/paired/all',
@@ -142,22 +144,37 @@ export class SpecteraApi extends EventEmitter {
 		// Usually subscribe() resolves when the request is sent, but handleSSEEvent sets the UUID
 		// To be safe, we can fetch initial data immediately
 		try {
-			const [inputs, outputs, channels, antennas, devices, psu, temp, fan1, fan2, fan3, identity, state, site] =
-				await Promise.all([
-					this.getAudioInputs(),
-					this.getAudioOutputs(),
-					this.getRfChannels(),
-					this.getAntennas(),
-					this.getMobileDevices(),
-					this.getHealthPsu(),
-					this.getHealthTempOverall(),
-					this.getHealthFan('FAN_1'),
-					this.getHealthFan('FAN_2'),
-					this.getHealthFan('FAN_3'),
-					this.getBaseStationIdentity(),
-					this.getBaseStationState(),
-					this.getBaseStationSite(),
-				])
+			const [
+				inputs,
+				outputs,
+				channels,
+				antennas,
+				devices,
+				psu,
+				temp,
+				fan1,
+				fan2,
+				fan3,
+				identity,
+				state,
+				site,
+				audioLinks,
+			] = await Promise.all([
+				this.getAudioInputs(),
+				this.getAudioOutputs(),
+				this.getRfChannels(),
+				this.getAntennas(),
+				this.getMobileDevices(),
+				this.getHealthPsu(),
+				this.getHealthTempOverall(),
+				this.getHealthFan('FAN_1'),
+				this.getHealthFan('FAN_2'),
+				this.getHealthFan('FAN_3'),
+				this.getBaseStationIdentity(),
+				this.getBaseStationState(),
+				this.getBaseStationSite(),
+				this.getAudioLinks(),
+			])
 
 			inputs.forEach((i) => this.state.updateAudioInput(i))
 			outputs.forEach((o) => this.state.updateAudioOutput(o))
@@ -172,6 +189,7 @@ export class SpecteraApi extends EventEmitter {
 			this.state.updateBaseStationIdentity(identity)
 			this.state.updateBaseStationState(state)
 			this.state.updateBaseStationSite(site)
+			audioLinks.forEach((l) => this.state.updateAudioLink(l))
 
 			UpdateVariableDefinitions(this.instance)
 			UpdateVariableValues(this.instance)
@@ -338,8 +356,9 @@ export class SpecteraApi extends EventEmitter {
 			if (key.startsWith('/api/audio/inputs/')) {
 				const oldState = this.state.audioInputs.get(value.inputId)
 				this.state.updateAudioInput(value)
+				const displayId = value.inputId + 1
 				this.handleStateUpdate(
-					`audio_input_${value.inputId}_`,
+					`audio_input_${displayId}_`,
 					oldState,
 					value,
 					AudioInputStateMap,
@@ -359,6 +378,20 @@ export class SpecteraApi extends EventEmitter {
 					feedbacksToCheck,
 				)
 				structureChanged = !oldState
+			} else if (key.startsWith('/api/audio/links/')) {
+				if (value === null) {
+					// Deletion
+					const match = key.match(/\/api\/audio\/links\/(\d+)/)
+					if (match && match[1]) {
+						const linkId = parseInt(match[1], 10)
+						this.state.removeAudioLink(linkId)
+						structureChanged = true
+					}
+				} else {
+					const oldState = this.state.audioLinks.get(value.audiolinkId)
+					this.state.updateAudioLink(value)
+					structureChanged = !oldState
+				}
 			} else if (key.startsWith('/api/rf/channels/')) {
 				const oldState = this.state.rfChannels.get(value.rfChannelId)
 				this.state.updateRfChannel(value)
@@ -464,8 +497,26 @@ export class SpecteraApi extends EventEmitter {
 		return this.sendRequest<AudioInput[]>('GET', '/audio/inputs')
 	}
 
+	async setAudioInput(inputId: number, state: Partial<AudioInput>): Promise<void> {
+		const currentInput = this.state.audioInputs.get(inputId)
+		if (!currentInput) {
+			throw new Error(`Audio input ${inputId} not found`)
+		}
+
+		const payload = {
+			...state,
+			inputId,
+		}
+
+		await this.sendRequest('PUT', `/audio/inputs/${inputId}`, payload)
+	}
+
 	async getAudioOutputs(): Promise<AudioOutput[]> {
 		return this.sendRequest<AudioOutput[]>('GET', '/audio/outputs')
+	}
+
+	async getAudioLinks(): Promise<AudioLink[]> {
+		return this.sendRequest<AudioLink[]>('GET', '/audio/links')
 	}
 
 	async getRfChannels(): Promise<RfChannel[]> {

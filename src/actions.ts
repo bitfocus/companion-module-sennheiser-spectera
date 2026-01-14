@@ -1,11 +1,13 @@
 import type { SpecteraInstance } from './main.js'
 import type { CompanionActionDefinitions } from '@companion-module/base'
 import {
+	AudioInput,
 	Antenna,
 	AntennaPortId,
 	BandwidthMode,
 	CableEmulation,
 	LedBrightness,
+	InputSource,
 	MobileDevice,
 	MtType,
 	RfChannel,
@@ -186,6 +188,39 @@ export function UpdateActions(self: SpecteraInstance): void {
 					rfChannelId: action.options.rfChannel as number,
 					frequency: Number(action.options.frequency) * 1000,
 				} as Partial<RfChannel>,
+			)
+		},
+	}
+
+	actions['setAudioInputSource'] = {
+		name: 'Audio Input - Source',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Audio Input',
+				choices: Array.from(self.state.audioInputs.values()).map((i) => ({
+					id: i.inputId,
+					label: i.name || `Input ${i.inputId + 1}`,
+				})),
+				default: 0,
+				id: 'inputId',
+			},
+			{
+				type: 'dropdown',
+				label: 'Source',
+				choices: getChoicesFromEnum(InputSource),
+				default: InputSource.Dante,
+				id: 'source',
+			},
+		],
+		description: 'Set the Audio Input Source',
+		callback: async (action) => {
+			if (!self.api) return
+			await self.api.setAudioInput(
+				action.options.inputId as number,
+				{
+					source: action.options.source as InputSource,
+				} as Partial<AudioInput>,
 			)
 		},
 	}

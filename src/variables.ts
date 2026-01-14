@@ -53,18 +53,19 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 
 	// Audio Inputs
 	for (const input of self.state.audioInputs.values()) {
+		const displayId = input.inputId + 1
 		variables.push(
 			{
-				variableId: `audio_input_${input.inputId}_name`,
-				name: `Audio Input ${input.inputId} Name`,
+				variableId: `audio_input_${displayId}_name`,
+				name: `Audio Input ${displayId} Name`,
 			},
 			{
-				variableId: `audio_input_${input.inputId}_iem_link_id`,
-				name: `Audio Input ${input.inputId} IEM Link ID`,
+				variableId: `audio_input_${displayId}_iem_link_id`,
+				name: `Audio Input ${displayId} IEM Link ID`,
 			},
 			{
-				variableId: `audio_input_${input.inputId}_source`,
-				name: `Audio Input ${input.inputId} Source`,
+				variableId: `audio_input_${displayId}_source`,
+				name: `Audio Input ${displayId} Source`,
 			},
 		)
 	}
@@ -372,10 +373,11 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 }
 
 export function getAudioInputVariables(input: AudioInput): Record<string, any> {
+	const displayId = input.inputId + 1
 	return {
-		[`audio_input_${input.inputId}_source`]: input.source,
-		[`audio_input_${input.inputId}_name`]: input.name,
-		[`audio_input_${input.inputId}_iem_link_id`]: input.iemAudiolinkId,
+		[`audio_input_${displayId}_source`]: input.source,
+		[`audio_input_${displayId}_name`]: input.name,
+		[`audio_input_${displayId}_iem_link_id`]: input.iemAudiolinkId,
 	}
 }
 
