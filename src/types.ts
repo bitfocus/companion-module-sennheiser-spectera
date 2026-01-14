@@ -88,7 +88,29 @@ export enum AntennaPortId {
 	D = 'd',
 }
 
+export enum AudiolinkModeId {
+	'MAX Range (Mono)' = 1,
+	'MAX Link Density (Mono)' = 2,
+	'LIVE Link Density (Mono)' = 3,
+	'LIVE (Mono)' = 4,
+	'LIVE Low Latency (Mono)' = 5,
+	'LIVE Link Density (Stereo)' = 6,
+	'LIVE (Stereo)' = 7,
+	'LIVE Low Latency (Stereo)' = 8,
+	'LIVE Ultra Low Latency (Stereo)' = 9,
+	'RAW (Mono)' = 10,
+	'RAW Low Latency (Mono)' = 11,
+	'Empty (Mono)' = 1001,
+	'Empty (Stereo)' = 1002,
+}
+
 // Interfaces
+export interface AudioLink {
+	audiolinkId: number
+	rfChannelId: number
+	modeId: AudiolinkModeId
+}
+
 export interface AudioInput {
 	inputId: number
 	iemAudiolinkId: number
@@ -200,7 +222,52 @@ export interface SKMDevice extends MobileDeviceBase {
 	micPreampGain: number
 	micLowCutHz: number
 	commandBehavior: string
-	micModule?: string
+	micModule?: MicModule
+}
+
+export enum MicModuleName {
+	NotAvailable = 'NotAvailable',
+	None = 'None',
+	Unknown = 'Unknown',
+	SennheiserMD9235 = 'SennheiserMD9235',
+	SennheiserME9002 = 'SennheiserME9002',
+	SennheiserME9004 = 'SennheiserME9004',
+	SennheiserME9005 = 'SennheiserME9005',
+	SennheiserMM435 = 'SennheiserMM435',
+	SennheiserMM445 = 'SennheiserMM445',
+	SennheiserMMD42_1 = 'SennheiserMMD42-1',
+	SennheiserMMD815_1 = 'SennheiserMMD815-1',
+	SennheiserMMD835_1 = 'SennheiserMMD835-1',
+	SennheiserMMD845_1 = 'SennheiserMMD845-1',
+	SennheiserMMD935_1 = 'SennheiserMMD935-1',
+	SennheiserMMD945_1 = 'SennheiserMMD945-1',
+	SennheiserMME865_1 = 'SennheiserMME865-1',
+	SennheiserMMK965_1 = 'SennheiserMMK965-1',
+	SennheiserCustom = 'SennheiserCustom',
+	NeumannKK104A = 'NeumannKK104A',
+	NeumannKK105A = 'NeumannKK105A',
+	NeumannKK204 = 'NeumannKK204',
+	NeumannKK205 = 'NeumannKK205',
+	ThirdPartyAdapter = 'ThirdPartyAdapter',
+}
+
+export enum MicModulePickupPattern {
+	NotApplicable = 'NotApplicable',
+	Omni = 'Omni',
+	Cardioid = 'Cardioid',
+	Supercardioid = 'Supercardioid',
+}
+
+export enum MicModulePad {
+	NotApplicable = 'NotApplicable',
+	Disabled = 'Disabled',
+	Start10dB = '10dB',
+}
+
+export interface MicModule {
+	name: MicModuleName
+	pickupPattern: MicModulePickupPattern
+	pad: MicModulePad
 }
 
 export enum CableEmulation {

@@ -12,8 +12,9 @@ import type {
 	AntennaBinding,
 	SEKDevice,
 	SKMDevice,
+	AudioLink,
 } from './types.js'
-import { RfState, RfStateStartup, RFChannels, PsuStatus } from './types.js'
+import { RfState, RfStateStartup, RFChannels, PsuStatus, AudiolinkModeId } from './types.js'
 
 export interface StateMapEntry<T> {
 	feedback?: string
@@ -33,6 +34,7 @@ const toBindingLabel = (v: unknown): any => {
 	const binding = (v as AntennaBinding[])?.[0]?.binding
 	return Object.keys(RFChannels).find((key) => RFChannels[key as keyof typeof RFChannels] === binding) ?? 'None'
 }
+const toAudioLinkModeLabel = (v: unknown): any => AudiolinkModeId[v as number] ?? 'Unknown'
 
 const psuStatusLabels: Record<PsuStatus, string> = {
 	[PsuStatus.Connected]: 'Connected',
@@ -215,7 +217,7 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 	iemLqi: { variable: 'iem_lqi', valueFn: (v: unknown): any => v },
 	// SKM specific
 	commandBehavior: { variable: 'command_behavior', valueFn: (v: unknown): any => v },
-	micModule: { variable: 'mic_module', valueFn: (v: unknown): any => v },
+	micModule: { variable: 'mic_module', valueFn: (v: unknown): any => (v as any)?.name },
 }
 
 export const PsuStateMap: StateMap<PsuState> = {
@@ -248,4 +250,10 @@ export const BaseStationSiteMap: StateMap<BaseStationSite> = {
 	deviceName: { variable: 'base_station_name', valueFn: (v: unknown): any => v },
 	location: { variable: 'base_station_location', valueFn: (v: any): any => v },
 	position: { variable: 'base_station_position', valueFn: (v: any): any => v },
+}
+
+export const AudioLinkStateMap: StateMap<AudioLink> = {
+	audiolinkId: { variable: 'id', valueFn: (v: unknown): any => v },
+	rfChannelId: { variable: 'rf_channel_id', valueFn: (v: unknown): any => v },
+	modeId: { variable: 'mode', valueFn: toAudioLinkModeLabel },
 }

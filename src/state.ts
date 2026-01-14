@@ -4,6 +4,7 @@ import type {
 	RfChannel,
 	Antenna,
 	MobileDevice,
+	AudioLink,
 	HealthState,
 	PsuState,
 	TempState,
@@ -21,6 +22,7 @@ export class SpecteraState {
 	public readonly rfChannels = new Map<number, RfChannel>()
 	public readonly antennas = new Map<string, Antenna>()
 	public readonly mobileDevices = new Map<number, MobileDevice>()
+	public readonly audioLinks = new Map<number, AudioLink>()
 	public health: HealthState = {
 		psu: { psu1: PsuStatusEnum.Unconnected, psu2: PsuStatusEnum.Unconnected },
 		temp: { value: TempStatusEnum.Normal },
@@ -46,6 +48,10 @@ export class SpecteraState {
 
 	public updateMobileDevice(device: MobileDevice): void {
 		this.mobileDevices.set(device.mtUid, device)
+	}
+
+	public updateAudioLink(link: AudioLink): void {
+		this.audioLinks.set(link.audiolinkId, link)
 	}
 
 	public updatePsuState(state: PsuState): void {
@@ -76,11 +82,16 @@ export class SpecteraState {
 		this.mobileDevices.delete(mtUid)
 	}
 
+	public removeAudioLink(audiolinkId: number): void {
+		this.audioLinks.delete(audiolinkId)
+	}
+
 	public clear(): void {
 		this.audioInputs.clear()
 		this.audioOutputs.clear()
 		this.rfChannels.clear()
 		this.antennas.clear()
 		this.mobileDevices.clear()
+		this.audioLinks.clear()
 	}
 }
