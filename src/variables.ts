@@ -12,7 +12,7 @@ import type {
 	BaseStationState,
 	BaseStationSite,
 } from './types.js'
-import { MtType, RfState, RFChannels, RfStateStartup, PsuStatus } from './types.js'
+import { MtType, RfState, RFChannels, RfStateStartup, PsuStatus, MicLowCutHzSEK, MicLowCutHzSKM } from './types.js'
 
 const rfStateStartupLabels: Record<RfStateStartup, string> = {
 	[RfStateStartup.Active]: 'Active',
@@ -462,7 +462,8 @@ export function getMobileDeviceVariables(device: MobileDevice): Record<string, a
 		variables[`${deviceVariableId}_headphone_volume`] = device.headphoneVolume
 		variables[`${deviceVariableId}_headphone_balance`] = device.headphoneBalance
 		variables[`${deviceVariableId}_mic_preamp_gain`] = device.micPreampGain
-		variables[`${deviceVariableId}_mic_lowcut_hz`] = device.micLowCutHz
+		variables[`${deviceVariableId}_mic_lowcut_hz`] =
+			device.micLowCutHz === MicLowCutHzSEK.Off ? 'Off' : device.micLowCutHz
 		variables[`${deviceVariableId}_iem_audiolink_id`] = device.iemAudiolinkId
 		variables[`${deviceVariableId}_iem_audiolink_active`] = device.iemAudiolinkActive
 		variables[`${deviceVariableId}_headphone_plug_state`] = device.headphonePlugState
@@ -474,7 +475,8 @@ export function getMobileDeviceVariables(device: MobileDevice): Record<string, a
 		variables[`${deviceVariableId}_iem_lqi`] = device.iemLqi
 	} else if (device.type === MtType.SKM) {
 		variables[`${deviceVariableId}_mic_preamp_gain`] = device.micPreampGain
-		variables[`${deviceVariableId}_mic_lowcut_hz`] = device.micLowCutHz
+		variables[`${deviceVariableId}_mic_lowcut_hz`] =
+			device.micLowCutHz === MicLowCutHzSKM.Off ? 'Off' : device.micLowCutHz
 		variables[`${deviceVariableId}_command_behavior`] = device.commandBehavior
 		variables[`${deviceVariableId}_mic_module`] = device.micModule
 	}

@@ -15,6 +15,8 @@ import {
 	RfState,
 	RfStateStartup,
 	TxPower,
+	MicLineSelection,
+	MicLowCutHzSEK,
 } from './types.js'
 import { getChoicesFromEnum, getMobileDeviceChoices } from './utils.js'
 
@@ -450,7 +452,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 		description: 'Set Headphone Volume for a SEK Device',
 		callback: async (action) => {
 			if (!self.api) return
-			const volume = Number(await self.parseVariablesInString(action.options.volume as string))
+			const volume = Number(action.options.volume)
 			await self.api.setMobileDevice(
 				action.options.mtUid as number,
 				{
@@ -481,7 +483,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 		description: 'Set Headphone Balance for a SEK Device',
 		callback: async (action) => {
 			if (!self.api) return
-			const balance = Number(await self.parseVariablesInString(action.options.balance as string))
+			const balance = Number(action.options.balance)
 			await self.api.setMobileDevice(
 				action.options.mtUid as number,
 				{
@@ -512,7 +514,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 		description: 'Set Mic Preamp Gain for a Mobile Device',
 		callback: async (action) => {
 			if (!self.api) return
-			const gain = Number(await self.parseVariablesInString(action.options.gain as string))
+			const gain = Number(action.options.gain)
 			await self.api.setMobileDevice(
 				action.options.mtUid as number,
 				{
@@ -533,17 +535,25 @@ export function UpdateActions(self: SpecteraInstance): void {
 				choices: mobileDeviceChoices,
 			},
 			{
-				type: 'textinput',
-				label: 'Frequency (Hz)',
-				default: '0',
+				type: 'dropdown',
+				label: 'Frequency',
+				choices: getChoicesFromEnum(MicLowCutHzSEK),
+				default: MicLowCutHzSEK.Off,
 				id: 'frequency',
-				useVariables: true,
 			},
 		],
 		description: 'Set Mic Low Cut Frequency for a Mobile Device',
 		callback: async (action) => {
 			if (!self.api) return
-			const frequency = Number(await self.parseVariablesInString(action.options.frequency as string))
+			let frequency = action.options.frequency as number
+
+			const device = self.state.mobileDevices.get(Number(action.options.mtUid))
+			if (device?.type === MtType.SKM) {
+				if (frequency === 20 || frequency === 30 || frequency === 60) {
+					frequency = 20
+				}
+			}
+
 			await self.api.setMobileDevice(
 				action.options.mtUid as number,
 				{
@@ -596,12 +606,8 @@ export function UpdateActions(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mode',
-				choices: [
-					{ id: 'Mic', label: 'Mic' },
-					{ id: 'Line', label: 'Line' },
-					{ id: 'Auto', label: 'Auto' },
-				],
-				default: 'Auto',
+				choices: getChoicesFromEnum(MicLineSelection),
+				default: MicLineSelection.Auto,
 				id: 'mode',
 			},
 		],
@@ -613,7 +619,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			await self.api.setMobileDevice(
 				action.options.mtUid as number,
 				{
-					micLineSelection: action.options.mode as string,
+					micLineSelection: action.options.mode as MicLineSelection,
 				} as Partial<MobileDevice>,
 			)
 		},
@@ -646,7 +652,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 		description: 'Set Mic Test Tone for a Mobile Device',
 		callback: async (action) => {
 			if (!self.api) return
-			const level = Number(await self.parseVariablesInString(action.options.level as string))
+			const level = Number(action.options.level)
 			await self.api.setMobileDevice(
 				action.options.mtUid as number,
 				{

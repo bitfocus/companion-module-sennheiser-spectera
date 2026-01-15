@@ -16,6 +16,9 @@ import {
 	MtState,
 	MtType,
 	Interference,
+	MicLineSelection,
+	MicLineSelectionAuto,
+	MicLowCutHzSEK,
 } from './types.js'
 import { getChoicesFromEnum, getMobileDeviceChoices } from './utils.js'
 import { Color } from './utils.js'
@@ -1033,15 +1036,27 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				choices: mobileDeviceChoices,
 			},
 			{
-				type: 'textinput',
-				label: 'Frequency (Hz)',
+				type: 'dropdown',
+				label: 'Frequency',
 				id: 'frequency',
-				default: '0',
+				default: MicLowCutHzSEK.Off,
+				choices: getChoicesFromEnum(MicLowCutHzSEK),
 			},
 		],
 		callback: async (feedback) => {
 			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
-			return (device as any)?.micLowCutHz === Number(feedback.options.frequency)
+			const frequency = Number(feedback.options.frequency)
+
+			if (device?.type === MtType.SKM) {
+				const deviceVal = (device as any).micLowCutHz
+				if (frequency === 20 || frequency === 30 || frequency === 60) {
+					// Treat 20, 30, and 60 as matching "Off" (60 for SKM)
+					return deviceVal === 60
+				}
+				return deviceVal === frequency
+			}
+
+			return (device as any)?.micLowCutHz === frequency
 		},
 	}
 
@@ -1157,12 +1172,8 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				type: 'dropdown',
 				label: 'Selection',
 				id: 'selection',
-				default: 'Auto',
-				choices: [
-					{ id: 'Mic', label: 'Mic' },
-					{ id: 'Line', label: 'Line' },
-					{ id: 'Auto', label: 'Auto' },
-				], // Assuming these strings
+				default: MicLineSelection.Auto,
+				choices: getChoicesFromEnum(MicLineSelection),
 			},
 		],
 		callback: async (feedback) => {
@@ -1190,10 +1201,11 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				choices: sekMobileDeviceChoices,
 			},
 			{
-				type: 'textinput',
+				type: 'dropdown',
 				label: 'Auto Value',
 				id: 'autoValue',
-				default: '',
+				default: MicLineSelectionAuto.Unknown,
+				choices: getChoicesFromEnum(MicLineSelectionAuto),
 			},
 		],
 		callback: async (feedback) => {

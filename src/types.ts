@@ -104,6 +104,34 @@ export enum AudiolinkModeId {
 	'Empty (Stereo)' = 1002,
 }
 
+export enum MicLineSelection {
+	Auto = 'Auto',
+	Mic = 'Mic',
+	Line = 'Line',
+}
+
+export enum MicLineSelectionAuto {
+	Unknown = 'Unknown',
+	Mic = 'Mic',
+	Line = 'Line',
+}
+
+export enum MicLowCutHzSEK {
+	'Off' = 20,
+	'30 Hz' = 30,
+	'60 Hz' = 60,
+	'80 Hz' = 80,
+	'100 Hz' = 100,
+	'120 Hz' = 120,
+}
+
+export enum MicLowCutHzSKM {
+	'Off' = 60,
+	'80 Hz' = 80,
+	'100 Hz' = 100,
+	'120 Hz' = 120,
+}
+
 // Interfaces
 export interface AudioLink {
 	audiolinkId: number
@@ -204,15 +232,15 @@ export interface SEKDevice extends MobileDeviceBase {
 	headphoneVolume: number
 	headphoneBalance: number
 	micPreampGain: number
-	micLowCutHz: number
 	iemAudiolinkId?: number
 	iemAudiolinkActive?: boolean
 	headphonePlugState?: string
 	headphoneVolumeLimit?: number
 	headphoneVolumeMax?: number
 	headphoneVolumeMin?: number
-	micLineSelection?: string
-	micLineSelectionAutoValue?: string
+	micLineSelection?: MicLineSelection
+	micLineSelectionAutoValue?: MicLineSelectionAuto
+	micLowCutHz: MicLowCutHzSEK
 	cableEmulation?: CableEmulation
 	iemLqi?: number
 }
@@ -220,7 +248,7 @@ export interface SEKDevice extends MobileDeviceBase {
 export interface SKMDevice extends MobileDeviceBase {
 	type: MtType.SKM
 	micPreampGain: number
-	micLowCutHz: number
+	micLowCutHz: MicLowCutHzSKM
 	commandBehavior: string
 	micModule?: MicModule
 }

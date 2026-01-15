@@ -14,7 +14,16 @@ import type {
 	SKMDevice,
 	AudioLink,
 } from './types.js'
-import { RfState, RfStateStartup, RFChannels, PsuStatus, AudiolinkModeId } from './types.js'
+import {
+	RfState,
+	RfStateStartup,
+	RFChannels,
+	PsuStatus,
+	AudiolinkModeId,
+	MicLowCutHzSEK,
+	MicLowCutHzSKM,
+	MtType,
+} from './types.js'
 
 export interface StateMapEntry<T> {
 	feedback?: string
@@ -35,6 +44,14 @@ const toBindingLabel = (v: unknown): any => {
 	return Object.keys(RFChannels).find((key) => RFChannels[key as keyof typeof RFChannels] === binding) ?? 'None'
 }
 const toAudioLinkModeLabel = (v: unknown): any => AudiolinkModeId[v as number] ?? 'Unknown'
+const toMicLowCutLabel = (v: unknown, state: SEKDevice | SKMDevice): string | number => {
+	if (state.type === MtType.SEK) {
+		return v === MicLowCutHzSEK.Off ? 'Off' : (v as number)
+	} else if (state.type === MtType.SKM) {
+		return v === MicLowCutHzSKM.Off ? 'Off' : (v as number)
+	}
+	return v as number
+}
 
 const psuStatusLabels: Record<PsuStatus, string> = {
 	[PsuStatus.Connected]: 'Connected',
@@ -180,7 +197,7 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 	micLowCutHz: {
 		feedback: 'mobileDeviceMicLowCutHz',
 		variable: 'mic_lowcut_hz',
-		valueFn: (v: unknown): any => v,
+		valueFn: toMicLowCutLabel,
 	},
 	iemAudiolinkId: { variable: 'iem_audiolink_id', valueFn: (v: unknown): any => v },
 	iemAudiolinkActive: { variable: 'iem_audiolink_active', valueFn: (v: unknown): any => v },
