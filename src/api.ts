@@ -16,6 +16,7 @@ import type {
 	AudioLevels,
 	AudioLevel,
 } from './types.js'
+import { AudiolinkModeId, MtType } from './types.js'
 import type { SpecteraState } from './state.js'
 import { Agent, Dispatcher } from 'undici'
 import { UpdateVariableDefinitions, UpdateVariableValues } from './variables.js'
@@ -144,9 +145,6 @@ export class SpecteraApi extends EventEmitter {
 		// Start subscription
 		await this.subscribe()
 
-		// Wait for sessionUUID to be available (from 'open' event)
-		// Usually subscribe() resolves when the request is sent, but handleSSEEvent sets the UUID
-		// To be safe, we can fetch initial data immediately
 		try {
 			const [
 				inputs,
@@ -451,9 +449,7 @@ export class SpecteraApi extends EventEmitter {
 				structureChanged = !oldState
 			} else if (key.startsWith('/api/rf/antennas/')) {
 				const oldState = this.state.antennas.get(value.antennaPortId)
-				this.state.updateAntenna(value) // Note: value needs to be compatible with Antenna interface
-				// The API returns the object with antennaPortId.
-				// sanitizeName is needed for prefix.
+				this.state.updateAntenna(value)
 				const port = value.antennaPortId.replace(/[^a-zA-Z0-9_-]/g, '_')
 				this.handleStateUpdate(`dad_${port}_`, oldState, value, AntennaStateMap, changedVariables, feedbacksToCheck)
 				structureChanged = !oldState
@@ -467,7 +463,7 @@ export class SpecteraApi extends EventEmitter {
 				this.handleStateUpdate(prefix, oldState as any, value, MobileDeviceStateMap, changedVariables, feedbacksToCheck)
 				structureChanged = !oldState || oldState.name !== value.name
 			} else if (key === '/api/health/psu') {
-				const oldState = { ...this.state.health.psu } // Clone old state
+				const oldState = { ...this.state.health.psu }
 				this.state.updatePsuState(value)
 				this.handleStateUpdate('', oldState, value, PsuStateMap, changedVariables, feedbacksToCheck)
 			} else if (key === '/api/health/tempstateoverall') {
@@ -566,6 +562,19 @@ export class SpecteraApi extends EventEmitter {
 		return this.sendRequest<AudioOutput[]>('GET', '/audio/outputs')
 	}
 
+	async setAudioOutput(outputId: number, state: Partial<AudioOutput>): Promise<void> {
+		const currentOutput = this.state.audioOutputs.get(outputId)
+		if (!currentOutput) {
+			throw new Error(`Audio output ${outputId} not found`)
+		}
+
+		const payload = {
+			...state,
+			outputId,
+		}
+		await this.sendRequest('PUT', `/audio/outputs/${outputId}`, payload)
+	}
+
 	async getAudioLinks(): Promise<AudioLink[]> {
 		return this.sendRequest<AudioLink[]>('GET', '/audio/links')
 	}
@@ -635,5 +644,278 @@ export class SpecteraApi extends EventEmitter {
 
 	async getAudioLevels(): Promise<AudioLevels> {
 		return this.sendRequest<AudioLevels>('GET', '/audio/levels')
+	}
+
+	async createAudioLink(config: { modeId: number; rfChannelId: number }): Promise<number> {
+		const url = `https://${this.host}:443/api/audio/links`
+		const options: RequestInit = {
+			method: 'POST',
+			headers: {
+				Authorization: this.getAuthHeader(),
+				Accept: 'application/json',
+				'Content-Type': 'application/json',
+			},
+			body: JSON.stringify(config),
+		}
+
+		try {
+			const response = await fetch(url, { ...options, dispatcher: this.dispatcher } as any)
+
+			if (!response.ok) {
+				const errorText = await response.text().catch(() => 'Unknown error')
+				this.instance.log('error', `Create Audio Link failed: HTTP ${response.status}: ${errorText}`)
+				throw new Error(`HTTP ${response.status}: ${errorText}`)
+			}
+
+			if (response.status === 201) {
+				const location = response.headers.get('Location')
+				if (location) {
+					const id = parseInt(location, 10)
+					if (!isNaN(id)) {
+						return id
+					}
+					// If it's a URL like /api/audio/links/123
+					const parts = location.split('/')
+					const lastPart = parts[parts.length - 1]
+					const extractedId = parseInt(lastPart, 10)
+					if (!isNaN(extractedId)) {
+						return extractedId
+					}
+				}
+			}
+
+			throw new Error('Failed to retrieve new Audio Link ID from response')
+		} catch (error) {
+			this.instance.log(
+				'error',
+				`Create Audio Link Request failed: ${error instanceof Error ? error.message : String(error)}`,
+			)
+			throw error
+		}
+	}
+
+	async updateAudioLink(config: { audiolinkId: number; modeId: number }): Promise<void> {
+		await this.sendRequest('PUT', `/audio/links/${config.audiolinkId}`, config)
+	}
+
+	async routeAudioInputToMobileDevice(inputId: number, mtUid: number, modeId: number): Promise<void> {
+		const audioInput = this.state.audioInputs.get(inputId)
+		const mobileDevice = this.state.mobileDevices.get(mtUid)
+
+		if (!audioInput || !mobileDevice) {
+			this.instance.log('warn', 'Audio Routing: Input or Mobile Device not found')
+			return
+		}
+
+		let audiolinkId = audioInput.iemAudiolinkId
+
+		if (!audiolinkId) {
+			// Create new Audio Link
+			if (mobileDevice.rfChannelId === undefined) {
+				this.instance.log('warn', 'Audio Routing: Mobile Device has no RF Channel assigned')
+				return
+			}
+
+			try {
+				audiolinkId = await this.createAudioLink({
+					modeId: modeId,
+					rfChannelId: mobileDevice.rfChannelId,
+				})
+				this.instance.log('info', `Created new Audio Link ${audiolinkId}`)
+
+				// Assign to Audio Input first
+				await this.setAudioInput(inputId, {
+					iemAudiolinkId: audiolinkId,
+				} as Partial<AudioInput>)
+			} catch (error) {
+				this.instance.log('error', `Audio Routing: Failed to create Audio Link: ${error}`)
+				return
+			}
+		} else {
+			// Existing Audio Link, check if mode needs update
+			const audioLink = this.state.audioLinks.get(audiolinkId)
+			if (audioLink && audioLink.modeId !== (modeId as AudiolinkModeId)) {
+				try {
+					await this.updateAudioLink({ audiolinkId, modeId })
+					this.instance.log('info', `Updated Audio Link ${audiolinkId} mode to ${modeId}`)
+				} catch (error) {
+					this.instance.log('error', `Audio Routing: Failed to update Audio Link mode: ${error}`)
+				}
+			}
+		}
+
+		// Assign to Mobile Device
+		try {
+			await this.setMobileDevice(mtUid, {
+				iemAudiolinkId: audiolinkId,
+			} as Partial<MobileDevice>)
+			this.instance.log('info', `Routed Audio Input ${inputId} to Mobile Device ${mtUid} via Audio Link ${audiolinkId}`)
+		} catch (error) {
+			this.instance.log('error', `Audio Routing: Failed to assign Audio Link to Mobile Device: ${error}`)
+		}
+	}
+
+	async routeMobileDeviceToAudioOutput(mtUid: number, outputId: number, modeId: number): Promise<void> {
+		const audioOutput = this.state.audioOutputs.get(outputId)
+		const mobileDevice = this.state.mobileDevices.get(mtUid)
+
+		if (!audioOutput || !mobileDevice) {
+			this.instance.log('warn', 'Audio Routing: Output or Mobile Device not found')
+			return
+		}
+
+		// Check if Mobile Device (Source) already has a valid link
+		let audiolinkId = mobileDevice.micAudiolinkId
+		if (audiolinkId && audiolinkId > 0) {
+			// Reuse device's existing link
+			this.instance.log('info', `Routing: Using existing Audio Link ${audiolinkId} from Mobile Device`)
+		} else {
+			// Device has no link, check if Audio Output (Dest) has a reusable link
+			const outLink = audioOutput.micAudiolinkId ? this.state.audioLinks.get(audioOutput.micAudiolinkId) : undefined
+
+			if (outLink && outLink.rfChannelId === mobileDevice.rfChannelId) {
+				// Reuse output's link as it matches the device's RF Channel
+				audiolinkId = outLink.audiolinkId
+				this.instance.log(
+					'info',
+					`Routing: Using existing Audio Link ${audiolinkId} from Audio Output (RF Channel matched)`,
+				)
+			} else {
+				// Create new Audio Link
+				if (mobileDevice.rfChannelId === undefined) {
+					this.instance.log('warn', 'Audio Routing: Mobile Device has no RF Channel assigned')
+					return
+				}
+
+				try {
+					audiolinkId = await this.createAudioLink({
+						modeId: modeId,
+						rfChannelId: mobileDevice.rfChannelId,
+					})
+					this.instance.log('info', `Created new Audio Link ${audiolinkId}`)
+				} catch (error) {
+					this.instance.log('error', `Audio Routing: Failed to create Audio Link: ${error}`)
+					return
+				}
+			}
+		}
+
+		// Update link mode if needed
+		if (audiolinkId) {
+			const audioLink = this.state.audioLinks.get(audiolinkId)
+			if (audioLink && audioLink.modeId !== (modeId as AudiolinkModeId)) {
+				try {
+					await this.updateAudioLink({ audiolinkId, modeId })
+					this.instance.log('info', `Updated Audio Link ${audiolinkId} mode to ${modeId}`)
+				} catch (error) {
+					this.instance.log('error', `Audio Routing: Failed to update Audio Link mode: ${error}`)
+				}
+			}
+		}
+
+		// Assign to Mobile Device (Source)
+		try {
+			if (mobileDevice.micAudiolinkId !== audiolinkId) {
+				await this.setMobileDevice(mtUid, {
+					micAudiolinkId: audiolinkId,
+				} as Partial<MobileDevice>)
+			}
+		} catch (error) {
+			this.instance.log('error', `Audio Routing: Failed to assign Audio Link to Mobile Device: ${error}`)
+		}
+
+		// Assign to Audio Output (Destination)
+		try {
+			if (audioOutput.micAudiolinkId !== audiolinkId) {
+				await this.setAudioOutput(outputId, {
+					micAudiolinkId: audiolinkId,
+				} as Partial<AudioOutput>)
+			}
+			this.instance.log(
+				'info',
+				`Routed Mobile Device ${mtUid} to Audio Output ${outputId} via Audio Link ${audiolinkId}`,
+			)
+		} catch (error) {
+			this.instance.log('error', `Audio Routing: Failed to assign Audio Link to Audio Output: ${error}`)
+		}
+	}
+
+	async copyMobileDeviceSettings(sourceMtUid: number, targetMtUid: number): Promise<void> {
+		const sourceDevice = this.state.mobileDevices.get(sourceMtUid)
+		const targetDevice = this.state.mobileDevices.get(targetMtUid)
+
+		if (!sourceDevice || !targetDevice) {
+			this.instance.log('warn', 'Copy Settings: Source or Target Mobile Device not found')
+			return
+		}
+
+		if (sourceDevice.mtUid === targetDevice.mtUid) {
+			this.instance.log('warn', 'Copy Settings: Source and Target are the same device')
+			return
+		}
+
+		// Common properties
+		const payload: any = {
+			ledBrightness: sourceDevice.ledBrightness,
+			micPreampGain: (sourceDevice as any).micPreampGain,
+			micAudiolinkId: sourceDevice.micAudiolinkId,
+		}
+
+		if (sourceDevice.type === MtType.SEK && targetDevice.type === MtType.SEK) {
+			const sourceSEK = sourceDevice as any
+			payload.headphoneVolume = sourceSEK.headphoneVolume
+			payload.headphoneBalance = sourceSEK.headphoneBalance
+			payload.headphoneVolumeLimit = sourceSEK.headphoneVolumeLimit
+			payload.micLineSelection = sourceSEK.micLineSelection
+			payload.micLowCutHz = sourceSEK.micLowCutHz
+			payload.cableEmulation = sourceSEK.cableEmulation
+			payload.iemAudiolinkId = sourceSEK.iemAudiolinkId
+		} else if (sourceDevice.type === MtType.SKM && targetDevice.type === MtType.SKM) {
+			const sourceSKM = sourceDevice as any
+			payload.micLowCutHz = sourceSKM.micLowCutHz
+			payload.commandBehavior = sourceSKM.commandBehavior
+		} else {
+			this.instance.log(
+				'info',
+				`Copy Settings: Devices are different types (${sourceDevice.type} -> ${targetDevice.type}). Only common settings copied.`,
+			)
+		}
+
+		try {
+			await this.setMobileDevice(targetMtUid, payload)
+			this.instance.log('info', `Copied settings from ${sourceDevice.name} to ${targetDevice.name}`)
+		} catch (error) {
+			this.instance.log('error', `Copy Settings: Failed to apply settings: ${error}`)
+		}
+	}
+
+	async copyIemMix(sourceMtUid: number, targetMtUid: number): Promise<void> {
+		const sourceDevice = this.state.mobileDevices.get(sourceMtUid)
+		const targetDevice = this.state.mobileDevices.get(targetMtUid)
+
+		if (!sourceDevice || !targetDevice) {
+			this.instance.log('warn', 'Copy IEM Mix: Source or Target Mobile Device not found')
+			return
+		}
+
+		const iemAudiolinkId = (sourceDevice as any).iemAudiolinkId
+
+		if (!iemAudiolinkId) {
+			this.instance.log('warn', `Copy IEM Mix: Source device ${sourceMtUid} has no IEM Mix assigned`)
+			return
+		}
+
+		if (sourceDevice.rfChannelId !== targetDevice.rfChannelId) {
+			this.instance.log('warn', 'Copy IEM Mix: Devices are on different RF Channels, this might fail')
+		}
+
+		try {
+			await this.setMobileDevice(targetMtUid, {
+				iemAudiolinkId: iemAudiolinkId,
+			} as Partial<MobileDevice>)
+			this.instance.log('info', `Copied IEM Mix from ${sourceMtUid} to ${targetMtUid}`)
+		} catch (error) {
+			this.instance.log('error', `Copy IEM Mix: Failed to assign Audio Link: ${error}`)
+		}
 	}
 }

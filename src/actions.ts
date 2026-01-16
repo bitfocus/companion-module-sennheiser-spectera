@@ -17,6 +17,8 @@ import {
 	TxPower,
 	MicLineSelection,
 	MicLowCutHzSEK,
+	IemAudiolinkMode,
+	MicAudiolinkMode,
 } from './types.js'
 import { getChoicesFromEnum, getMobileDeviceChoices } from './utils.js'
 
@@ -658,6 +660,141 @@ export function UpdateActions(self: SpecteraInstance): void {
 					micTestToneLevel: level,
 				} as Partial<MobileDevice>,
 			)
+		},
+	}
+
+	actions['routeAudioInputToMobileDevice'] = {
+		name: 'Audio IO - Route Input to Mobile Device',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				choices: mobileDeviceChoices,
+			},
+			{
+				type: 'dropdown',
+				label: 'Audio Input',
+				choices: Array.from(self.state.audioInputs.values()).map((i) => ({
+					id: i.inputId,
+					label: i.name || `Input ${i.inputId + 1}`,
+				})),
+				default: 0,
+				id: 'inputId',
+			},
+			{
+				type: 'dropdown',
+				label: 'Link Mode (if creating new link)',
+				choices: getChoicesFromEnum(IemAudiolinkMode),
+				default: IemAudiolinkMode.LIVE as unknown as number,
+				id: 'modeId',
+			},
+		],
+		description: 'Route an Audio Input to a Mobile Device (IEM). ',
+		callback: async (action) => {
+			if (!self.api) return
+			const mtUid = Number(action.options.mtUid)
+			const inputId = Number(action.options.inputId)
+			const modeId = Number(action.options.modeId)
+
+			await self.api.routeAudioInputToMobileDevice(inputId, mtUid, modeId)
+		},
+	}
+
+	actions['routeMobileDeviceToAudioOutput'] = {
+		name: 'Audio IO - Route Mobile Device to Output',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				choices: mobileDeviceChoices,
+			},
+			{
+				type: 'dropdown',
+				label: 'Audio Output',
+				choices: Array.from(self.state.audioOutputs.values()).map((o) => ({
+					id: o.outputId,
+					label: `Output ${o.outputId + 1}`,
+				})),
+				default: 0,
+				id: 'outputId',
+			},
+			{
+				type: 'dropdown',
+				label: 'Link Mode (if creating new link)',
+				choices: getChoicesFromEnum(MicAudiolinkMode),
+				default: MicAudiolinkMode.LIVE,
+				id: 'modeId',
+			},
+		],
+		description: 'Route a Mobile Device (Mic) to an Audio Output. ',
+		callback: async (action) => {
+			if (!self.api) return
+			const mtUid = Number(action.options.mtUid)
+			const outputId = Number(action.options.outputId)
+			const modeId = Number(action.options.modeId)
+			await self.api.routeMobileDeviceToAudioOutput(mtUid, outputId, modeId)
+		},
+	}
+
+	actions['copyMobileDeviceSettings'] = {
+		name: 'Mobile Device - Copy Settings',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Source Mobile Device',
+				id: 'sourceMtUid',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				choices: mobileDeviceChoices,
+			},
+			{
+				type: 'dropdown',
+				label: 'Target Mobile Device',
+				id: 'targetMtUid',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				choices: mobileDeviceChoices,
+			},
+		],
+		description:
+			'Copy settings from one Mobile Device to another. Copies common settings, and type-specific settings if devices match.',
+		callback: async (action) => {
+			if (!self.api) return
+			const sourceMtUid = Number(action.options.sourceMtUid)
+			const targetMtUid = Number(action.options.targetMtUid)
+
+			await self.api.copyMobileDeviceSettings(sourceMtUid, targetMtUid)
+		},
+	}
+
+	actions['copyIemMix'] = {
+		name: 'Audio IO - Copy IEM Mix',
+
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Source Mobile Device',
+				id: 'sourceMtUid',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				choices: mobileDeviceChoices,
+			},
+			{
+				type: 'dropdown',
+				label: 'Target Mobile Device',
+				id: 'targetMtUid',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				choices: mobileDeviceChoices,
+			},
+		],
+		description: 'Copy the IEM Mix (Audio Link) from one Mobile Device to another.',
+		callback: async (action) => {
+			if (!self.api) return
+			const sourceMtUid = Number(action.options.sourceMtUid)
+			const targetMtUid = Number(action.options.targetMtUid)
+
+			await self.api.copyIemMix(sourceMtUid, targetMtUid)
 		},
 	}
 
