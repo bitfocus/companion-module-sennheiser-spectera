@@ -20,7 +20,7 @@ import {
 	IemAudiolinkMode,
 	MicAudiolinkMode,
 } from './types.js'
-import { getChoicesFromEnum, getMobileDeviceChoices } from './utils.js'
+import { getAudioLinkChoices, getChoicesFromEnum, getMobileDeviceChoices } from './utils.js'
 
 export function UpdateActions(self: SpecteraInstance): void {
 	const actions: CompanionActionDefinitions = {}
@@ -777,22 +777,19 @@ export function UpdateActions(self: SpecteraInstance): void {
 				type: 'dropdown',
 				label: 'Mobile Device',
 				id: 'mtUid',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
-				choices: mobileDeviceChoices,
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				choices: sekMobileDeviceChoices,
 			},
 			{
 				type: 'dropdown',
 				label: 'Audio Input',
-				choices: Array.from(self.state.audioInputs.values()).map((i) => ({
-					id: i.inputId,
-					label: i.name || `Input ${i.inputId + 1}`,
-				})),
+				choices: getAudioLinkChoices(self.state),
 				default: 0,
 				id: 'inputId',
 			},
 			{
 				type: 'dropdown',
-				label: 'Link Mode (if creating new link)',
+				label: 'Link Mode',
 				choices: getChoicesFromEnum(IemAudiolinkMode),
 				default: IemAudiolinkMode.LIVE as unknown as number,
 				id: 'modeId',
@@ -804,7 +801,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			const mtUid = Number(action.options.mtUid)
 			const inputId = Number(action.options.inputId)
 			const modeId = Number(action.options.modeId)
-
+			console.log(mtUid, inputId, modeId)
 			await self.api.routeAudioInputToMobileDevice(inputId, mtUid, modeId)
 		},
 	}
@@ -831,7 +828,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			},
 			{
 				type: 'dropdown',
-				label: 'Link Mode (if creating new link)',
+				label: 'Link Mode',
 				choices: getChoicesFromEnum(MicAudiolinkMode),
 				default: MicAudiolinkMode.LIVE,
 				id: 'modeId',

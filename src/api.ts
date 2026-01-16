@@ -818,7 +818,7 @@ export class SpecteraApi extends EventEmitter {
 
 		let audiolinkId = audioInput.iemAudiolinkId
 
-		if (!audiolinkId) {
+		if (audiolinkId < 0) {
 			// Create new Audio Link
 			if (mobileDevice.rfChannelId === undefined) {
 				this.instance.log('warn', 'Audio Routing: Mobile Device has no RF Channel assigned')
