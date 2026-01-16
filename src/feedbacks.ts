@@ -947,9 +947,9 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			},
 			{
 				type: 'textinput',
-				label: 'Volume (0-100)',
+				label: 'Volume (-100 to 27.5)',
 				id: 'volume',
-				default: '50',
+				default: '-20',
 			},
 		],
 		callback: async (feedback) => {
@@ -1011,7 +1011,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				type: 'textinput',
 				label: 'Gain (dB)',
 				id: 'gain',
-				default: '0',
+				default: '12',
 			},
 		],
 		callback: async (feedback) => {

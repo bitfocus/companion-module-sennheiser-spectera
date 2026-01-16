@@ -444,23 +444,62 @@ export function UpdateActions(self: SpecteraInstance): void {
 				choices: sekMobileDeviceChoices,
 			},
 			{
+				type: 'dropdown',
+				label: 'Action',
+				choices: [
+					{ id: 'set', label: 'Set' },
+					{ id: 'adjust', label: 'Adjust' },
+				],
+				default: 'set',
+				id: 'action',
+			},
+			{
 				type: 'textinput',
-				label: 'Volume (0-100)',
-				default: '50',
+				label: 'Set Volume (-100 to 27.5)',
+				default: '-20',
 				id: 'volume',
 				useVariables: true,
+				isVisibleExpression: '$(options:action) === "set"',
+			},
+			{
+				type: 'textinput',
+				label: 'Adjustment Amount',
+				default: '0.5',
+				id: 'adjustment',
+				useVariables: true,
+				isVisibleExpression: '$(options:action) === "adjust"',
 			},
 		],
 		description: 'Set Headphone Volume for a SEK Device',
 		callback: async (action) => {
 			if (!self.api) return
-			const volume = Number(action.options.volume)
-			await self.api.setMobileDevice(
-				action.options.mtUid as number,
-				{
-					headphoneVolume: volume,
-				} as Partial<MobileDevice>,
-			)
+			let volume = Number(action.options.volume)
+			const mtUid = action.options.mtUid as number
+			const device = self.state.mobileDevices.get(mtUid)
+
+			if (device && device.type === MtType.SEK) {
+				if (action.options.action === 'adjust') {
+					const prevVolume = device.headphoneVolume ?? 0
+					volume = prevVolume + Number(action.options.adjustment)
+				} else {
+					volume = Number(action.options.volume)
+				}
+
+				if (volume < -100) volume = -100
+				if (volume > 27.5) volume = 27.5
+				if (device.headphoneVolumeMax !== undefined && volume > device.headphoneVolumeMax) {
+					volume = device.headphoneVolumeMax
+				}
+				if (device.headphoneVolumeMin !== undefined && volume < device.headphoneVolumeMin) {
+					volume = device.headphoneVolumeMin
+				}
+				await self.api.setMobileDevice(
+					action.options.mtUid as number,
+					{
+						headphoneVolume: volume,
+					} as Partial<MobileDevice>,
+				)
+			}
 		},
 	}
 
@@ -475,23 +514,54 @@ export function UpdateActions(self: SpecteraInstance): void {
 				choices: sekMobileDeviceChoices,
 			},
 			{
+				type: 'dropdown',
+				label: 'Action',
+				choices: [
+					{ id: 'set', label: 'Set' },
+					{ id: 'adjust', label: 'Adjust' },
+				],
+				default: 'set',
+				id: 'action',
+			},
+			{
 				type: 'textinput',
-				label: 'Balance (-100 to 100)',
+				label: 'Set Balance (-100 to 100)',
 				default: '0',
 				id: 'balance',
 				useVariables: true,
+				isVisibleExpression: '$(options:action) === "set"',
+			},
+			{
+				type: 'textinput',
+				label: 'Adjustment Amount',
+				default: '1',
+				id: 'adjustment',
+				useVariables: true,
+				isVisibleExpression: '$(options:action) === "adjust"',
 			},
 		],
 		description: 'Set Headphone Balance for a SEK Device',
 		callback: async (action) => {
 			if (!self.api) return
-			const balance = Number(action.options.balance)
-			await self.api.setMobileDevice(
-				action.options.mtUid as number,
-				{
-					headphoneBalance: balance,
-				} as Partial<MobileDevice>,
-			)
+			let balance = Number(action.options.balance)
+			const device = self.state.mobileDevices.get(action.options.mtUid as number)
+
+			if (device && device.type === MtType.SEK) {
+				if (action.options.action === 'adjust') {
+					const prevBalance = device?.headphoneBalance ?? 0
+					balance = prevBalance + Number(action.options.adjustment)
+				} else {
+					balance = Number(action.options.balance)
+				}
+				if (balance < -100) balance = -100
+				if (balance > 100) balance = 100
+				await self.api.setMobileDevice(
+					action.options.mtUid as number,
+					{
+						headphoneBalance: balance,
+					} as Partial<MobileDevice>,
+				)
+			}
 		},
 	}
 
@@ -506,23 +576,60 @@ export function UpdateActions(self: SpecteraInstance): void {
 				choices: mobileDeviceChoices,
 			},
 			{
+				type: 'dropdown',
+				label: 'Action',
+				choices: [
+					{ id: 'set', label: 'Set' },
+					{ id: 'adjust', label: 'Adjust' },
+				],
+				default: 'set',
+				id: 'action',
+			},
+			{
 				type: 'textinput',
-				label: 'Gain (dB)',
-				default: '0',
+				label: 'Set Gain (dB)',
+				default: '12',
 				id: 'gain',
 				useVariables: true,
+				isVisibleExpression: '$(options:action) === "set"',
+			},
+			{
+				type: 'textinput',
+				label: 'Adjustment Amount (dB)',
+				default: '12',
+				id: 'adjustment',
+				useVariables: true,
+				isVisibleExpression: '$(options:action) === "adjust"',
 			},
 		],
 		description: 'Set Mic Preamp Gain for a Mobile Device',
 		callback: async (action) => {
 			if (!self.api) return
-			const gain = Number(action.options.gain)
-			await self.api.setMobileDevice(
-				action.options.mtUid as number,
-				{
-					micPreampGain: gain,
-				} as Partial<MobileDevice>,
-			)
+			let gain = Number(action.options.gain)
+			const mtUid = action.options.mtUid as number
+
+			const device = self.state.mobileDevices.get(mtUid)
+			if (device) {
+				if (action.options.action === 'adjust') {
+					const prevGain = device?.micPreampGain ?? 0
+					gain = prevGain + Number(action.options.adjustment)
+				} else {
+					gain = Number(action.options.gain)
+				}
+				if (device.type === MtType.SEK) {
+					// SEK: Min -6, Max 42
+					if (gain < -6) gain = -6
+					if (gain > 42) gain = 42
+				} else if (device.type === MtType.SKM) {
+					// SKM: Min -10, Max 42
+					if (gain < -10) gain = -10
+					if (gain > 42) gain = 42
+				}
+			}
+
+			await self.api.setMobileDevice(mtUid, {
+				micPreampGain: gain,
+			} as Partial<MobileDevice>)
 		},
 	}
 
@@ -664,7 +771,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	}
 
 	actions['routeAudioInputToMobileDevice'] = {
-		name: 'Audio IO - Route Input to Mobile Device',
+		name: 'Audio I/O - Route Input to Mobile Device',
 		options: [
 			{
 				type: 'dropdown',
@@ -703,7 +810,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	}
 
 	actions['routeMobileDeviceToAudioOutput'] = {
-		name: 'Audio IO - Route Mobile Device to Output',
+		name: 'Audio I/O - Route Mobile Device to Output',
 		options: [
 			{
 				type: 'dropdown',
@@ -741,7 +848,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	}
 
 	actions['copyMobileDeviceSettings'] = {
-		name: 'Mobile Device - Copy Settings',
+		name: 'Mobile Device - Copy All Settings',
 		options: [
 			{
 				type: 'dropdown',
@@ -758,8 +865,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 				choices: mobileDeviceChoices,
 			},
 		],
-		description:
-			'Copy settings from one Mobile Device to another. Copies common settings, and type-specific settings if devices match.',
+		description: 'Copy all shared settings from one Mobile Device to another.',
 		callback: async (action) => {
 			if (!self.api) return
 			const sourceMtUid = Number(action.options.sourceMtUid)
@@ -770,7 +876,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	}
 
 	actions['copyIemMix'] = {
-		name: 'Audio IO - Copy IEM Mix',
+		name: 'Audio I/O - Copy IEM Mix',
 
 		options: [
 			{
