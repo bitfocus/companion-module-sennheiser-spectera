@@ -14,6 +14,9 @@ import type {
 	BaseStationState,
 	BaseStationIdentity,
 	AudioLevels,
+	InterfaceStatusAudioNetwork,
+	InterfaceStatusMadi,
+	InterfaceStatusWordclock,
 } from './types.js'
 import { PsuStatus as PsuStatusEnum, TempStatus as TempStatusEnum } from './types.js'
 
@@ -31,6 +34,10 @@ export class SpecteraState {
 		fans: {},
 	}
 	public basestation: BaseStationInfo = {}
+	public audioNetwork?: InterfaceStatusAudioNetwork
+	public madi1?: InterfaceStatusMadi
+	public madi2?: InterfaceStatusMadi
+	public wordclock?: InterfaceStatusWordclock
 
 	public updateAudioInput(input: AudioInput): void {
 		this.audioInputs.set(input.inputId, input)
@@ -82,6 +89,22 @@ export class SpecteraState {
 
 	public updateAudioLevels(levels: AudioLevels): void {
 		this.audioLevels = levels
+	}
+
+	public updateAudioNetwork(status: InterfaceStatusAudioNetwork): void {
+		this.audioNetwork = status
+	}
+
+	public updateMadi1(status: InterfaceStatusMadi): void {
+		this.madi1 = status
+	}
+
+	public updateMadi2(status: InterfaceStatusMadi): void {
+		this.madi2 = status
+	}
+
+	public updateWordclock(status: InterfaceStatusWordclock): void {
+		this.wordclock = status
 	}
 
 	public removeMobileDevice(mtUid: number): void {

@@ -13,6 +13,15 @@ import type {
 	BaseStationSite,
 } from './types.js'
 import { MtType, RfState, RFChannels, RfStateStartup, PsuStatus, MicLowCutHzSEK, MicLowCutHzSKM } from './types.js'
+import {
+	StateMap,
+	AudioNetworkStateMap,
+	MadiStateMap,
+	MadiInputStateMap,
+	MadiOutputStateMap,
+	WordclockInputStateMap,
+	WordclockOutputStateMap,
+} from './state_maps.js'
 
 const rfStateStartupLabels: Record<RfStateStartup, string> = {
 	[RfStateStartup.Active]: 'Active',
@@ -28,6 +37,35 @@ const psuStatusLabels: Record<PsuStatus, string> = {
 
 function sanitizeName(name: string): string {
 	return name.replace(/[^a-zA-Z0-9_-]/g, '_')
+}
+
+function addVariablesFromMap<T>(
+	variables: { variableId: string; name: string }[],
+	map: StateMap<T>,
+	prefix: string,
+	labelPrefix: string,
+): void {
+	for (const key of Object.keys(map) as (keyof T)[]) {
+		const entry = map[key]
+		if (entry?.variable) {
+			variables.push({
+				variableId: `${prefix}${entry.variable}`,
+				name: `${labelPrefix} - ${String(key)}`,
+			})
+		}
+	}
+}
+
+function getVariablesFromMap<T>(map: StateMap<T>, state: T, prefix: string): Record<string, any> {
+	const values: Record<string, any> = {}
+	for (const key of Object.keys(map) as (keyof T)[]) {
+		const entry = map[key]
+		if (entry?.variable && entry.valueFn) {
+			const val = entry.valueFn(state[key], state)
+			values[`${prefix}${entry.variable}`] = val
+		}
+	}
+	return values
 }
 
 export function UpdateVariableDefinitions(self: SpecteraInstance): void {
@@ -49,7 +87,25 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 		{ variableId: 'health_fan_1_error', name: 'Fan 1 - Error State' },
 		{ variableId: 'health_fan_2_error', name: 'Fan 2 - Error State' },
 		{ variableId: 'health_fan_3_error', name: 'Fan 3 - Error State' },
+		{ variableId: 'health_fan_3_error', name: 'Fan 3 - Error State' },
 	]
+
+	// Dante I/O
+	addVariablesFromMap(variables, AudioNetworkStateMap, 'dante_', 'Dante I/O')
+
+	// MADI 1
+	addVariablesFromMap(variables, MadiStateMap, 'madi_1_', 'MADI 1')
+	addVariablesFromMap(variables, MadiInputStateMap, 'madi_1_', 'MADI 1 Input')
+	addVariablesFromMap(variables, MadiOutputStateMap, 'madi_1_', 'MADI 1 Output')
+
+	// MADI 2
+	addVariablesFromMap(variables, MadiStateMap, 'madi_2_', 'MADI 2')
+	addVariablesFromMap(variables, MadiInputStateMap, 'madi_2_', 'MADI 2 Input')
+	addVariablesFromMap(variables, MadiOutputStateMap, 'madi_2_', 'MADI 2 Output')
+
+	// Wordclock
+	addVariablesFromMap(variables, WordclockInputStateMap, 'wordclock_', 'Wordclock Input')
+	addVariablesFromMap(variables, WordclockOutputStateMap, 'wordclock_', 'Wordclock Output')
 
 	// Audio Inputs
 	for (const input of self.state.audioInputs.values()) {
@@ -569,6 +625,30 @@ export function UpdateVariableValues(self: SpecteraInstance): void {
 	for (const [fanId, fanState] of Object.entries(self.state.health.fans)) {
 		if (fanState) {
 			values = { ...values, ...getFanVariables(fanId, fanState) }
+		}
+	}
+
+	if (self.state.audioNetwork) {
+		values = { ...values, ...getVariablesFromMap(AudioNetworkStateMap, self.state.audioNetwork, 'dante_') }
+	}
+	if (self.state.madi1) {
+		values = { ...values, ...getVariablesFromMap(MadiStateMap, self.state.madi1, 'madi_1_') }
+		values = { ...values, ...getVariablesFromMap(MadiInputStateMap, self.state.madi1.inputStatus, 'madi_1_') }
+		values = { ...values, ...getVariablesFromMap(MadiOutputStateMap, self.state.madi1.outputStatus, 'madi_1_') }
+	}
+	if (self.state.madi2) {
+		values = { ...values, ...getVariablesFromMap(MadiStateMap, self.state.madi2, 'madi_2_') }
+		values = { ...values, ...getVariablesFromMap(MadiInputStateMap, self.state.madi2.inputStatus, 'madi_2_') }
+		values = { ...values, ...getVariablesFromMap(MadiOutputStateMap, self.state.madi2.outputStatus, 'madi_2_') }
+	}
+	if (self.state.wordclock) {
+		values = {
+			...values,
+			...getVariablesFromMap(WordclockInputStateMap, self.state.wordclock.inputStatus, 'wordclock_'),
+		}
+		values = {
+			...values,
+			...getVariablesFromMap(WordclockOutputStateMap, self.state.wordclock.outputStatus, 'wordclock_'),
 		}
 	}
 

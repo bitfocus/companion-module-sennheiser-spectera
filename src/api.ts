@@ -15,6 +15,9 @@ import type {
 	BaseStationIdentity,
 	AudioLevels,
 	AudioLevel,
+	InterfaceStatusAudioNetwork,
+	InterfaceStatusMadi,
+	InterfaceStatusWordclock,
 } from './types.js'
 import { AudiolinkModeId, MtType } from './types.js'
 import type { SpecteraState } from './state.js'
@@ -36,6 +39,12 @@ import {
 	BaseStationIdentityMap,
 	BaseStationStateMap,
 	BaseStationSiteMap,
+	AudioNetworkStateMap,
+	MadiStateMap,
+	MadiInputStateMap,
+	MadiOutputStateMap,
+	WordclockInputStateMap,
+	WordclockOutputStateMap,
 } from './state_maps.js'
 
 export class SpecteraApi extends EventEmitter {
@@ -137,6 +146,10 @@ export class SpecteraApi extends EventEmitter {
 				'/api/device/state',
 				'/api/device/site',
 				'/api/audio/levels',
+				'/api/audio/interface/audionetwork/status',
+				'/api/audio/interface/madi1/status',
+				'/api/audio/interface/madi2/status',
+				'/api/audio/interface/wordclock/status',
 			]).catch((err) => {
 				this.instance.log('error', `Failed to set subscription paths: ${err.message}`)
 			})
@@ -162,6 +175,10 @@ export class SpecteraApi extends EventEmitter {
 				site,
 				audioLinks,
 				audioLevels,
+				audioNetwork,
+				madi1,
+				madi2,
+				wordclock,
 			] = await Promise.all([
 				this.getAudioInputs(),
 				this.getAudioOutputs(),
@@ -178,6 +195,10 @@ export class SpecteraApi extends EventEmitter {
 				this.getBaseStationSite(),
 				this.getAudioLinks(),
 				this.getAudioLevels(),
+				this.getAudioNetworkStatus(),
+				this.getMadiStatus('madi1'),
+				this.getMadiStatus('madi2'),
+				this.getWordclockStatus(),
 			])
 
 			inputs.forEach((i) => this.state.updateAudioInput(i))
@@ -195,6 +216,11 @@ export class SpecteraApi extends EventEmitter {
 			this.state.updateBaseStationSite(site)
 			audioLinks.forEach((l) => this.state.updateAudioLink(l))
 			this.state.updateAudioLevels(audioLevels)
+
+			this.state.updateAudioNetwork(audioNetwork)
+			this.state.updateMadi1(madi1)
+			this.state.updateMadi2(madi2)
+			this.state.updateWordclock(wordclock)
 
 			UpdateVariableDefinitions(this.instance)
 			UpdateVariableValues(this.instance)
@@ -505,6 +531,77 @@ export class SpecteraApi extends EventEmitter {
 				this.handleStateUpdate('', oldState, value, BaseStationSiteMap, changedVariables, feedbacksToCheck)
 			} else if (key === '/api/audio/levels') {
 				this.processAudioLevels(value as AudioLevels, changedVariables)
+			} else if (key === '/api/audio/interface/audionetwork/status') {
+				const oldState = this.state.audioNetwork ? { ...this.state.audioNetwork } : undefined
+				this.state.updateAudioNetwork(value)
+				this.handleStateUpdate('dante_', oldState, value, AudioNetworkStateMap, changedVariables, feedbacksToCheck)
+			} else if (key === '/api/audio/interface/madi1/status') {
+				const oldState = this.state.madi1 ? { ...this.state.madi1 } : undefined
+				this.state.updateMadi1(value)
+				// Handle top level
+				this.handleStateUpdate('madi_1_', oldState, value, MadiStateMap, changedVariables, feedbacksToCheck)
+				// Handle input status
+				this.handleStateUpdate(
+					'madi_1_',
+					oldState?.inputStatus,
+					value.inputStatus,
+					MadiInputStateMap,
+					changedVariables,
+					feedbacksToCheck,
+				)
+				// Handle output status
+				this.handleStateUpdate(
+					'madi_1_',
+					oldState?.outputStatus,
+					value.outputStatus,
+					MadiOutputStateMap,
+					changedVariables,
+					feedbacksToCheck,
+				)
+			} else if (key === '/api/audio/interface/madi2/status') {
+				const oldState = this.state.madi2 ? { ...this.state.madi2 } : undefined
+				this.state.updateMadi2(value)
+				// Handle top level
+				this.handleStateUpdate('madi_2_', oldState, value, MadiStateMap, changedVariables, feedbacksToCheck)
+				// Handle input status
+				this.handleStateUpdate(
+					'madi_2_',
+					oldState?.inputStatus,
+					value.inputStatus,
+					MadiInputStateMap,
+					changedVariables,
+					feedbacksToCheck,
+				)
+				// Handle output status
+				this.handleStateUpdate(
+					'madi_2_',
+					oldState?.outputStatus,
+					value.outputStatus,
+					MadiOutputStateMap,
+					changedVariables,
+					feedbacksToCheck,
+				)
+			} else if (key === '/api/audio/interface/wordclock/status') {
+				const oldState = this.state.wordclock ? { ...this.state.wordclock } : undefined
+				this.state.updateWordclock(value)
+				// Handle input status
+				this.handleStateUpdate(
+					'wordclock_',
+					oldState?.inputStatus,
+					value.inputStatus,
+					WordclockInputStateMap,
+					changedVariables,
+					feedbacksToCheck,
+				)
+				// Handle output status
+				this.handleStateUpdate(
+					'wordclock_',
+					oldState?.outputStatus,
+					value.outputStatus,
+					WordclockOutputStateMap,
+					changedVariables,
+					feedbacksToCheck,
+				)
 			}
 		}
 
@@ -644,6 +741,18 @@ export class SpecteraApi extends EventEmitter {
 
 	async getAudioLevels(): Promise<AudioLevels> {
 		return this.sendRequest<AudioLevels>('GET', '/audio/levels')
+	}
+
+	async getAudioNetworkStatus(): Promise<InterfaceStatusAudioNetwork> {
+		return this.sendRequest<InterfaceStatusAudioNetwork>('GET', '/audio/interface/audionetwork/status')
+	}
+
+	async getMadiStatus(interfaceId: 'madi1' | 'madi2'): Promise<InterfaceStatusMadi> {
+		return this.sendRequest<InterfaceStatusMadi>('GET', `/audio/interface/${interfaceId}/status`)
+	}
+
+	async getWordclockStatus(): Promise<InterfaceStatusWordclock> {
+		return this.sendRequest<InterfaceStatusWordclock>('GET', '/audio/interface/wordclock/status')
 	}
 
 	async createAudioLink(config: { modeId: number; rfChannelId: number }): Promise<number> {

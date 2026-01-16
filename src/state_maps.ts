@@ -13,6 +13,9 @@ import type {
 	SEKDevice,
 	SKMDevice,
 	AudioLink,
+	InterfaceStatusAudioNetwork,
+	InterfaceStatusMadi,
+	InterfaceStatusWordclock,
 } from './types.js'
 import {
 	RfState,
@@ -273,4 +276,51 @@ export const AudioLinkStateMap: StateMap<AudioLink> = {
 	audiolinkId: { variable: 'id', valueFn: (v: unknown): any => v },
 	rfChannelId: { variable: 'rf_channel_id', valueFn: (v: unknown): any => v },
 	modeId: { variable: 'mode', valueFn: toAudioLinkModeLabel },
+}
+
+export const AudioNetworkStateMap: StateMap<InterfaceStatusAudioNetwork> = {
+	status: { feedback: 'audioInterfaceStatus', variable: 'status', valueFn: (v: unknown): any => v },
+	sampleRateHz: { variable: 'sample_rate', valueFn: (v: unknown): any => v },
+	mute: { variable: 'mute', valueFn: (v: unknown): any => v },
+}
+
+export const MadiStateMap: StateMap<Pick<InterfaceStatusMadi, 'moduleType'>> = {
+	moduleType: { variable: 'module_type', valueFn: (v: unknown): any => v },
+}
+
+export const MadiInputStateMap: StateMap<InterfaceStatusMadi['inputStatus']> = {
+	status: { feedback: 'audioInterfaceStatus', variable: 'input_status', valueFn: (v: unknown): any => v },
+	sampleRateHz: { variable: 'input_sample_rate', valueFn: (v: unknown): any => v },
+	mute: { variable: 'input_mute', valueFn: (v: unknown): any => v },
+	channels: { variable: 'input_channels', valueFn: (v: unknown): any => v },
+	fewerChannelsThanUsed: { variable: 'input_fewer_channels_than_used', valueFn: (v: unknown): any => v },
+}
+
+export const MadiOutputStateMap: StateMap<InterfaceStatusMadi['outputStatus']> = {
+	clockSource: { variable: 'output_clock_source', valueFn: (v: unknown): any => v },
+	clockSourceStatus: {
+		feedback: 'audioInterfaceStatus',
+		variable: 'output_clock_source_status',
+		valueFn: (v: unknown): any => v,
+	},
+	fallbackToInternalClockActive: { variable: 'output_fallback_active', valueFn: (v: unknown): any => v },
+	sampleRateHz: { variable: 'output_sample_rate', valueFn: (v: unknown): any => v },
+	mute: { variable: 'output_mute', valueFn: (v: unknown): any => v },
+	channels: { variable: 'output_channels', valueFn: (v: unknown): any => v },
+}
+
+export const WordclockInputStateMap: StateMap<InterfaceStatusWordclock['inputStatus']> = {
+	status: { feedback: 'audioInterfaceStatus', variable: 'input_status', valueFn: (v: unknown): any => v },
+	sampleRateHz: { variable: 'input_sample_rate', valueFn: (v: unknown): any => v },
+}
+
+export const WordclockOutputStateMap: StateMap<InterfaceStatusWordclock['outputStatus']> = {
+	clockSource: { variable: 'output_clock_source', valueFn: (v: unknown): any => v },
+	clockSourceStatus: {
+		feedback: 'audioInterfaceStatus',
+		variable: 'output_clock_source_status',
+		valueFn: (v: unknown): any => v,
+	},
+	fallbackToInternalClockActive: { variable: 'output_fallback_active', valueFn: (v: unknown): any => v },
+	sampleRateHz: { variable: 'output_sample_rate', valueFn: (v: unknown): any => v },
 }

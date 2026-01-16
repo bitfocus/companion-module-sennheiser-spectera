@@ -1,7 +1,15 @@
 import { CompanionPresetDefinitions } from '@companion-module/base'
 import { SpecteraInstance } from './main.js'
 import { Color } from './utils.js'
-import { RFChannels, AntennaPortId, BaseStationStatus, DeviceStatus, RfState, MtType } from './types.js'
+import {
+	RFChannels,
+	AntennaPortId,
+	BaseStationStatus,
+	DeviceStatus,
+	RfState,
+	MtType,
+	InterfaceInputStatus,
+} from './types.js'
 
 function sanitizeName(name: string): string {
 	return name.replace(/[^a-zA-Z0-9_-]/g, '_')
@@ -771,5 +779,388 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			feedbacks: [],
 		}
 	}
+	// Audio Interfaces
+	// Audio Network (Dante)
+	presets['audioNetworkHeader'] = {
+		type: 'text',
+		category: 'Audio Interfaces',
+		name: 'Audio Network (Dante)',
+		text: '',
+	}
+	presets['audioNetworkStatus'] = {
+		type: 'button',
+		category: 'Audio Interfaces',
+		name: 'Audio Network Status',
+		style: {
+			bgcolor: Color.Black,
+			color: Color.White,
+			text: 'DANTE I/O\\n\\n$(spectera:dante_status)\\n$(spectera:dante_sample_rate)Hz',
+			size: 10,
+			show_topbar: false,
+		},
+		steps: [
+			{
+				down: [],
+				up: [],
+			},
+		],
+		feedbacks: [
+			{
+				feedbackId: 'audioInterfaceStatus',
+				options: {
+					interface: 'audioNetwork',
+					status: InterfaceInputStatus.Locked,
+				},
+				style: {
+					bgcolor: Color.SpecteraGreen,
+				},
+			},
+			{
+				feedbackId: 'audioInterfaceStatus',
+				options: {
+					interface: 'audioNetwork',
+					status: InterfaceInputStatus.NoToggle,
+				},
+				style: {
+					bgcolor: Color.SpecteraRed,
+				},
+			},
+			{
+				feedbackId: 'audioInterfaceStatus',
+				options: {
+					interface: 'audioNetwork',
+					status: InterfaceInputStatus.Unlocked,
+				},
+				style: {
+					bgcolor: Color.SpecteraRed,
+				},
+			},
+		],
+	}
+
+	// MADI 1
+	presets['madi1Header'] = {
+		type: 'text',
+		category: 'Audio Interfaces',
+		name: 'MADI 1',
+		text: '',
+	}
+	presets['madi1InputStatus'] = {
+		type: 'button',
+		category: 'Audio Interfaces',
+		name: 'MADI 1 Input Status',
+		style: {
+			bgcolor: Color.Black,
+			color: Color.White,
+			text: 'MADI 1 IN\\n\\n$(spectera:madi_1_input_status)\\n$(spectera:madi_1_input_sample_rate)Hz',
+			size: 10,
+			show_topbar: false,
+		},
+		steps: [
+			{
+				down: [],
+				up: [],
+			},
+		],
+		feedbacks: [
+			{
+				feedbackId: 'audioInterfaceStatus',
+				options: {
+					interface: 'madi1In',
+					status: InterfaceInputStatus.Locked,
+				},
+				style: {
+					bgcolor: Color.SpecteraGreen,
+				},
+			},
+			{
+				feedbackId: 'audioInterfaceStatus',
+				options: {
+					interface: 'madi1In',
+					status: InterfaceInputStatus.NoToggle,
+				},
+				style: {
+					bgcolor: Color.SpecteraRed,
+				},
+			},
+			{
+				feedbackId: 'audioInterfaceStatus',
+				options: {
+					interface: 'madi1In',
+					status: InterfaceInputStatus.Unlocked,
+				},
+				style: {
+					bgcolor: Color.SpecteraRed,
+				},
+			},
+		],
+	}
+	presets['madi1OutputStatus'] = {
+		type: 'button',
+		category: 'Audio Interfaces',
+		name: 'MADI 1 Output Status',
+		style: {
+			bgcolor: Color.Black,
+			color: Color.White,
+			text: 'MADI 1 OUT\\n\\n$(spectera:madi_1_output_clock_source_status)\\n$(spectera:madi_1_output_sample_rate)Hz',
+			size: 10,
+			show_topbar: false,
+		},
+		steps: [
+			{
+				down: [],
+				up: [],
+			},
+		],
+		feedbacks: [
+			{
+				feedbackId: 'audioInterfaceStatus',
+				options: {
+					interface: 'madi1Out',
+					status: InterfaceInputStatus.Locked,
+				},
+				style: {
+					bgcolor: Color.SpecteraGreen,
+				},
+			},
+			{
+				feedbackId: 'audioInterfaceStatus',
+				options: {
+					interface: 'madi1Out',
+					status: InterfaceInputStatus.NoToggle,
+				},
+				style: {
+					bgcolor: Color.SpecteraRed,
+				},
+			},
+			{
+				feedbackId: 'audioInterfaceStatus',
+				options: {
+					interface: 'madi1Out',
+					status: InterfaceInputStatus.Unlocked,
+				},
+				style: {
+					bgcolor: Color.SpecteraRed,
+				},
+			},
+		],
+	}
+
+	// MADI 2
+	presets['madi2Header'] = {
+		type: 'text',
+		category: 'Audio Interfaces',
+		name: 'MADI 2',
+		text: '',
+	}
+	presets['madi2InputStatus'] = {
+		type: 'button',
+		category: 'Audio Interfaces',
+		name: 'MADI 2 Input Status',
+		style: {
+			bgcolor: Color.Black,
+			color: Color.White,
+			text: 'MADI 2 IN\\n\\n$(spectera:madi_2_input_status)\\n$(spectera:madi_2_input_sample_rate)Hz',
+			size: 10,
+			show_topbar: false,
+		},
+		steps: [
+			{
+				down: [],
+				up: [],
+			},
+		],
+		feedbacks: [
+			{
+				feedbackId: 'audioInterfaceStatus',
+				options: {
+					interface: 'madi2In',
+					status: InterfaceInputStatus.Locked,
+				},
+				style: {
+					bgcolor: Color.SpecteraGreen,
+				},
+			},
+			{
+				feedbackId: 'audioInterfaceStatus',
+				options: {
+					interface: 'madi2In',
+					status: InterfaceInputStatus.NoToggle,
+				},
+				style: {
+					bgcolor: Color.SpecteraRed,
+				},
+			},
+			{
+				feedbackId: 'audioInterfaceStatus',
+				options: {
+					interface: 'madi2In',
+					status: InterfaceInputStatus.Unlocked,
+				},
+				style: {
+					bgcolor: Color.SpecteraRed,
+				},
+			},
+		],
+	}
+	presets['madi2OutputStatus'] = {
+		type: 'button',
+		category: 'Audio Interfaces',
+		name: 'MADI 2 Output Status',
+		style: {
+			bgcolor: Color.Black,
+			color: Color.White,
+			text: 'MADI 2 OUT\\n\\n$(spectera:madi_2_output_clock_source_status)\\n$(spectera:madi_2_output_sample_rate)Hz',
+			size: 10,
+			show_topbar: false,
+		},
+		steps: [
+			{
+				down: [],
+				up: [],
+			},
+		],
+		feedbacks: [
+			{
+				feedbackId: 'audioInterfaceStatus',
+				options: {
+					interface: 'madi2Out',
+					status: InterfaceInputStatus.Locked,
+				},
+				style: {
+					bgcolor: Color.SpecteraGreen,
+				},
+			},
+			{
+				feedbackId: 'audioInterfaceStatus',
+				options: {
+					interface: 'madi2Out',
+					status: InterfaceInputStatus.NoToggle,
+				},
+				style: {
+					bgcolor: Color.SpecteraRed,
+				},
+			},
+			{
+				feedbackId: 'audioInterfaceStatus',
+				options: {
+					interface: 'madi2Out',
+					status: InterfaceInputStatus.Unlocked,
+				},
+				style: {
+					bgcolor: Color.SpecteraRed,
+				},
+			},
+		],
+	}
+
+	// Wordclock
+	presets['wordclockHeader'] = {
+		type: 'text',
+		category: 'Audio Interfaces',
+		name: 'Wordclock',
+		text: '',
+	}
+	presets['wordclockInputStatus'] = {
+		type: 'button',
+		category: 'Audio Interfaces',
+		name: 'Wordclock Input Status',
+		style: {
+			bgcolor: Color.Black,
+			color: Color.White,
+			text: 'WC IN\\n\\n$(spectera:wordclock_input_status)\\n$(spectera:wordclock_input_sample_rate)Hz',
+			size: 10,
+			show_topbar: false,
+		},
+		steps: [
+			{
+				down: [],
+				up: [],
+			},
+		],
+		feedbacks: [
+			{
+				feedbackId: 'audioInterfaceStatus',
+				options: {
+					interface: 'wordclockIn',
+					status: InterfaceInputStatus.Locked,
+				},
+				style: {
+					bgcolor: Color.SpecteraGreen,
+				},
+			},
+			{
+				feedbackId: 'audioInterfaceStatus',
+				options: {
+					interface: 'wordclockIn',
+					status: InterfaceInputStatus.NoToggle,
+				},
+				style: {
+					bgcolor: Color.SpecteraRed,
+				},
+			},
+			{
+				feedbackId: 'audioInterfaceStatus',
+				options: {
+					interface: 'wordclockIn',
+					status: InterfaceInputStatus.Unlocked,
+				},
+				style: {
+					bgcolor: Color.SpecteraRed,
+				},
+			},
+		],
+	}
+	presets['wordclockOutputStatus'] = {
+		type: 'button',
+		category: 'Audio Interfaces',
+		name: 'Wordclock Output Status',
+		style: {
+			bgcolor: Color.Black,
+			color: Color.White,
+			text: 'WC OUT\\n\\n$(spectera:wordclock_output_clock_source_status)\\n$(spectera:wordclock_output_sample_rate)Hz',
+			size: 10,
+			show_topbar: false,
+		},
+		steps: [
+			{
+				down: [],
+				up: [],
+			},
+		],
+		feedbacks: [
+			{
+				feedbackId: 'audioInterfaceStatus',
+				options: {
+					interface: 'wordclockOut',
+					status: InterfaceInputStatus.Locked,
+				},
+				style: {
+					bgcolor: Color.SpecteraGreen,
+				},
+			},
+			{
+				feedbackId: 'audioInterfaceStatus',
+				options: {
+					interface: 'wordclockOut',
+					status: InterfaceInputStatus.NoToggle,
+				},
+				style: {
+					bgcolor: Color.SpecteraRed,
+				},
+			},
+			{
+				feedbackId: 'audioInterfaceStatus',
+				options: {
+					interface: 'wordclockOut',
+					status: InterfaceInputStatus.Unlocked,
+				},
+				style: {
+					bgcolor: Color.SpecteraRed,
+				},
+			},
+		],
+	}
+
 	self.setPresetDefinitions(presets)
 }

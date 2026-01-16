@@ -397,3 +397,73 @@ export interface BaseStationInfo {
 	state?: BaseStationState
 	site?: BaseStationSite
 }
+
+export enum InterfaceInputStatus {
+	NoToggle = 'NoToggle',
+	TooFast = 'TooFast',
+	Mismatch = 'Mismatch',
+	Unlocked = 'Unlocked',
+	Locked = 'Locked',
+	LoopThrough = 'LoopThrough',
+}
+
+export enum AudioNetworkType {
+	None = 'None',
+	Unknown = 'Unknown',
+	Dante = 'Dante',
+}
+
+export enum MadiModuleType {
+	None = 'None',
+	Unknown = 'Unknown',
+	Coax = 'Coax',
+	OpticalMultimode = 'OpticalMultimode',
+}
+
+export enum OutputClockSource {
+	Internal48kHz = 'Internal48kHz',
+	Internal96kHz = 'Internal96kHz',
+	WordclockIn = 'WordclockIn',
+	AudioNetwork = 'AudioNetwork',
+	Madi1In = 'Madi1In',
+	Madi2In = 'Madi2In',
+}
+
+export interface InterfaceStatusAudioNetwork {
+	audioNetworkType: AudioNetworkType
+	status: InterfaceInputStatus
+	sampleRateHz: number
+	mute: boolean
+}
+
+export interface InterfaceStatusMadi {
+	moduleType: MadiModuleType
+	inputStatus: {
+		status: InterfaceInputStatus
+		sampleRateHz: number
+		mute: boolean
+		channels: number
+		fewerChannelsThanUsed: boolean
+	}
+	outputStatus: {
+		clockSource: OutputClockSource
+		clockSourceStatus: InterfaceInputStatus
+		fallbackToInternalClockActive: boolean
+		sampleRateHz: number
+		mute: boolean
+		channels: number
+	}
+}
+
+export interface InterfaceStatusWordclock {
+	inputStatus: {
+		status: InterfaceInputStatus
+		sampleRateHz: number
+	}
+	outputStatus: {
+		clockSource: OutputClockSource
+		clockSourceStatus: InterfaceInputStatus
+		fallbackToInternalClockActive: boolean
+		sampleRateHz: number
+	}
+}

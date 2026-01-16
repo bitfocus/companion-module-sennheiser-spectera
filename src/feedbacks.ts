@@ -19,6 +19,7 @@ import {
 	MicLineSelection,
 	MicLineSelectionAuto,
 	MicLowCutHzSEK,
+	InterfaceInputStatus,
 } from './types.js'
 import { getChoicesFromEnum, getMobileDeviceChoices } from './utils.js'
 import { Color } from './utils.js'
@@ -1306,6 +1307,76 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			}
 
 			return false
+		},
+	}
+
+	feedbacks['audioInterfaceStatus'] = {
+		type: 'boolean',
+		name: 'Audio Interface - Status',
+		description: 'Audio Interface - Status',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Interface',
+				choices: [
+					{ label: 'Dante I/O', id: 'audioNetwork' },
+					{ label: 'MADI 1 Input', id: 'madi1In' },
+					{ label: 'MADI 1 Output', id: 'madi1Out' },
+					{ label: 'MADI 2 Input', id: 'madi2In' },
+					{ label: 'MADI 2 Output', id: 'madi2Out' },
+					{ label: 'Word Clock Input', id: 'wordclockIn' },
+					{ label: 'Word Clock Output', id: 'wordclockOut' },
+				],
+				default: 'audioNetwork',
+				id: 'interface',
+			},
+			{
+				type: 'dropdown',
+				label: 'Status',
+				choices: getChoicesFromEnum(InterfaceInputStatus),
+				default: InterfaceInputStatus.Locked,
+				id: 'status',
+			},
+		],
+		callback: async (feedback) => {
+			const interfaceId = feedback.options.interface as
+				| 'audioNetwork'
+				| 'madi1In'
+				| 'madi1Out'
+				| 'madi2In'
+				| 'madi2Out'
+				| 'wordclockIn'
+				| 'wordclockOut'
+			let status: InterfaceInputStatus | undefined
+
+			switch (interfaceId) {
+				case 'audioNetwork':
+					status = self.state.audioNetwork?.status
+					break
+				case 'madi1In':
+					status = self.state.madi1?.inputStatus.status
+					break
+				case 'madi1Out':
+					status = self.state.madi1?.outputStatus.clockSourceStatus
+					break
+				case 'madi2In':
+					status = self.state.madi2?.inputStatus.status
+					break
+				case 'madi2Out':
+					status = self.state.madi2?.outputStatus.clockSourceStatus
+					break
+				case 'wordclockIn':
+					status = self.state.wordclock?.inputStatus.status
+					break
+				case 'wordclockOut':
+					status = self.state.wordclock?.outputStatus.clockSourceStatus
+					break
+			}
+
+			return status === feedback.options.status
 		},
 	}
 
