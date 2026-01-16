@@ -37,6 +37,9 @@ export function getMobileDeviceChoices(state: SpecteraState, filterType?: MtType
 			choices.push({ id: device.mtUid, label: `${device.name} (${device.serial})` })
 		}
 	}
+
+	choices.sort((a, b) => a.label.localeCompare(b.label))
+
 	if (choices.length === 0) {
 		choices.push({ id: 0, label: 'No Devices Found' })
 	}

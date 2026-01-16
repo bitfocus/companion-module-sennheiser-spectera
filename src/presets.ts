@@ -458,7 +458,10 @@ export function UpdatePresets(self: SpecteraInstance): void {
 	}
 
 	//Mobile Devices
-	for (const device of self.state.mobileDevices.values()) {
+	const mobileDevices = [...self.state.mobileDevices.values()]
+	mobileDevices.sort((a, b) => a.name.localeCompare(b.name))
+
+	for (const device of mobileDevices) {
 		const name = sanitizeName(device.name)
 		const type = device.type
 		const serial = device.serial

@@ -365,7 +365,7 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 			},
 			{
 				variableId: `${deviceVariableId}_rssi`,
-				name: `${deviceVariableLabel} - RSSI`,
+				name: `${deviceVariableLabel} - RSSI (dBm)`,
 			},
 		)
 
