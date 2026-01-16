@@ -13,6 +13,7 @@ import type {
 	BaseStationSite,
 	BaseStationState,
 	BaseStationIdentity,
+	AudioLevels,
 } from './types.js'
 import { PsuStatus as PsuStatusEnum, TempStatus as TempStatusEnum } from './types.js'
 
@@ -23,6 +24,7 @@ export class SpecteraState {
 	public readonly antennas = new Map<string, Antenna>()
 	public readonly mobileDevices = new Map<number, MobileDevice>()
 	public readonly audioLinks = new Map<number, AudioLink>()
+	public audioLevels: AudioLevels = { updateCounter: 0 }
 	public health: HealthState = {
 		psu: { psu1: PsuStatusEnum.Unconnected, psu2: PsuStatusEnum.Unconnected },
 		temp: { value: TempStatusEnum.Normal },
@@ -76,6 +78,10 @@ export class SpecteraState {
 
 	public updateBaseStationSite(site: BaseStationSite): void {
 		this.basestation.site = site
+	}
+
+	public updateAudioLevels(levels: AudioLevels): void {
+		this.audioLevels = levels
 	}
 
 	public removeMobileDevice(mtUid: number): void {

@@ -614,8 +614,6 @@ export function UpdateActions(self: SpecteraInstance): void {
 		description: 'Set Mic/Line Selection for a SEK Device',
 		callback: async (action) => {
 			if (!self.api) return
-			// Assuming literal string 'Mic' | 'Line' | 'Auto'
-			// User request mentioned "micLineSelection?: string" in type definition
 			await self.api.setMobileDevice(
 				action.options.mtUid as number,
 				{

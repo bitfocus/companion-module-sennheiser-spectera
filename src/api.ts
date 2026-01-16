@@ -13,6 +13,8 @@ import type {
 	BaseStationSite,
 	BaseStationState,
 	BaseStationIdentity,
+	AudioLevels,
+	AudioLevel,
 } from './types.js'
 import type { SpecteraState } from './state.js'
 import { Agent, Dispatcher } from 'undici'
@@ -44,6 +46,7 @@ export class SpecteraApi extends EventEmitter {
 	private sessionUUID: string | null = null
 	private readonly dispatcher: Dispatcher
 	private variableCache: Record<string, string | number | boolean | undefined> = {}
+	private lastLevelUpdateTime = 0
 
 	constructor(instance: SpecteraInstance, state: SpecteraState, host: string, password: string) {
 		super()
@@ -132,6 +135,7 @@ export class SpecteraApi extends EventEmitter {
 				'/api/device/identity',
 				'/api/device/state',
 				'/api/device/site',
+				'/api/audio/levels',
 			]).catch((err) => {
 				this.instance.log('error', `Failed to set subscription paths: ${err.message}`)
 			})
@@ -159,6 +163,7 @@ export class SpecteraApi extends EventEmitter {
 				state,
 				site,
 				audioLinks,
+				audioLevels,
 			] = await Promise.all([
 				this.getAudioInputs(),
 				this.getAudioOutputs(),
@@ -174,6 +179,7 @@ export class SpecteraApi extends EventEmitter {
 				this.getBaseStationState(),
 				this.getBaseStationSite(),
 				this.getAudioLinks(),
+				this.getAudioLevels(),
 			])
 
 			inputs.forEach((i) => this.state.updateAudioInput(i))
@@ -190,6 +196,7 @@ export class SpecteraApi extends EventEmitter {
 			this.state.updateBaseStationState(state)
 			this.state.updateBaseStationSite(site)
 			audioLinks.forEach((l) => this.state.updateAudioLink(l))
+			this.state.updateAudioLevels(audioLevels)
 
 			UpdateVariableDefinitions(this.instance)
 			UpdateVariableValues(this.instance)
@@ -344,6 +351,43 @@ export class SpecteraApi extends EventEmitter {
 		}
 	}
 
+	private processAudioLevels(
+		levels: AudioLevels,
+		changedVariables: Record<string, string | number | boolean | undefined>,
+	): void {
+		this.state.updateAudioLevels(levels)
+
+		const now = Date.now()
+		if (now - this.lastLevelUpdateTime >= 500) {
+			this.lastLevelUpdateTime = now
+
+			const interfaces: (keyof AudioLevels)[] = ['madi1In', 'madi2In', 'danteIn', 'madi1Out', 'madi2Out', 'danteOut']
+
+			for (const iface of interfaces) {
+				const levelData = levels[iface] as AudioLevel | undefined
+				if (levelData) {
+					const ifaceName = iface.replace(/([A-Z])/g, '_$1').toLowerCase()
+
+					levelData.peak.forEach((val, index) => {
+						const varName = `audio_level_${ifaceName}_${index + 1}_peak`
+						if (this.variableCache[varName] !== val) {
+							changedVariables[varName] = val
+							this.variableCache[varName] = val
+						}
+					})
+					levelData.rms.forEach((val, index) => {
+						const varName = `audio_level_${ifaceName}_${index + 1}_rms`
+						if (this.variableCache[varName] !== val) {
+							changedVariables[varName] = val
+							this.variableCache[varName] = val
+						}
+					})
+				}
+			}
+			this.instance.checkFeedbacks('audioLevelThreshold')
+		}
+	}
+
 	private processInternalUpdate(_eventType: string, data: any): void {
 		let structureChanged = false
 		const keys = Object.keys(data)
@@ -463,6 +507,8 @@ export class SpecteraApi extends EventEmitter {
 				const oldState = this.state.basestation.site ? { ...this.state.basestation.site } : undefined
 				this.state.updateBaseStationSite(value)
 				this.handleStateUpdate('', oldState, value, BaseStationSiteMap, changedVariables, feedbacksToCheck)
+			} else if (key === '/api/audio/levels') {
+				this.processAudioLevels(value as AudioLevels, changedVariables)
 			}
 		}
 
@@ -477,7 +523,12 @@ export class SpecteraApi extends EventEmitter {
 
 		if (Object.keys(changedVariables).length > 0) {
 			this.instance.setVariableValues(changedVariables)
-			console.log('Changed variables:', changedVariables)
+			const loggableVariables = Object.fromEntries(
+				Object.entries(changedVariables).filter(([key]) => !key.includes('audio_level')),
+			)
+			if (Object.keys(loggableVariables).length > 0) {
+				console.log('Changed variables:', loggableVariables)
+			}
 		}
 
 		if (feedbacksToCheck.size > 0) {
@@ -580,5 +631,9 @@ export class SpecteraApi extends EventEmitter {
 
 	async getBaseStationSite(): Promise<BaseStationSite> {
 		return this.sendRequest<BaseStationSite>('GET', '/device/site')
+	}
+
+	async getAudioLevels(): Promise<AudioLevels> {
+		return this.sendRequest<AudioLevels>('GET', '/audio/levels')
 	}
 }

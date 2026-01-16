@@ -1249,5 +1249,65 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		},
 	}
 
+	feedbacks['audioLevelThreshold'] = {
+		type: 'boolean',
+		name: 'Audio Level - Threshold',
+		description: 'Trigger when audio level exceeds a threshold',
+		defaultStyle: {
+			bgcolor: Color.SpecteraRed,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Interface',
+				id: 'interface',
+				default: 'danteIn',
+				choices: [
+					{ id: 'danteIn', label: 'Dante In' },
+					{ id: 'danteOut', label: 'Dante Out' },
+					{ id: 'madi1In', label: 'MADI 1 In' },
+					{ id: 'madi1Out', label: 'MADI 1 Out' },
+					{ id: 'madi2In', label: 'MADI 2 In' },
+					{ id: 'madi2Out', label: 'MADI 2 Out' },
+				],
+			},
+			{
+				type: 'number',
+				label: 'Channel (1-32)',
+				id: 'channel',
+				default: 1,
+				min: 1,
+				max: 32,
+			},
+			{
+				type: 'number',
+				label: 'Threshold (dBFS)',
+				id: 'threshold',
+				default: -20,
+				min: -128,
+				max: 0,
+			},
+		],
+		callback: async (feedback) => {
+			const levels = self.state.audioLevels
+			const iface = feedback.options.interface as
+				| 'danteIn'
+				| 'danteOut'
+				| 'madi1In'
+				| 'madi1Out'
+				| 'madi2In'
+				| 'madi2Out'
+			const channel = (feedback.options.channel as number) - 1
+			const threshold = feedback.options.threshold as number
+
+			const levelData = levels[iface]
+			if (levelData && levelData.peak[channel] !== undefined) {
+				return levelData.peak[channel] >= threshold
+			}
+
+			return false
+		},
+	}
+
 	self.setFeedbackDefinitions(feedbacks)
 }

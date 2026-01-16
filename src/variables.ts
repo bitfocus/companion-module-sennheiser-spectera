@@ -70,6 +70,28 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 		)
 	}
 
+	const interfaces = ['Madi1', 'Madi2', 'Dante']
+	const directions = ['In', 'Out']
+
+	for (const iface of interfaces) {
+		for (const dir of directions) {
+			const ifaceNameSnake = `${iface.toLowerCase()}_${dir.toLowerCase()}`
+
+			for (let i = 1; i <= 32; i++) {
+				variables.push(
+					{
+						variableId: `audio_level_${ifaceNameSnake}_${i}_peak`,
+						name: `Audio Level ${iface} ${dir} Ch ${i} Peak (dBFS)`,
+					},
+					{
+						variableId: `audio_level_${ifaceNameSnake}_${i}_rms`,
+						name: `Audio Level ${iface} ${dir} Ch ${i} RMS (dBFS)`,
+					},
+				)
+			}
+		}
+	}
+
 	// Audio Outputs
 	for (const output of self.state.audioOutputs.values()) {
 		variables.push({
