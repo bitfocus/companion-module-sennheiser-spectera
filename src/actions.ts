@@ -801,7 +801,6 @@ export function UpdateActions(self: SpecteraInstance): void {
 			const mtUid = Number(action.options.mtUid)
 			const inputId = Number(action.options.inputId)
 			const modeId = Number(action.options.modeId)
-			console.log(mtUid, inputId, modeId)
 			await self.api.routeAudioInputToMobileDevice(inputId, mtUid, modeId)
 		},
 	}

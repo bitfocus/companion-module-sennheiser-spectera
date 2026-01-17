@@ -830,7 +830,7 @@ export class SpecteraApi extends EventEmitter {
 					modeId: modeId,
 					rfChannelId: mobileDevice.rfChannelId,
 				})
-				this.instance.log('info', `Created new Audio Link ${audiolinkId}`)
+				this.instance.log('debug', `Created new Audio Link ${audiolinkId}`)
 
 				// Assign to Audio Input first
 				await this.setAudioInput(inputId, {
@@ -846,7 +846,7 @@ export class SpecteraApi extends EventEmitter {
 			if (audioLink && audioLink.modeId !== (modeId as AudiolinkModeId)) {
 				try {
 					await this.updateAudioLink({ audiolinkId, modeId })
-					this.instance.log('info', `Updated Audio Link ${audiolinkId} mode to ${modeId}`)
+					this.instance.log('debug', `Updated Audio Link ${audiolinkId} mode to ${modeId}`)
 				} catch (error) {
 					this.instance.log('error', `Audio Routing: Failed to update Audio Link mode: ${error}`)
 				}
@@ -858,9 +858,12 @@ export class SpecteraApi extends EventEmitter {
 			await this.setMobileDevice(mtUid, {
 				iemAudiolinkId: audiolinkId,
 			} as Partial<MobileDevice>)
-			this.instance.log('info', `Routed Audio Input ${inputId} to Mobile Device ${mtUid} via Audio Link ${audiolinkId}`)
+			this.instance.log(
+				'debug',
+				`Routed Audio Input ${inputId} to Mobile Device ${mtUid} via Audio Link ${audiolinkId}`,
+			)
 		} catch (error) {
-			this.instance.log('error', `Audio Routing: Failed to assign Audio Link to Mobile Device: ${error}`)
+			this.instance.log('warn', `Audio Routing: Failed to assign Audio Link to Mobile Device: ${error}`)
 		}
 	}
 
@@ -877,7 +880,7 @@ export class SpecteraApi extends EventEmitter {
 		let audiolinkId = mobileDevice.micAudiolinkId
 		if (audiolinkId && audiolinkId > 0) {
 			// Reuse device's existing link
-			this.instance.log('info', `Routing: Using existing Audio Link ${audiolinkId} from Mobile Device`)
+			this.instance.log('debug', `Routing: Using existing Audio Link ${audiolinkId} from Mobile Device`)
 		} else {
 			// Device has no link, check if Audio Output (Dest) has a reusable link
 			const outLink = audioOutput.micAudiolinkId ? this.state.audioLinks.get(audioOutput.micAudiolinkId) : undefined
@@ -886,7 +889,7 @@ export class SpecteraApi extends EventEmitter {
 				// Reuse output's link as it matches the device's RF Channel
 				audiolinkId = outLink.audiolinkId
 				this.instance.log(
-					'info',
+					'debug',
 					`Routing: Using existing Audio Link ${audiolinkId} from Audio Output (RF Channel matched)`,
 				)
 			} else {
@@ -901,9 +904,9 @@ export class SpecteraApi extends EventEmitter {
 						modeId: modeId,
 						rfChannelId: mobileDevice.rfChannelId,
 					})
-					this.instance.log('info', `Created new Audio Link ${audiolinkId}`)
+					this.instance.log('debug', `Created new Audio Link ${audiolinkId}`)
 				} catch (error) {
-					this.instance.log('error', `Audio Routing: Failed to create Audio Link: ${error}`)
+					this.instance.log('warn', `Audio Routing: Failed to create Audio Link: ${error}`)
 					return
 				}
 			}
@@ -915,9 +918,9 @@ export class SpecteraApi extends EventEmitter {
 			if (audioLink && audioLink.modeId !== (modeId as AudiolinkModeId)) {
 				try {
 					await this.updateAudioLink({ audiolinkId, modeId })
-					this.instance.log('info', `Updated Audio Link ${audiolinkId} mode to ${modeId}`)
+					this.instance.log('debug', `Updated Audio Link ${audiolinkId} mode to ${modeId}`)
 				} catch (error) {
-					this.instance.log('error', `Audio Routing: Failed to update Audio Link mode: ${error}`)
+					this.instance.log('warn', `Audio Routing: Failed to update Audio Link mode: ${error}`)
 				}
 			}
 		}
@@ -930,7 +933,7 @@ export class SpecteraApi extends EventEmitter {
 				} as Partial<MobileDevice>)
 			}
 		} catch (error) {
-			this.instance.log('error', `Audio Routing: Failed to assign Audio Link to Mobile Device: ${error}`)
+			this.instance.log('warn', `Audio Routing: Failed to assign Audio Link to Mobile Device: ${error}`)
 		}
 
 		// Assign to Audio Output (Destination)
@@ -941,11 +944,11 @@ export class SpecteraApi extends EventEmitter {
 				} as Partial<AudioOutput>)
 			}
 			this.instance.log(
-				'info',
+				'debug',
 				`Routed Mobile Device ${mtUid} to Audio Output ${outputId} via Audio Link ${audiolinkId}`,
 			)
 		} catch (error) {
-			this.instance.log('error', `Audio Routing: Failed to assign Audio Link to Audio Output: ${error}`)
+			this.instance.log('warn', `Audio Routing: Failed to assign Audio Link to Audio Output: ${error}`)
 		}
 	}
 
@@ -992,9 +995,9 @@ export class SpecteraApi extends EventEmitter {
 
 		try {
 			await this.setMobileDevice(targetMtUid, payload)
-			this.instance.log('info', `Copied settings from ${sourceDevice.name} to ${targetDevice.name}`)
+			this.instance.log('debug', `Copied settings from ${sourceDevice.name} to ${targetDevice.name}`)
 		} catch (error) {
-			this.instance.log('error', `Copy Settings: Failed to apply settings: ${error}`)
+			this.instance.log('warn', `Copy Settings: Failed to apply settings: ${error}`)
 		}
 	}
 
@@ -1022,9 +1025,9 @@ export class SpecteraApi extends EventEmitter {
 			await this.setMobileDevice(targetMtUid, {
 				iemAudiolinkId: iemAudiolinkId,
 			} as Partial<MobileDevice>)
-			this.instance.log('info', `Copied IEM Mix from ${sourceMtUid} to ${targetMtUid}`)
+			this.instance.log('debug', `Copied IEM Mix from ${sourceMtUid} to ${targetMtUid}`)
 		} catch (error) {
-			this.instance.log('error', `Copy IEM Mix: Failed to assign Audio Link: ${error}`)
+			this.instance.log('warn', `Copy IEM Mix: Failed to assign Audio Link: ${error}`)
 		}
 	}
 }
