@@ -753,18 +753,17 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				choices: mobileDeviceChoices,
 			},
 			{
-				type: 'number',
+				type: 'textinput',
 				label: 'Threshold (%)',
 				id: 'threshold',
-				default: 10,
-				min: 0,
-				max: 100,
+				default: '10',
+				useVariables: true,
 			},
 		],
 		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid)) // get device
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
 			const level = device?.batteryFillLevel
-			return level !== undefined && level <= (feedback.options.threshold as number)
+			return level !== undefined && level <= Number(feedback.options.threshold)
 		},
 	}
 
@@ -784,18 +783,17 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				choices: mobileDeviceChoices,
 			},
 			{
-				type: 'number',
+				type: 'textinput',
 				label: 'Threshold (minutes)',
 				id: 'threshold',
-				default: 30,
-				min: 0,
-				max: 10000,
+				default: '30',
+				useVariables: true,
 			},
 		],
 		callback: async (feedback) => {
 			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
 			const runtime = device?.batteryRuntime
-			return runtime !== undefined && runtime <= (feedback.options.threshold as number)
+			return runtime !== undefined && runtime <= Number(feedback.options.threshold)
 		},
 	}
 
@@ -825,36 +823,6 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		callback: async (feedback) => {
 			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
 			return device?.ledBrightness === feedback.options.brightness
-		},
-	}
-
-	feedbacks['mobileDeviceMicAudiolinkId'] = {
-		type: 'boolean',
-		name: 'Mobile Device - Mic Audio Link ID',
-		description: 'Check Mic Audio Link ID',
-		defaultStyle: {
-			bgcolor: Color.SpecteraGreen,
-		},
-		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'mtUid',
-				default: mobileDeviceChoices[0].id,
-				choices: mobileDeviceChoices,
-			},
-			{
-				type: 'number',
-				label: 'Audio Link ID',
-				id: 'audioLinkId',
-				default: 0,
-				min: 0,
-				max: 65535,
-			},
-		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
-			return device?.micAudiolinkId === feedback.options.audioLinkId
 		},
 	}
 
@@ -1016,8 +984,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		],
 		callback: async (feedback) => {
 			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
-			// Type check for property access if strict, but ignoring for now as shared prop in practice
-			return (device as any)?.micPreampGain === Number(feedback.options.gain)
+			return device?.micPreampGain === Number(feedback.options.gain)
 		},
 	}
 
@@ -1273,20 +1240,18 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				],
 			},
 			{
-				type: 'number',
+				type: 'textinput',
 				label: 'Channel (1-32)',
 				id: 'channel',
-				default: 1,
-				min: 1,
-				max: 32,
+				default: '1',
+				useVariables: true,
 			},
 			{
-				type: 'number',
+				type: 'textinput',
 				label: 'Threshold (dBFS)',
 				id: 'threshold',
-				default: -20,
-				min: -128,
-				max: 0,
+				default: '-20',
+				useVariables: true,
 			},
 		],
 		callback: async (feedback) => {
@@ -1298,8 +1263,8 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				| 'madi1Out'
 				| 'madi2In'
 				| 'madi2Out'
-			const channel = (feedback.options.channel as number) - 1
-			const threshold = feedback.options.threshold as number
+			const channel = Number(feedback.options.channel) - 1
+			const threshold = Number(feedback.options.threshold)
 
 			const levelData = levels[iface]
 			if (levelData && levelData.peak[channel] !== undefined) {

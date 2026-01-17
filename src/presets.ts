@@ -475,36 +475,6 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			text: '',
 		}
 
-		presets[`${deviceVariableId}_Battery`] = {
-			type: 'button',
-			category: `${category}s`,
-			name: `${device.name} Battery`,
-			style: {
-				bgcolor: Color.Black,
-				color: Color.White,
-				text: `${device.name}\\nBATTERY\\n$(spectera:${deviceVariableId}_battery_level)%\\n$(spectera:${deviceVariableId}_battery_runtime)min`,
-				size: 10,
-				show_topbar: false,
-			},
-			steps: [
-				{
-					down: [],
-					up: [],
-				},
-			],
-			feedbacks: [
-				{
-					feedbackId: 'mobileDeviceBatteryLow',
-					options: {
-						mtUid: device.mtUid,
-					},
-					style: {
-						bgcolor: Color.SpecteraRed,
-					},
-				},
-			],
-		}
-
 		presets[`${deviceVariableId}_Connection`] = {
 			type: 'button',
 			category: `${category}s`,
@@ -512,7 +482,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `${device.name}\\nSTATE\\n$(spectera:${deviceVariableId}_state)`,
+				text: `${device.name}\\nSTATE\\n\\n$(spectera:${deviceVariableId}_state)`,
 				size: 11,
 				show_topbar: false,
 			},
@@ -535,15 +505,144 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			],
 		}
 
+		presets[`${deviceVariableId}_Battery`] = {
+			type: 'button',
+			category: `${category}s`,
+			name: `${device.name} Battery`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `${device.name}\\nBATTERY\\n\\n$(spectera:${deviceVariableId}_battery_level)%\\n$(spectera:${deviceVariableId}_battery_runtime)min`,
+				size: 10,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'mobileDeviceBatteryLow',
+					options: {
+						mtUid: device.mtUid,
+					},
+					style: {
+						bgcolor: Color.SpecteraRed,
+					},
+				},
+			],
+		}
+
+		presets[`${deviceVariableId}_Identify`] = {
+			type: 'button',
+			category: `${category}s`,
+			name: `${device.name} Identify`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `${device.name}\\nIDENTIFY`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [
+						{
+							actionId: 'mobileDeviceIdentify',
+							options: {
+								mtUid: device.mtUid,
+								identify: 'true',
+							},
+						},
+					],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'mobileDeviceIdentify',
+					options: {
+						mtUid: device.mtUid,
+					},
+					style: {
+						bgcolor: Color.SpecteraBlue,
+					},
+				},
+			],
+		}
+
+		presets[`${deviceVariableId}_ReverseIdentify`] = {
+			type: 'button',
+			category: `${category}s`,
+			name: `${device.name} Reverse Identify`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `${device.name}\\nREVERSE\\nIDENTIFY`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'mobileDeviceReverseIdentify',
+					options: {
+						mtUid: device.mtUid,
+					},
+					style: {
+						bgcolor: Color.SpecteraBlue,
+					},
+				},
+			],
+		}
+
+		presets[`${deviceVariableId}_Interference`] = {
+			type: 'button',
+			category: `${category}s`,
+			name: `${device.name} Interference`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `${device.name}\\nIF\\n\\n$(spectera:${deviceVariableId}_interference)`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'mobileDeviceInterference',
+					options: {
+						mtUid: device.mtUid,
+						severity: 'High',
+					},
+					style: {
+						bgcolor: Color.SpecteraRed,
+					},
+				},
+			],
+		}
+
 		if (device.type === MtType.SEK) {
-			presets[`${deviceVariableId}_HeadphoneVolume`] = {
+			presets[`${deviceVariableId}_HeadphoneVolumeInfo`] = {
 				type: 'button',
 				category: `${category}s`,
 				name: `${device.name} Headphone Vol`,
 				style: {
 					bgcolor: Color.Black,
 					color: Color.White,
-					text: `${device.name}\\nPHONES VOL\\n$(spectera:${deviceVariableId}_headphone_volume)dB`,
+					text: `${device.name}\\nPHONES\\n\\n$(spectera:${deviceVariableId}_headphone_plug_state)\\n$(spectera:${deviceVariableId}_headphone_volume)dB`,
 					size: 11,
 					show_topbar: false,
 				},
@@ -555,22 +654,138 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				],
 				feedbacks: [],
 			}
+
+			presets[`${deviceVariableId}_HeadphoneVolumeUp`] = {
+				type: 'button',
+				category: `${category}s`,
+				name: `${device.name} Phone Vol +1`,
+				style: {
+					bgcolor: Color.Black,
+					color: Color.White,
+					text: `${device.name}\\nVOL +1`,
+					size: 11,
+					show_topbar: false,
+				},
+				steps: [
+					{
+						down: [
+							{
+								actionId: 'mobileDeviceHeadphoneVolume',
+								options: {
+									mtUid: device.mtUid,
+									action: 'adjust',
+									adjustment: '1',
+								},
+							},
+						],
+						up: [],
+					},
+				],
+				feedbacks: [],
+			}
+
+			presets[`${deviceVariableId}_HeadphoneVolumeDown`] = {
+				type: 'button',
+				category: `${category}s`,
+				name: `${device.name} Phone Vol -1`,
+				style: {
+					bgcolor: Color.Black,
+					color: Color.White,
+					text: `${device.name}\\nVOL -1`,
+					size: 11,
+					show_topbar: false,
+				},
+				steps: [
+					{
+						down: [
+							{
+								actionId: 'mobileDeviceHeadphoneVolume',
+								options: {
+									mtUid: device.mtUid,
+									action: 'adjust',
+									adjustment: '-1',
+								},
+							},
+						],
+						up: [],
+					},
+				],
+				feedbacks: [],
+			}
 		}
 
-		presets[`${deviceVariableId}_Gain`] = {
+		presets[`${deviceVariableId}_GainInfo`] = {
 			type: 'button',
 			category: `${category}s`,
 			name: `${device.name} Gain`,
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `${device.name}\\nPREAMP GAIN\\n$(spectera:${deviceVariableId}_mic_preamp_gain)dB`,
+				text: `${device.name}\\nPREAMP GAIN\\n$(spectera:${deviceVariableId}_mic_preamp_gain) dB`,
 				size: 11,
 				show_topbar: false,
 			},
 			steps: [
 				{
 					down: [],
+					up: [],
+				},
+			],
+			feedbacks: [],
+		}
+
+		presets[`${deviceVariableId}_GainUp`] = {
+			type: 'button',
+			category: `${category}s`,
+			name: `${device.name} Gain +3`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `${device.name}\\nGAIN +3`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [
+						{
+							actionId: 'mobileDeviceMicPreampGain',
+							options: {
+								mtUid: device.mtUid,
+								action: 'adjust',
+								adjustment: '3',
+							},
+						},
+					],
+					up: [],
+				},
+			],
+			feedbacks: [],
+		}
+
+		presets[`${deviceVariableId}_GainDown`] = {
+			type: 'button',
+			category: `${category}s`,
+			name: `${device.name} Gain -3`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `${device.name}\\nGAIN -3`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [
+						{
+							actionId: 'mobileDeviceMicPreampGain',
+							options: {
+								mtUid: device.mtUid,
+								action: 'adjust',
+								adjustment: '-3',
+							},
+						},
+					],
 					up: [],
 				},
 			],
