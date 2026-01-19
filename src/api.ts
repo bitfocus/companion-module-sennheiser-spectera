@@ -986,6 +986,7 @@ export class SpecteraApi extends EventEmitter {
 
 		// Common properties
 		const payload: any = {
+			name: sourceDevice.name,
 			ledBrightness: sourceDevice.ledBrightness,
 			micPreampGain: (sourceDevice as any).micPreampGain,
 			micAudiolinkId: sourceDevice.micAudiolinkId,
@@ -1012,6 +1013,32 @@ export class SpecteraApi extends EventEmitter {
 		}
 
 		try {
+			// If we are moving a Mic Audio Link, we must unassign it from the source first
+			if (payload.micAudiolinkId && payload.micAudiolinkId > 0) {
+				try {
+					this.instance.log('debug', `Copy Settings: Unassigning Mic Link ${payload.micAudiolinkId} from source`)
+					await this.setMobileDevice(sourceMtUid, { micAudiolinkId: -1 } as any)
+				} catch (err) {
+					this.instance.log(
+						'warn',
+						`Copy Settings: Failed to unassign mic audio link from source: ${err instanceof Error ? err.message : String(err)}`,
+					)
+				}
+			}
+
+			// Same for IEM Link, if it's an SEK
+			if (payload.iemAudiolinkId && payload.iemAudiolinkId > 0) {
+				try {
+					this.instance.log('debug', `Copy Settings: Unassigning IEM Link ${payload.iemAudiolinkId} from source`)
+					await this.setMobileDevice(sourceMtUid, { iemAudiolinkId: -1 } as any)
+				} catch (err) {
+					this.instance.log(
+						'warn',
+						`Copy Settings: Failed to unassign IEM audio link from source: ${err instanceof Error ? err.message : String(err)}`,
+					)
+				}
+			}
+
 			await this.setMobileDevice(targetMtUid, payload)
 			this.instance.log('debug', `Copied settings from ${sourceDevice.name} to ${targetDevice.name}`)
 		} catch (error) {
@@ -1029,11 +1056,6 @@ export class SpecteraApi extends EventEmitter {
 		}
 
 		const iemAudiolinkId = (sourceDevice as any).iemAudiolinkId
-
-		if (!iemAudiolinkId) {
-			this.instance.log('warn', `Copy IEM Mix: Source device ${sourceMtUid} has no IEM Mix assigned`)
-			return
-		}
 
 		if (sourceDevice.rfChannelId !== targetDevice.rfChannelId) {
 			this.instance.log('warn', 'Copy IEM Mix: Devices are on different RF Channels, this might fail')

@@ -872,7 +872,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	}
 
 	actions['copyIemMix'] = {
-		name: 'Audio I/O - Copy IEM Mix',
+		name: 'Audio I/O - Copy IEM Channels',
 
 		options: [
 			{
