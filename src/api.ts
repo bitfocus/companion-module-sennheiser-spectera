@@ -91,6 +91,8 @@ export class SpecteraApi extends EventEmitter {
 			options.body = JSON.stringify(body)
 		}
 
+		this.instance.log('debug', `API Request: ${method} ${path} ${body ? JSON.stringify(body) : ''}`)
+
 		try {
 			const response = await fetch(url, { ...options, dispatcher: this.dispatcher } as any)
 
@@ -269,6 +271,8 @@ export class SpecteraApi extends EventEmitter {
 			},
 			signal: this.abortController.signal,
 		}
+
+		this.instance.log('debug', `API Request: GET ${url}`)
 
 		try {
 			const response = await fetch(url, { ...options, dispatcher: this.dispatcher } as any)
@@ -606,7 +610,6 @@ export class SpecteraApi extends EventEmitter {
 		}
 
 		if (structureChanged) {
-			this.instance.log('debug', 'Structure changed, updating variable definitions')
 			UpdateVariableDefinitions(this.instance)
 			UpdatePresets(this.instance)
 			UpdateFeedbacks(this.instance)
@@ -616,12 +619,12 @@ export class SpecteraApi extends EventEmitter {
 
 		if (Object.keys(changedVariables).length > 0) {
 			this.instance.setVariableValues(changedVariables)
-			const loggableVariables = Object.fromEntries(
+			/* const loggableVariables = Object.fromEntries(
 				Object.entries(changedVariables).filter(([key]) => !key.includes('audio_level')),
 			)
 			if (Object.keys(loggableVariables).length > 0) {
 				console.log('Changed variables:', loggableVariables)
-			}
+			} */
 		}
 
 		if (feedbacksToCheck.size > 0) {
@@ -766,6 +769,8 @@ export class SpecteraApi extends EventEmitter {
 			},
 			body: JSON.stringify(config),
 		}
+
+		this.instance.log('debug', `API Request: POST ${url} ${JSON.stringify(config)}`)
 
 		try {
 			const response = await fetch(url, { ...options, dispatcher: this.dispatcher } as any)
