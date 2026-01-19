@@ -207,8 +207,12 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 		variable: 'mic_lowcut_hz',
 		valueFn: toMicLowCutLabel,
 	},
-	iemAudiolinkId: { variable: 'iem_audiolink_id', valueFn: (v: unknown): any => v },
-	iemAudiolinkActive: { variable: 'iem_audiolink_active', valueFn: (v: unknown): any => v },
+	iemAudiolinkId: { feedback: 'iemAudioLinkMatch', variable: 'iem_audiolink_id', valueFn: (v: unknown): any => v },
+	iemAudiolinkActive: {
+		feedback: 'iemAudioLinkActive',
+		variable: 'iem_audiolink_active',
+		valueFn: (v: unknown): any => v,
+	},
 	headphonePlugState: {
 		feedback: 'mobileDeviceHeadphonePlugState',
 		variable: 'headphone_plug_state',

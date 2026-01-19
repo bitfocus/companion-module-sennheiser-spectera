@@ -512,7 +512,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `${device.name}\\nBATTERY\\n\\n$(spectera:${deviceVariableId}_battery_level)%\\n$(spectera:${deviceVariableId}_battery_runtime)min`,
+				text: `${device.name}\\nBATTERY\\n\\n$(spectera:${deviceVariableId}_battery_level) %\\n$(spectera:${deviceVariableId}_battery_runtime) min`,
 				size: 10,
 				show_topbar: false,
 			},
@@ -533,6 +533,26 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					},
 				},
 			],
+		}
+
+		presets[`${deviceVariableId}_LastConnected`] = {
+			type: 'button',
+			category: `${category}s`,
+			name: `${device.name} Last Connected`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `${device.name}\\nLAST SEEN\\n\\n$(spectera:${deviceVariableId}_last_connected)`,
+				size: 10,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [],
+					up: [],
+				},
+			],
+			feedbacks: [],
 		}
 
 		presets[`${deviceVariableId}_Identify`] = {
@@ -711,6 +731,102 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					},
 				],
 				feedbacks: [],
+			}
+			presets[`${deviceVariableId}_EngineerModeHeader`] = {
+				type: 'text',
+				category: `Engineer Mode`,
+				name: `${device.name} (${serial}) - Engineer Mode`,
+				text: '',
+			}
+			for (const copyDevice of mobileDevices) {
+				if (copyDevice.type !== MtType.SEK) {
+					continue
+				}
+				if (copyDevice.mtUid === device.mtUid) {
+					continue
+				}
+				presets[`${deviceVariableId}_SEKCopy_${copyDevice.mtUid}`] = {
+					type: 'button',
+					category: `Engineer Mode`,
+					name: `${copyDevice.name} SEK Copy`,
+					style: {
+						bgcolor: Color.Black,
+						color: Color.White,
+						text: `${copyDevice.name}\\nSEK COPY`,
+						size: 11,
+						show_topbar: false,
+					},
+					steps: [
+						{
+							down: [
+								{
+									actionId: 'copyIemAudioLink',
+									options: {
+										sourceMtUid: copyDevice.mtUid,
+										targetMtUid: device.mtUid,
+									},
+								},
+							],
+							up: [],
+						},
+					],
+					feedbacks: [
+						{
+							feedbackId: 'iemAudioLinkActive',
+							options: {
+								mtUid: copyDevice.mtUid,
+							},
+							style: {
+								bgcolor: Color.SpecteraDarkGray,
+							},
+						},
+						{
+							feedbackId: 'iemAudioLinkMatch',
+							options: {
+								mtUid1: device.mtUid,
+								mtUid2: copyDevice.mtUid,
+							},
+							style: {
+								bgcolor: Color.SpecteraBlue,
+							},
+						},
+					],
+				}
+			}
+			presets[`${deviceVariableId}_CopySettingsHeader`] = {
+				type: 'text',
+				category: `Backup Mode`,
+				name: `${device.name} (${serial}) - Backup Mode`,
+				text: '',
+			}
+			for (const copyDevice of mobileDevices) {
+				presets[`${deviceVariableId}_SEKCopy_${copyDevice.mtUid}`] = {
+					type: 'button',
+					category: `Backup Mode`,
+					name: `${copyDevice.name} SEK Copy`,
+					style: {
+						bgcolor: Color.Black,
+						color: Color.White,
+						text: `${copyDevice.name}\\nSEK COPY`,
+						size: 11,
+						show_topbar: false,
+					},
+					steps: [
+						{
+							down: [
+								{
+									actionId: 'copyAllMobileDeviceSettings',
+									options: {
+										sourceMtUid: copyDevice.mtUid,
+										targetMtUid: device.mtUid,
+									},
+								},
+							],
+							up: [],
+						},
+					],
+					feedbacks: [],
+				}
 			}
 		}
 

@@ -515,7 +515,7 @@ export function getMobileDeviceVariables(device: MobileDevice): Record<string, a
 		[`${deviceVariableId}_reverse_identify`]: device.reverseIdentify,
 		[`${deviceVariableId}_serial`]: device.serial,
 		[`${deviceVariableId}_connected`]: device.connected,
-		[`${deviceVariableId}_last_connected`]: device.lastConnected,
+		[`${deviceVariableId}_last_connected`]: device.lastConnected === 'NotAvailable' ? 'Now' : device.lastConnected,
 		[`${deviceVariableId}_sleep`]: device.sleep,
 		[`${deviceVariableId}_state`]: device.state,
 		[`${deviceVariableId}_battery_level`]: device.batteryFillLevel === -1 ? 'Off' : device.batteryFillLevel,

@@ -843,7 +843,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 		},
 	}
 
-	actions['copyMobileDeviceSettings'] = {
+	actions['copyAllMobileDeviceSettings'] = {
 		name: 'Mobile Device - Copy All Settings',
 		options: [
 			{
@@ -871,32 +871,32 @@ export function UpdateActions(self: SpecteraInstance): void {
 		},
 	}
 
-	actions['copyIemMix'] = {
+	actions['copyIemAudioLink'] = {
 		name: 'Audio I/O - Copy IEM Channels',
 
 		options: [
 			{
 				type: 'dropdown',
-				label: 'Source Mobile Device',
+				label: 'Source SEK',
 				id: 'sourceMtUid',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
-				choices: mobileDeviceChoices,
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				choices: sekMobileDeviceChoices,
 			},
 			{
 				type: 'dropdown',
-				label: 'Target Mobile Device',
+				label: 'Target SEK',
 				id: 'targetMtUid',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
-				choices: mobileDeviceChoices,
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				choices: sekMobileDeviceChoices,
 			},
 		],
-		description: 'Copy the IEM Mix (Audio Link) from one Mobile Device to another.',
+		description: 'Copy the IEM Audio Channels from one SEK to another.',
 		callback: async (action) => {
 			if (!self.api) return
 			const sourceMtUid = Number(action.options.sourceMtUid)
 			const targetMtUid = Number(action.options.targetMtUid)
 
-			await self.api.copyIemMix(sourceMtUid, targetMtUid)
+			await self.api.copyIemAudioLink(sourceMtUid, targetMtUid)
 		},
 	}
 

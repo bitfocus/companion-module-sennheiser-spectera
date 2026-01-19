@@ -1046,7 +1046,7 @@ export class SpecteraApi extends EventEmitter {
 		}
 	}
 
-	async copyIemMix(sourceMtUid: number, targetMtUid: number): Promise<void> {
+	async copyIemAudioLink(sourceMtUid: number, targetMtUid: number): Promise<void> {
 		const sourceDevice = this.state.mobileDevices.get(sourceMtUid)
 		const targetDevice = this.state.mobileDevices.get(targetMtUid)
 

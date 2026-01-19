@@ -592,6 +592,66 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		},
 	}
 
+	feedbacks['iemAudioLinkMatch'] = {
+		type: 'boolean',
+		name: 'SEK - IEM Audio Link Match',
+		description: 'Indicates if two SEKs share the same audio link',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'SEK 1',
+				id: 'mtUid1',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				choices: sekMobileDeviceChoices,
+			},
+			{
+				type: 'dropdown',
+				label: 'SEK 2',
+				id: 'mtUid2',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				choices: sekMobileDeviceChoices,
+			},
+		],
+		callback: async (feedback) => {
+			const device1 = self.state.mobileDevices.get(Number(feedback.options.mtUid1))
+			const device2 = self.state.mobileDevices.get(Number(feedback.options.mtUid2))
+			if (device1?.type === MtType.SEK && device2?.type === MtType.SEK) {
+				if (device1.iemAudiolinkId !== -1 && device2.iemAudiolinkId !== -1) {
+					return device1.iemAudiolinkId === device2.iemAudiolinkId
+				}
+			}
+			return false
+		},
+	}
+
+	feedbacks['iemAudioLinkActive'] = {
+		type: 'boolean',
+		name: 'SEK - IEM Audio Link Active',
+		description: 'Indicates if the IEM audio link is active',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'SEK',
+				id: 'mtUid',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				choices: sekMobileDeviceChoices,
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			if (device?.type === MtType.SEK) {
+				return device.iemAudiolinkActive === true
+			}
+			return false
+		},
+	}
+
 	//Base Station Feedbacks
 	feedbacks['baseStationState'] = {
 		type: 'boolean',
@@ -701,9 +761,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 					{ label: 'Off', id: -1 },
 					{ label: 'RF Channel 1', id: 0 },
 					{ label: 'RF Channel 2', id: 1 },
-				], // Assuming 0-indexed plus 'off' or similar logic?
-				// The user type has optional number. If it's optional, maybe it can be undefined.
-				// For now let's assume we match against specific IDs.
+				],
 				default: 0,
 				id: 'rfChannelId',
 			},
