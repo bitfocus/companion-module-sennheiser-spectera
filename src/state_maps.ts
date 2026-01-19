@@ -125,17 +125,22 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 	},
 	serial: { variable: 'serial', valueFn: (v: unknown): any => v },
 	connected: { feedback: 'mobileDeviceConnected', variable: 'connected', valueFn: (v: unknown): any => v },
+	lastConnected: {
+		feedback: 'mobileDeviceLastConnected',
+		variable: 'last_connected',
+		valueFn: (v: unknown): any => v,
+	},
 	sleep: { feedback: 'mobileDeviceSleep', variable: 'sleep', valueFn: (v: unknown): any => v },
 	state: { feedback: 'mobileDeviceState', variable: 'state', valueFn: (v: unknown): any => v },
 	batteryFillLevel: {
 		feedback: 'mobileDeviceBatteryLevel',
 		variable: 'battery_level',
-		valueFn: (v: unknown): any => (v === -1 ? 'OFF' : v),
+		valueFn: (v: unknown): any => (v === -1 ? 'Off' : v),
 	},
 	batteryRuntime: {
 		feedback: 'mobileDeviceBatteryRuntime',
 		variable: 'battery_runtime',
-		valueFn: (v: unknown): any => (v === -1 ? 'OFF' : v),
+		valueFn: (v: unknown): any => (v === -1 ? 'Off' : v),
 	},
 	batteryLow: { feedback: 'mobileDeviceBatteryLow', variable: 'battery_low', valueFn: (v: unknown): any => v },
 	version: { variable: 'version', valueFn: (v: unknown): any => v },
@@ -178,7 +183,7 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 	dominantAntenna: {
 		feedback: 'mobileDeviceDominantAntenna',
 		variable: 'dominant_antenna',
-		valueFn: (v: unknown): any => v,
+		valueFn: (v: unknown): any => (typeof v === 'string' && v !== 'NotAvailable' ? v.toUpperCase() : 'Not Available'),
 	},
 	rssi: { variable: 'rssi', valueFn: (v: unknown): any => v },
 	// SEK specific
@@ -207,7 +212,7 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 	headphonePlugState: {
 		feedback: 'mobileDeviceHeadphonePlugState',
 		variable: 'headphone_plug_state',
-		valueFn: (v: unknown): any => v,
+		valueFn: (v: unknown): any => (v === 'NotAvailable' ? 'Not Available' : v),
 	},
 	headphoneVolumeMax: {
 		feedback: 'mobileDeviceHeadphoneVolumeMax',

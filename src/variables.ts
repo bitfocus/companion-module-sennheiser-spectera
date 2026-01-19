@@ -113,15 +113,15 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 		variables.push(
 			{
 				variableId: `audio_input_${displayId}_name`,
-				name: `Audio Input ${displayId} Name`,
+				name: `Audio Input - ${displayId} - Name`,
 			},
 			{
 				variableId: `audio_input_${displayId}_iem_link_id`,
-				name: `Audio Input ${displayId} IEM Link ID`,
+				name: `Audio Input - ${displayId} - IEM Link ID`,
 			},
 			{
 				variableId: `audio_input_${displayId}_source`,
-				name: `Audio Input ${displayId} Source`,
+				name: `Audio Input - ${displayId} - Source`,
 			},
 		)
 	}
@@ -137,11 +137,11 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 				variables.push(
 					{
 						variableId: `audio_level_${ifaceNameSnake}_${i}_peak`,
-						name: `Audio Level ${iface} ${dir} Ch ${i} Peak (dBFS)`,
+						name: `Audio Level - ${iface} ${dir} Ch ${i} - Peak (dBFS)`,
 					},
 					{
 						variableId: `audio_level_${ifaceNameSnake}_${i}_rms`,
-						name: `Audio Level ${iface} ${dir} Ch ${i} RMS (dBFS)`,
+						name: `Audio Level - ${iface} ${dir} Ch ${i} - RMS (dBFS)`,
 					},
 				)
 			}
@@ -190,54 +190,55 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 	// DADs
 	for (const antenna of self.state.antennas.values()) {
 		const port = sanitizeName(antenna.antennaPortId)
+		const label = antenna.antennaPortId.toUpperCase()
 		variables.push(
 			{
 				variableId: `dad_${port}_state`,
-				name: `DAD ${antenna.antennaPortId} - State`,
+				name: `DAD ${label} - State`,
 			},
 			{
 				variableId: `dad_${port}_type`,
-				name: `DAD ${antenna.antennaPortId} - Type`,
+				name: `DAD ${label} - Type`,
 			},
 			{
 				variableId: `dad_${port}_error_details`,
-				name: `DAD ${antenna.antennaPortId} - Error Details`,
+				name: `DAD ${label} - Error Details`,
 			},
 			{
 				variableId: `dad_${port}_high_temp_warning`,
-				name: `DAD ${antenna.antennaPortId} - High Temperature Warning`,
+				name: `DAD ${label} - High Temperature Warning`,
 			},
 			{
 				variableId: `dad_${port}_packet_error_warning`,
-				name: `DAD ${antenna.antennaPortId} - Packet Error Warning`,
+				name: `DAD ${label} - Packet Error Warning`,
 			},
 			{
 				variableId: `dad_${port}_temperature`,
-				name: `DAD ${antenna.antennaPortId} - Temperature`,
+				name: `DAD ${label} - Temperature`,
 			},
 			{
 				variableId: `dad_${port}_type`,
-				name: `DAD ${antenna.antennaPortId} - Type`,
+				name: `DAD ${label} - Type`,
 			},
 			{
 				variableId: `dad_${port}_version`,
-				name: `DAD ${antenna.antennaPortId} - Version`,
+				name: `DAD ${label} - Version`,
 			},
 			{
 				variableId: `dad_${port}_identify`,
-				name: `DAD ${antenna.antennaPortId} - Identify`,
+				name: `DAD ${label} - Identify`,
 			},
 			{
 				variableId: `dad_${port}_led_brightness`,
-				name: `DAD ${antenna.antennaPortId} - LED Brightness`,
+				name: `DAD ${label} - LED Brightness`,
 			},
 			{
 				variableId: `dad_${port}_bindings`,
-				name: `DAD ${antenna.antennaPortId} - Bindings`,
+				name: `DAD ${label} - Bindings`,
 			},
 			{
 				variableId: `dad_${port}_mismatch`,
-				name: `DAD ${antenna.antennaPortId} - Mismatch`,
+				name: `DAD ${label} - Mismatch`,
 			},
 		)
 	}
@@ -454,7 +455,7 @@ export function getAudioInputVariables(input: AudioInput): Record<string, any> {
 	const displayId = input.inputId + 1
 	return {
 		[`audio_input_${displayId}_source`]: input.source,
-		[`audio_input_${displayId}_name`]: input.name,
+		[`audio_input_${displayId}_name`]: input.name || 'None',
 		[`audio_input_${displayId}_iem_link_id`]: input.iemAudiolinkId,
 	}
 }
@@ -487,7 +488,7 @@ export function getAntennaVariables(antenna: Antenna): Record<string, any> {
 	return {
 		[`dad_${port}_state`]: antenna.state,
 		[`dad_${port}_type`]: antenna.type,
-		[`dad_${port}_error_details`]: antenna.errorStateDetails,
+		[`dad_${port}_error_details`]: antenna.errorStateDetails === 'NA' ? 'None' : antenna.errorStateDetails,
 		[`dad_${port}_high_temp_warning`]: antenna.warningHighTemperature,
 		[`dad_${port}_packet_error_warning`]: antenna.warningPacketError,
 		[`dad_${port}_temperature`]: antenna.temperature,
@@ -514,10 +515,11 @@ export function getMobileDeviceVariables(device: MobileDevice): Record<string, a
 		[`${deviceVariableId}_reverse_identify`]: device.reverseIdentify,
 		[`${deviceVariableId}_serial`]: device.serial,
 		[`${deviceVariableId}_connected`]: device.connected,
+		[`${deviceVariableId}_last_connected`]: device.lastConnected,
 		[`${deviceVariableId}_sleep`]: device.sleep,
 		[`${deviceVariableId}_state`]: device.state,
-		[`${deviceVariableId}_battery_level`]: device.batteryFillLevel === -1 ? 'OFF' : device.batteryFillLevel,
-		[`${deviceVariableId}_battery_runtime`]: device.batteryRuntime === -1 ? 'OFF' : device.batteryRuntime,
+		[`${deviceVariableId}_battery_level`]: device.batteryFillLevel === -1 ? 'Off' : device.batteryFillLevel,
+		[`${deviceVariableId}_battery_runtime`]: device.batteryRuntime === -1 ? 'Off' : device.batteryRuntime,
 		[`${deviceVariableId}_battery_low`]: device.batteryLow,
 		[`${deviceVariableId}_version`]: device.version,
 		[`${deviceVariableId}_version_mismatch`]: device.versionMismatch,
@@ -532,7 +534,10 @@ export function getMobileDeviceVariables(device: MobileDevice): Record<string, a
 		[`${deviceVariableId}_command_state`]: device.commandState,
 		[`${deviceVariableId}_mic_lqi`]: device.micLqi,
 		[`${deviceVariableId}_interference`]: device.interference?.severity,
-		[`${deviceVariableId}_dominant_antenna`]: device.dominantAntenna,
+		[`${deviceVariableId}_dominant_antenna`]:
+			typeof device.dominantAntenna === 'string' && device.dominantAntenna !== 'NotAvailable'
+				? device.dominantAntenna.toUpperCase()
+				: 'Not Available',
 		[`${deviceVariableId}_rssi`]: device.rssi,
 	}
 
@@ -544,7 +549,8 @@ export function getMobileDeviceVariables(device: MobileDevice): Record<string, a
 			device.micLowCutHz === MicLowCutHzSEK.Off ? 'Off' : device.micLowCutHz
 		variables[`${deviceVariableId}_iem_audiolink_id`] = device.iemAudiolinkId
 		variables[`${deviceVariableId}_iem_audiolink_active`] = device.iemAudiolinkActive
-		variables[`${deviceVariableId}_headphone_plug_state`] = device.headphonePlugState
+		variables[`${deviceVariableId}_headphone_plug_state`] =
+			device.headphonePlugState === 'NotAvailable' ? 'Not Available' : device.headphonePlugState
 		variables[`${deviceVariableId}_headphone_volume_max`] = device.headphoneVolumeMax
 		variables[`${deviceVariableId}_headphone_volume_min`] = device.headphoneVolumeMin
 		variables[`${deviceVariableId}_mic_line_selection`] = device.micLineSelection
@@ -600,8 +606,8 @@ export function getBaseStationStateVariables(state: BaseStationState): Record<st
 export function getBaseStationSiteVariables(site: BaseStationSite): Record<string, any> {
 	return {
 		base_station_name: site.deviceName,
-		base_station_location: site.location,
-		base_station_position: site.position,
+		base_station_location: site.location || 'Unknown',
+		base_station_position: site.position || 'Unknown',
 	}
 }
 
