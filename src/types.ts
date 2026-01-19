@@ -64,8 +64,8 @@ export enum MtType {
 
 export enum InputSource {
 	Dante = 'dante',
-	Madi1 = 'madi1',
-	Madi2 = 'madi2',
+	'MADI 1' = 'madi1',
+	'MADI 2' = 'madi2',
 }
 
 export enum TempStatus {

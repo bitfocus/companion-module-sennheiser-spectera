@@ -126,12 +126,12 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 		)
 	}
 
-	const interfaces = ['Madi1', 'Madi2', 'Dante']
+	const interfaces = ['MADI 1', 'MADI 2', 'Dante']
 	const directions = ['In', 'Out']
 
 	for (const iface of interfaces) {
 		for (const dir of directions) {
-			const ifaceNameSnake = `${iface.toLowerCase()}_${dir.toLowerCase()}`
+			const ifaceNameSnake = `${iface.replaceAll(' ', '_').toLowerCase()}_${dir.toLowerCase()}`
 
 			for (let i = 1; i <= 32; i++) {
 				variables.push(
