@@ -51,9 +51,7 @@ export class SpecteraInstance extends InstanceBase<ModuleConfig, ModuleSecrets> 
 
 			try {
 				await this.api.performLogin()
-				this.api.startMonitoring().catch((err) => {
-					this.log('error', `Failed to start monitoring: ${err instanceof Error ? err.message : String(err)}`)
-				})
+				await this.api.startMonitoring()
 				this.updateStatus(InstanceStatus.Ok)
 				this.log('info', `Successfully connected to Spectera`)
 			} catch (err) {

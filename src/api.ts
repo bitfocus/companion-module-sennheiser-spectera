@@ -57,6 +57,7 @@ export class SpecteraApi extends EventEmitter {
 	private readonly dispatcher: Dispatcher
 	private variableCache: Record<string, string | number | boolean | undefined> = {}
 	private lastLevelUpdateTime = 0
+	private isInitializing = false
 
 	constructor(instance: SpecteraInstance, state: SpecteraState, host: string, password: string) {
 		super()
@@ -160,6 +161,8 @@ export class SpecteraApi extends EventEmitter {
 		// Start subscription
 		await this.subscribe()
 
+		this.isInitializing = true
+
 		try {
 			const [
 				inputs,
@@ -224,12 +227,18 @@ export class SpecteraApi extends EventEmitter {
 			this.state.updateMadi2(madi2)
 			this.state.updateWordclock(wordclock)
 
+			this.state.updateMadi2(madi2)
+			this.state.updateWordclock(wordclock)
+
+			this.isInitializing = false
+
 			UpdateVariableDefinitions(this.instance)
 			UpdateVariableValues(this.instance)
 			UpdatePresets(this.instance)
 			UpdateFeedbacks(this.instance)
 			UpdateActions(this.instance)
 		} catch (error) {
+			this.isInitializing = false
 			this.instance.log('error', `Initial data fetch failed: ${error instanceof Error ? error.message : String(error)}`)
 			// We don't throw here to allow the subscription to keep running if the fetch fails
 		}
@@ -384,6 +393,8 @@ export class SpecteraApi extends EventEmitter {
 		changedVariables: Record<string, string | number | boolean | undefined>,
 	): void {
 		this.state.updateAudioLevels(levels)
+
+		if (this.isInitializing) return
 
 		const now = Date.now()
 		if (now - this.lastLevelUpdateTime >= 500) {
@@ -609,7 +620,7 @@ export class SpecteraApi extends EventEmitter {
 			}
 		}
 
-		if (structureChanged) {
+		if (structureChanged && !this.isInitializing) {
 			UpdateVariableDefinitions(this.instance)
 			UpdatePresets(this.instance)
 			UpdateFeedbacks(this.instance)
@@ -617,18 +628,20 @@ export class SpecteraApi extends EventEmitter {
 			UpdateVariableValues(this.instance)
 		}
 
-		if (Object.keys(changedVariables).length > 0) {
-			this.instance.setVariableValues(changedVariables)
-			/* const loggableVariables = Object.fromEntries(
-				Object.entries(changedVariables).filter(([key]) => !key.includes('audio_level')),
-			)
-			if (Object.keys(loggableVariables).length > 0) {
-				console.log('Changed variables:', loggableVariables)
-			} */
-		}
+		if (!this.isInitializing) {
+			if (Object.keys(changedVariables).length > 0) {
+				this.instance.setVariableValues(changedVariables)
+				/* const loggableVariables = Object.fromEntries(
+					Object.entries(changedVariables).filter(([key]) => !key.includes('audio_level')),
+				)
+				if (Object.keys(loggableVariables).length > 0) {
+					console.log('Changed variables:', loggableVariables)
+				} */
+			}
 
-		if (feedbacksToCheck.size > 0) {
-			this.instance.checkFeedbacks(...Array.from(feedbacksToCheck))
+			if (feedbacksToCheck.size > 0) {
+				this.instance.checkFeedbacks(...Array.from(feedbacksToCheck))
+			}
 		}
 	}
 
