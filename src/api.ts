@@ -19,7 +19,7 @@ import type {
 	InterfaceStatusMadi,
 	InterfaceStatusWordclock,
 } from './types.js'
-import { AudiolinkModeId, MtType } from './types.js'
+import { MtType } from './types.js'
 import type { SpecteraState } from './state.js'
 import { Agent, Dispatcher } from 'undici'
 import { UpdateVariableDefinitions, UpdateVariableValues } from './variables.js'
@@ -860,7 +860,7 @@ export class SpecteraApi extends EventEmitter {
 			}
 		} else {
 			// Existing Audio Link, check if mode needs update
-			const audioLink = this.state.audioLinks.get(audiolinkId)
+			/* const audioLink = this.state.audioLinks.get(audiolinkId)
 			if (audioLink && audioLink.modeId !== (modeId as AudiolinkModeId)) {
 				try {
 					await this.updateAudioLink({ audiolinkId, modeId })
@@ -868,7 +868,7 @@ export class SpecteraApi extends EventEmitter {
 				} catch (error) {
 					this.instance.log('error', `Audio Routing: Failed to update Audio Link mode: ${error}`)
 				}
-			}
+			} */
 		}
 
 		// Assign to Mobile Device
@@ -931,9 +931,10 @@ export class SpecteraApi extends EventEmitter {
 		}
 
 		// Update link mode if needed
-		if (audiolinkId) {
+		/* if (audiolinkId) {
 			const audioLink = this.state.audioLinks.get(audiolinkId)
-			if (audioLink && audioLink.modeId !== (modeId as AudiolinkModeId)) {
+			if (audioLink && audioLink.modeId) {
+				const modeId = audioLink.modeId
 				try {
 					await this.updateAudioLink({ audiolinkId, modeId })
 					this.instance.log('debug', `Updated Audio Link ${audiolinkId} mode to ${modeId}`)
@@ -941,7 +942,7 @@ export class SpecteraApi extends EventEmitter {
 					this.instance.log('warn', `Audio Routing: Failed to update Audio Link mode: ${error}`)
 				}
 			}
-		}
+		} */
 
 		// Assign to Mobile Device (Source)
 		try {

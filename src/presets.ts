@@ -764,7 +764,63 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				],
 				feedbacks: [],
 			}
-			for (const input of self.state.audioInputs.values()) {
+			const sortedInputs = [...self.state.audioInputs.values()].sort((a, b) => a.inputId - b.inputId)
+
+			// Grouped Inputs (1+2, 3+4, etc.)
+			// We iterate by 2 to get pairs
+			for (let i = 0; i < sortedInputs.length; i += 2) {
+				const input1 = sortedInputs[i]
+				const input2 = sortedInputs[i + 1]
+
+				// We only create a pair if there is a second input
+				if (!input2) break
+
+				const pairLabel = `INPUT\\n${input1.inputId + 1} + ${input2.inputId + 1}`
+				const pairName = `${input1.name} + ${input2.name} Engineer Mode`
+
+				presets[`${deviceVariableId}_EngMode_Pair_${input1.inputId}_${input2.inputId}`] = {
+					type: 'button',
+					category: `Engineer Mode`,
+					name: pairName,
+					style: {
+						bgcolor: Color.Black,
+						color: Color.White,
+						text: pairLabel,
+						size: 11,
+						show_topbar: false,
+					},
+					steps: [
+						{
+							down: [
+								{
+									actionId: 'routeAudioInputToMobileDevice',
+									options: {
+										inputId: input1.inputId,
+										mtUid: device.mtUid,
+										modeId: 7, // LIVE (Stereo)
+									},
+								},
+							],
+							up: [],
+						},
+					],
+					feedbacks: [
+						{
+							feedbackId: 'iemAudioInputLinked',
+							options: {
+								mtUid: device.mtUid,
+								inputId: input1.inputId,
+							},
+							style: {
+								bgcolor: Color.SpecteraBlue,
+							},
+						},
+					],
+				}
+			}
+
+			// Individual Inputs
+			for (const input of sortedInputs) {
 				presets[`${deviceVariableId}_EngMode_${input.inputId}`] = {
 					type: 'button',
 					category: `Engineer Mode`,
@@ -772,7 +828,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					style: {
 						bgcolor: Color.Black,
 						color: Color.White,
-						text: `INPUT ${input.inputId + 1}`,
+						text: `INPUT\\n${input.inputId + 1}`,
 						size: 11,
 						show_topbar: false,
 					},
@@ -784,7 +840,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 									options: {
 										inputId: input.inputId,
 										mtUid: device.mtUid,
-										modeId: 7,
+										modeId: 4, // LIVE (Mono)
 									},
 								},
 							],
