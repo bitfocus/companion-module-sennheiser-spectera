@@ -791,7 +791,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 				type: 'dropdown',
 				label: 'Link Mode',
 				choices: getChoicesFromEnum(IemAudiolinkMode),
-				default: IemAudiolinkMode.LIVE as unknown as number,
+				default: IemAudiolinkMode['LIVE (Stereo)'],
 				id: 'modeId',
 			},
 		],
@@ -802,6 +802,27 @@ export function UpdateActions(self: SpecteraInstance): void {
 			const inputId = Number(action.options.inputId)
 			const modeId = Number(action.options.modeId)
 			await self.api.routeAudioInputToMobileDevice(inputId, mtUid, modeId)
+		},
+	}
+
+	actions['removeIemAudioLink'] = {
+		name: 'Audio I/O - Remove IEM Audio Link',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				choices: sekMobileDeviceChoices,
+			},
+		],
+		description: 'Remove an IEM Audio Link from a Mobile Device (IEM). ',
+		callback: async (action) => {
+			if (!self.api) return
+			const mtUid = Number(action.options.mtUid)
+			await self.api.setMobileDevice(mtUid, {
+				iemAudiolinkId: -1,
+			})
 		},
 	}
 
@@ -829,7 +850,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 				type: 'dropdown',
 				label: 'Link Mode',
 				choices: getChoicesFromEnum(MicAudiolinkMode),
-				default: MicAudiolinkMode.LIVE,
+				default: MicAudiolinkMode['LIVE (Mono)'],
 				id: 'modeId',
 			},
 		],
@@ -873,7 +894,6 @@ export function UpdateActions(self: SpecteraInstance): void {
 
 	actions['copyIemAudioLink'] = {
 		name: 'Audio I/O - Copy IEM Channels',
-
 		options: [
 			{
 				type: 'dropdown',

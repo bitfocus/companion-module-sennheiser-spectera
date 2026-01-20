@@ -1,6 +1,6 @@
 import { combineRgb } from '@companion-module/base'
 import { SpecteraState } from './state.js'
-import { AudioInput, MtType } from './types.js'
+import { MtType } from './types.js'
 
 export const Color = {
 	Black: combineRgb(0, 0, 0),
@@ -48,46 +48,54 @@ export function getMobileDeviceChoices(state: SpecteraState, filterType?: MtType
 
 export function getAudioLinkChoices(state: SpecteraState): { id: number; label: string }[] {
 	const choices: { id: number; label: string }[] = []
+	/*
 	const inputsByLink = new Map<number, AudioInput[]>()
 	const activeInputIds = new Set<number>()
-
-	// Group inputs by audio link
-	for (const input of state.audioInputs.values()) {
-		if (!inputsByLink.has(input.iemAudiolinkId)) {
-			inputsByLink.set(input.iemAudiolinkId, [])
+	
+		// Group inputs by audio link
+		for (const input of state.audioInputs.values()) {
+			if (!inputsByLink.has(input.iemAudiolinkId)) {
+				inputsByLink.set(input.iemAudiolinkId, [])
+			}
+			inputsByLink.get(input.iemAudiolinkId)?.push(input)
 		}
-		inputsByLink.get(input.iemAudiolinkId)?.push(input)
-	}
-
-	// Process Active Links
-	for (const link of state.audioLinks.values()) {
-		const inputs = inputsByLink.get(link.audiolinkId) || []
-		if (inputs.length === 0) continue
-
-		// Sort inputs by inputId to ensure deterministic order (1st input is lowest ID)
-		inputs.sort((a, b) => a.inputId - b.inputId)
-
-		const firstInputId = inputs[0].inputId
-		inputs.forEach((i) => activeInputIds.add(i.inputId))
-
-		const label = inputs.map((i) => i.name || `Input ${i.inputId + 1}`).join(' & ')
-
-		choices.push({
-			id: firstInputId,
-			label: `[ACTIVE] ${label}`,
-		})
-	}
-
-	// Process Free Inputs
-	const allInputs = Array.from(state.audioInputs.values()).sort((a, b) => a.inputId - b.inputId)
-	for (const input of allInputs) {
-		if (!activeInputIds.has(input.inputId)) {
+	
+		// Process Active Links
+		for (const link of state.audioLinks.values()) {
+			const inputs = inputsByLink.get(link.audiolinkId) || []
+			if (inputs.length === 0) continue
+	
+			// Sort inputs by inputId to ensure deterministic order (1st input is lowest ID)
+			inputs.sort((a, b) => a.inputId - b.inputId)
+	
+			const firstInputId = inputs[0].inputId
+			inputs.forEach((i) => activeInputIds.add(i.inputId))
+	
+			const label = inputs.map((i) => i.name || `Input ${i.inputId + 1}`).join(' & ')
+	
 			choices.push({
-				id: input.inputId,
-				label: input.name || `Input ${input.inputId + 1}`,
+				id: firstInputId,
+				label: `[ACTIVE] ${label}`,
 			})
 		}
-	}
+	
+		// Process Free Inputs
+		const allInputs = Array.from(state.audioInputs.values()).sort((a, b) => a.inputId - b.inputId)
+		for (const input of allInputs) {
+			if (!activeInputIds.has(input.inputId)) {
+				choices.push({
+					id: input.inputId,
+					label: input.name || `Input ${input.inputId + 1}`,
+				})
+			}
+		} */
+
+	state.audioInputs.forEach((input) => {
+		choices.push({
+			id: input.inputId,
+			label: input.name || `Input ${input.inputId + 1}`,
+		})
+	})
 
 	// Sort choices by ID (which is input ID)
 	choices.sort((a, b) => a.id - b.id)

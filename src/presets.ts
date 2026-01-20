@@ -738,21 +738,41 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				name: `${device.name} (${serial}) - Engineer Mode`,
 				text: '',
 			}
-			for (const copyDevice of mobileDevices) {
-				if (copyDevice.type !== MtType.SEK) {
-					continue
-				}
-				if (copyDevice.mtUid === device.mtUid) {
-					continue
-				}
-				presets[`${deviceVariableId}_SEKCopy_${copyDevice.mtUid}`] = {
+			presets[`${deviceVariableId}_EngMode_$remove`] = {
+				type: 'button',
+				category: `Engineer Mode`,
+				name: `${device.name} Remove IEM Audio Link`,
+				style: {
+					bgcolor: Color.Black,
+					color: Color.White,
+					text: `REMOVE`,
+					size: 11,
+					show_topbar: false,
+				},
+				steps: [
+					{
+						down: [
+							{
+								actionId: 'removeIemAudioLink',
+								options: {
+									mtUid: device.mtUid,
+								},
+							},
+						],
+						up: [],
+					},
+				],
+				feedbacks: [],
+			}
+			for (const input of self.state.audioInputs.values()) {
+				presets[`${deviceVariableId}_EngMode_${input.inputId}`] = {
 					type: 'button',
 					category: `Engineer Mode`,
-					name: `${copyDevice.name} SEK Copy`,
+					name: `${input.name} Engineer Mode`,
 					style: {
 						bgcolor: Color.Black,
 						color: Color.White,
-						text: `${copyDevice.name}\\nSEK COPY`,
+						text: `INPUT ${input.inputId + 1}`,
 						size: 11,
 						show_topbar: false,
 					},
@@ -760,10 +780,11 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						{
 							down: [
 								{
-									actionId: 'copyIemAudioLink',
+									actionId: 'routeAudioInputToMobileDevice',
 									options: {
-										sourceMtUid: copyDevice.mtUid,
-										targetMtUid: device.mtUid,
+										inputId: input.inputId,
+										mtUid: device.mtUid,
+										modeId: 7,
 									},
 								},
 							],
@@ -772,19 +793,10 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					],
 					feedbacks: [
 						{
-							feedbackId: 'iemAudioLinkActive',
+							feedbackId: 'iemAudioInputLinked',
 							options: {
-								mtUid: copyDevice.mtUid,
-							},
-							style: {
-								bgcolor: Color.SpecteraDarkGray,
-							},
-						},
-						{
-							feedbackId: 'iemAudioLinkMatch',
-							options: {
-								mtUid1: device.mtUid,
-								mtUid2: copyDevice.mtUid,
+								mtUid: device.mtUid,
+								inputId: input.inputId,
 							},
 							style: {
 								bgcolor: Color.SpecteraBlue,
@@ -800,14 +812,17 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				text: '',
 			}
 			for (const copyDevice of mobileDevices) {
-				presets[`${deviceVariableId}_SEKCopy_${copyDevice.mtUid}`] = {
+				if (copyDevice.mtUid === device.mtUid) {
+					continue
+				}
+				presets[`${deviceVariableId}_BackupMode_${copyDevice.mtUid}`] = {
 					type: 'button',
 					category: `Backup Mode`,
-					name: `${copyDevice.name} SEK Copy`,
+					name: `${copyDevice.name} Backup Mode`,
 					style: {
 						bgcolor: Color.Black,
 						color: Color.White,
-						text: `${copyDevice.name}\\nSEK COPY`,
+						text: `${copyDevice.name}\\nOVERRIDE`,
 						size: 11,
 						show_topbar: false,
 					},

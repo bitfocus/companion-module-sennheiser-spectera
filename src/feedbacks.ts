@@ -21,7 +21,7 @@ import {
 	MicLowCutHzSEK,
 	InterfaceInputStatus,
 } from './types.js'
-import { getChoicesFromEnum, getMobileDeviceChoices } from './utils.js'
+import { getChoicesFromEnum, getMobileDeviceChoices, getAudioLinkChoices } from './utils.js'
 import { Color } from './utils.js'
 
 export function UpdateFeedbacks(self: SpecteraInstance): void {
@@ -647,6 +647,39 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
 			if (device?.type === MtType.SEK) {
 				return device.iemAudiolinkActive === true
+			}
+			return false
+		},
+	}
+
+	feedbacks['iemAudioInputLinked'] = {
+		type: 'boolean',
+		name: 'SEK - IEM Audio Input Linked',
+		description: 'Indicates if the IEM audio input is linked to the SEK',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'SEK',
+				id: 'mtUid',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				choices: sekMobileDeviceChoices,
+			},
+			{
+				type: 'dropdown',
+				label: 'Audio Input',
+				choices: getAudioLinkChoices(self.state),
+				default: 0,
+				id: 'inputId',
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			const inputId = Number(feedback.options.inputId)
+			if (device?.type === MtType.SEK && device.iemAudiolinkId !== -1) {
+				return self.state.audioInputs.get(inputId)?.iemAudiolinkId === device.iemAudiolinkId
 			}
 			return false
 		},

@@ -89,38 +89,43 @@ export enum AntennaPortId {
 }
 
 export enum AudiolinkModeId {
-	'MAX Range (Mono)' = 1,
-	'MAX Link Density (Mono)' = 2,
-	'LIVE Link Density (Mono)' = 3,
-	'LIVE (Mono)' = 4,
-	'LIVE Low Latency (Mono)' = 5,
-	'LIVE Link Density (Stereo)' = 6,
-	'LIVE (Stereo)' = 7,
-	'LIVE Low Latency (Stereo)' = 8,
-	'LIVE Ultra Low Latency (Stereo)' = 9,
-	'RAW (Mono)' = 10,
 	'RAW Low Latency (Mono)' = 11,
-	'Empty (Mono)' = 1001,
+	'RAW (Mono)' = 10,
+	'LIVE Ultra Low Latency (Stereo)' = 9,
+	'LIVE Low Latency (Stereo)' = 8,
+	'LIVE (Stereo)' = 7,
+	'LIVE Link Density (Stereo)' = 6,
+	'LIVE Low Latency (Mono)' = 5,
+	'LIVE (Mono)' = 4,
+	'LIVE Link Density (Mono)' = 3,
+	'MAX Link Density (Mono)' = 2,
+	'MAX Range (Mono)' = 1,
 	'Empty (Stereo)' = 1002,
+	'Empty (Mono)' = 1001,
 }
 
 export enum IemAudiolinkMode {
-	'None' = 1002,
-	'LIVE Ultra Low Latency' = 9,
-	'LIVE Low Latency' = 8,
-	'LIVE' = 7,
-	'LIVE Link Density' = 6,
+	'LIVE Ultra Low Latency (Stereo)' = 9,
+	'LIVE Low Latency (Stereo)' = 8,
+	'LIVE (Stereo)' = 7,
+	'LIVE Link Density (Stereo)' = 6,
+	'LIVE (Mono)' = 4,
+	'LIVE Link Density (Mono)' = 3,
+	'MAX Link Density (Mono)' = 2,
+	'MAX Range (Mono)' = 1,
+	'Empty (Stereo)' = 1002,
+	'Empty (Mono)' = 1001,
 }
 
 export enum MicAudiolinkMode {
-	'None' = 1001,
-	'RAW Low Latency' = 11,
-	'RAW' = 10,
-	'LIVE Low Latency' = 5,
-	'LIVE' = 4,
-	'LIVE Link Density' = 3,
-	'MAX Range' = 1,
-	'MAX Link Density' = 2,
+	'RAW Low Latency (Mono)' = 11,
+	'RAW (Mono)' = 10,
+	'LIVE Low Latency (Mono)' = 5,
+	'LIVE (Mono)' = 4,
+	'LIVE Link Density (Mono)' = 3,
+	'MAX Link Density (Mono)' = 2,
+	'MAX Range (Mono)' = 1,
+	'Empty (Mono)' = 1001,
 }
 
 export enum MicLineSelection {

@@ -150,9 +150,10 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 
 	// Audio Outputs
 	for (const output of self.state.audioOutputs.values()) {
+		const displayId = output.outputId + 1
 		variables.push({
-			variableId: `audio_output_${output.outputId}_mic_link`,
-			name: `Audio Output ${output.outputId} Mic Link ID`,
+			variableId: `audio_output_${displayId}_mic_link_id`,
+			name: `Audio Output ${displayId} Mic Link ID`,
 		})
 	}
 
@@ -461,8 +462,9 @@ export function getAudioInputVariables(input: AudioInput): Record<string, any> {
 }
 
 export function getAudioOutputVariables(output: AudioOutput): Record<string, any> {
+	const displayId = output.outputId + 1
 	return {
-		[`audio_output_${output.outputId}_mic_link`]: output.micAudiolinkId,
+		[`audio_output_${displayId}_mic_link_id`]: output.micAudiolinkId,
 	}
 }
 

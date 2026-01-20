@@ -101,11 +101,11 @@ export const AntennaStateMap: StateMap<Antenna> = {
 export const AudioInputStateMap: StateMap<AudioInput> = {
 	source: { variable: 'source', valueFn: (v: unknown): any => v },
 	name: { variable: 'name', valueFn: (v: unknown): any => v },
-	iemAudiolinkId: { variable: 'iem_link_id', valueFn: (v: unknown): any => v },
+	iemAudiolinkId: { feedback: 'iemAudioInputLinked', variable: 'iem_link_id', valueFn: (v: unknown): any => v },
 }
 
 export const AudioOutputStateMap: StateMap<AudioOutput> = {
-	micAudiolinkId: { variable: 'mic_link', valueFn: (v: unknown): any => v },
+	micAudiolinkId: { variable: 'mic_link_id', valueFn: (v: unknown): any => v },
 }
 
 export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
@@ -207,7 +207,7 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 		variable: 'mic_lowcut_hz',
 		valueFn: toMicLowCutLabel,
 	},
-	iemAudiolinkId: { feedback: 'iemAudioLinkMatch', variable: 'iem_audiolink_id', valueFn: (v: unknown): any => v },
+	iemAudiolinkId: { feedback: 'iemAudioInputLinked', variable: 'iem_audiolink_id', valueFn: (v: unknown): any => v },
 	iemAudiolinkActive: {
 		feedback: 'iemAudioLinkActive',
 		variable: 'iem_audiolink_active',
