@@ -24,7 +24,9 @@ export class SpecteraInstance extends InstanceBase<ModuleConfig, ModuleSecrets> 
 
 		this.updateStatus(InstanceStatus.Connecting)
 
-		await this.initApi()
+		this.initApi().catch((e) => {
+			this.log('error', `Error initializing API: ${e}`)
+		})
 
 		this.updateActions()
 		this.updateFeedbacks()
