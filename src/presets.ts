@@ -9,6 +9,7 @@ import {
 	RfState,
 	MtType,
 	InterfaceInputStatus,
+	MicAudiolinkMode,
 } from './types.js'
 
 function sanitizeName(name: string): string {
@@ -467,6 +468,55 @@ export function UpdatePresets(self: SpecteraInstance): void {
 		const serial = device.serial
 		const deviceVariableId = `${type}_${name}_${serial}`
 		const category = device.type === MtType.SEK ? 'SEK' : 'SKM'
+
+		presets[`${deviceVariableId}_MicLinkMove_Header`] = {
+			type: 'text',
+			category: `Instant Switch Mode`,
+			name: `${device.name} (${serial})`,
+			text: '',
+		}
+
+		for (const output of self.state.audioOutputs.values()) {
+			presets[`${deviceVariableId}_MicLinkMove_Source_${output.outputId}`] = {
+				type: 'button',
+				category: `Instant Switch Mode`,
+				name: `${device.name} Source`,
+				style: {
+					bgcolor: Color.Black,
+					color: Color.White,
+					text: `${device.name}\\nto\\nOUT ${output.outputId + 1}`,
+					size: 11,
+					show_topbar: false,
+				},
+				steps: [
+					{
+						down: [
+							{
+								actionId: 'routeMobileDeviceToAudioOutput',
+								options: {
+									mtUid: device.mtUid,
+									outputId: output.outputId,
+									modeId: MicAudiolinkMode['LIVE (Mono)'],
+								},
+							},
+						],
+						up: [],
+					},
+				],
+				feedbacks: [
+					{
+						feedbackId: 'mobileDeviceOutputLinked',
+						options: {
+							mtUid: device.mtUid,
+							outputId: output.outputId,
+						},
+						style: {
+							bgcolor: Color.SpecteraGreen,
+						},
+					},
+				],
+			}
+		}
 
 		presets[`${deviceVariableId}_Header`] = {
 			type: 'text',

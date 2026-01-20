@@ -105,7 +105,7 @@ export const AudioInputStateMap: StateMap<AudioInput> = {
 }
 
 export const AudioOutputStateMap: StateMap<AudioOutput> = {
-	micAudiolinkId: { variable: 'mic_link_id', valueFn: (v: unknown): any => v },
+	micAudiolinkId: { feedback: 'mobileDeviceOutputLinked', variable: 'mic_link_id', valueFn: (v: unknown): any => v },
 }
 
 export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {

@@ -894,57 +894,56 @@ export class SpecteraApi extends EventEmitter {
 			return
 		}
 
-		// Check if Mobile Device (Source) already has a valid link
 		let audiolinkId = mobileDevice.micAudiolinkId
 		if (audiolinkId && audiolinkId > 0) {
-			// Reuse device's existing link
 			this.instance.log('debug', `Routing: Using existing Audio Link ${audiolinkId} from Mobile Device`)
 		} else {
-			// Device has no link, check if Audio Output (Dest) has a reusable link
-			const outLink = audioOutput.micAudiolinkId ? this.state.audioLinks.get(audioOutput.micAudiolinkId) : undefined
+			if (mobileDevice.rfChannelId === undefined) {
+				this.instance.log('warn', 'Audio Routing: Mobile Device has no RF Channel assigned')
+				return
+			}
 
-			if (outLink && outLink.rfChannelId === mobileDevice.rfChannelId) {
-				// Reuse output's link as it matches the device's RF Channel
-				audiolinkId = outLink.audiolinkId
-				this.instance.log(
-					'debug',
-					`Routing: Using existing Audio Link ${audiolinkId} from Audio Output (RF Channel matched)`,
-				)
-			} else {
-				// Create new Audio Link
-				if (mobileDevice.rfChannelId === undefined) {
-					this.instance.log('warn', 'Audio Routing: Mobile Device has no RF Channel assigned')
-					return
+			try {
+				audiolinkId = await this.createAudioLink({
+					modeId: modeId,
+					rfChannelId: mobileDevice.rfChannelId,
+				})
+				this.instance.log('debug', `Created new Audio Link ${audiolinkId}`)
+			} catch (error) {
+				this.instance.log('warn', `Audio Routing: Failed to create Audio Link: ${error}`)
+				return
+			}
+		}
+
+		const oldLinkID = audioOutput.micAudiolinkId
+		if (oldLinkID && oldLinkID !== -1 && oldLinkID !== audiolinkId) {
+			let isOldLinkShared = false
+			for (const otherOutput of this.state.audioOutputs.values()) {
+				if (otherOutput.outputId !== outputId && otherOutput.micAudiolinkId === oldLinkID) {
+					isOldLinkShared = true
+					break
 				}
+			}
 
-				try {
-					audiolinkId = await this.createAudioLink({
-						modeId: modeId,
-						rfChannelId: mobileDevice.rfChannelId,
-					})
-					this.instance.log('debug', `Created new Audio Link ${audiolinkId}`)
-				} catch (error) {
-					this.instance.log('warn', `Audio Routing: Failed to create Audio Link: ${error}`)
-					return
+			if (!isOldLinkShared) {
+				for (const otherDevice of this.state.mobileDevices.values()) {
+					if (otherDevice.micAudiolinkId === oldLinkID) {
+						this.instance.log(
+							'debug',
+							`Audio Routing: Unlinking device ${otherDevice.mtUid} from Audio Link ${oldLinkID}`,
+						)
+						try {
+							await this.setMobileDevice(otherDevice.mtUid, {
+								micAudiolinkId: -1,
+							} as Partial<MobileDevice>)
+						} catch (error) {
+							this.instance.log('warn', `Audio Routing: Failed to unlink device ${otherDevice.mtUid}: ${error}`)
+						}
+					}
 				}
 			}
 		}
 
-		// Update link mode if needed
-		/* if (audiolinkId) {
-			const audioLink = this.state.audioLinks.get(audiolinkId)
-			if (audioLink && audioLink.modeId) {
-				const modeId = audioLink.modeId
-				try {
-					await this.updateAudioLink({ audiolinkId, modeId })
-					this.instance.log('debug', `Updated Audio Link ${audiolinkId} mode to ${modeId}`)
-				} catch (error) {
-					this.instance.log('warn', `Audio Routing: Failed to update Audio Link mode: ${error}`)
-				}
-			}
-		} */
-
-		// Assign to Mobile Device (Source)
 		try {
 			if (mobileDevice.micAudiolinkId !== audiolinkId) {
 				await this.setMobileDevice(mtUid, {
@@ -955,7 +954,6 @@ export class SpecteraApi extends EventEmitter {
 			this.instance.log('warn', `Audio Routing: Failed to assign Audio Link to Mobile Device: ${error}`)
 		}
 
-		// Assign to Audio Output (Destination)
 		try {
 			if (audioOutput.micAudiolinkId !== audiolinkId) {
 				await this.setAudioOutput(outputId, {

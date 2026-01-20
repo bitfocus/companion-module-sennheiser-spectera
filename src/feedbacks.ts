@@ -685,6 +685,42 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		},
 	}
 
+	feedbacks['mobileDeviceOutputLinked'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Output Linked',
+		description: 'Indicates if the mobile device is linked to an audio output',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'mtUid',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				choices: mobileDeviceChoices,
+			},
+			{
+				type: 'dropdown',
+				label: 'Audio Output',
+				choices: Array.from(self.state.audioOutputs.values()).map((o) => ({
+					id: o.outputId,
+					label: `Output ${o.outputId + 1}`,
+				})),
+				default: 0,
+				id: 'outputId',
+			},
+		],
+		callback: async (feedback) => {
+			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+			const outputId = Number(feedback.options.outputId)
+			if (device?.micAudiolinkId !== -1) {
+				return self.state.audioOutputs.get(outputId)?.micAudiolinkId === device?.micAudiolinkId
+			}
+			return false
+		},
+	}
+
 	//Base Station Feedbacks
 	feedbacks['baseStationState'] = {
 		type: 'boolean',
