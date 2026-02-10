@@ -24,18 +24,18 @@
 	},
 	"dependencies": {
 		"@companion-module/base": "~1.14.1",
-		"undici": "^7.18.2"
+		"undici": "^7.21.0"
 	},
 	"devDependencies": {
-		"@companion-module/tools": "^2.5.0",
-		"@types/node": "^22.19.7",
+		"@companion-module/tools": "^2.6.1",
+		"@types/node": "^22.19.9",
 		"eslint": "^9.39.2",
 		"husky": "^9.1.7",
 		"lint-staged": "^16.2.7",
-		"prettier": "^3.8.0",
+		"prettier": "^3.8.1",
 		"rimraf": "^6.1.2",
 		"typescript": "~5.9.3",
-		"typescript-eslint": "^8.53.0"
+		"typescript-eslint": "^8.54.0"
 	},
 	"prettier": "@companion-module/tools/.prettierrc.json",
 	"lint-staged": {
