@@ -864,6 +864,81 @@ export function UpdateActions(self: SpecteraInstance): void {
 		},
 	}
 
+	actions['removeDeviceFromAudioOutput'] = {
+		name: 'Audio I/O - Remove Device from Output',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Audio Output',
+				choices: Array.from(self.state.audioOutputs.values()).map((o) => ({
+					id: o.outputId,
+					label: `Output ${o.outputId + 1}`,
+				})),
+				default: 0,
+				id: 'outputId',
+			},
+		],
+		description: 'Remove the mobile device currently routed to the selected audio output.',
+		callback: async (action) => {
+			if (!self.api) return
+			const outputId = Number(action.options.outputId)
+			await self.api.setAudioOutput(outputId, { micAudiolinkId: -1 })
+		},
+	}
+
+	const audioOutputChannelChoices = [
+		{ id: 'commandModeAudioNetwork', label: 'Dante' },
+		{ id: 'commandModeMadi1', label: 'MADI 1' },
+		{ id: 'commandModeMadi2', label: 'MADI 2' },
+	] as const
+
+	actions['setAudioOutputChannel'] = {
+		name: 'Audio Output - Set Channel',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Audio Output',
+				choices: Array.from(self.state.audioOutputs.values()).map((o) => ({
+					id: o.outputId,
+					label: `Output ${o.outputId + 1}`,
+				})),
+				default: 0,
+				id: 'outputId',
+			},
+			{
+				type: 'dropdown',
+				label: 'Channel',
+				choices: [...audioOutputChannelChoices],
+				default: 'commandModeAudioNetwork',
+				id: 'channel',
+			},
+			{
+				type: 'dropdown',
+				label: 'Mode',
+				choices: [
+					{ id: 'On', label: 'On' },
+					{ id: 'Off', label: 'Off' },
+					{ id: 'Toggle', label: 'Toggle' },
+				],
+				default: 'On',
+				id: 'mode',
+			},
+		],
+		description: 'Set the output channel  for an audio output channel.',
+		callback: async (action) => {
+			if (!self.api) return
+			const outputId = Number(action.options.outputId)
+			const channel = action.options.channel as (typeof audioOutputChannelChoices)[number]['id']
+			let mode = action.options.mode as 'On' | 'Off' | 'Toggle'
+			if (mode === 'Toggle') {
+				const current = self.state.audioOutputs.get(outputId)?.[channel]
+				mode = current === 'On' ? 'Off' : 'On'
+			}
+			await self.api.setAudioOutput(outputId, { [channel]: mode })
+			self.checkFeedbacks('audioOutputChannel')
+		},
+	}
+
 	actions['copyAllMobileDeviceSettings'] = {
 		name: 'Mobile Device - Copy All Settings',
 		options: [

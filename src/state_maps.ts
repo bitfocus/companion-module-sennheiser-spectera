@@ -26,6 +26,7 @@ import {
 	MicLowCutHzSEK,
 	MicLowCutHzSKM,
 	MtType,
+	InputSource,
 } from './types.js'
 
 export interface StateMapEntry<T> {
@@ -64,6 +65,13 @@ const psuStatusLabels: Record<PsuStatus, string> = {
 const toPsuLabel = (v: unknown): any => psuStatusLabels[v as PsuStatus]
 const joinWarnings = (v: unknown): any => ((v as string[])?.length ? (v as string[]).join(', ') : 'None')
 
+const inputSourceLabels: Record<InputSource, string> = {
+	[InputSource.Dante]: 'Dante',
+	[InputSource['MADI 1']]: 'MADI 1',
+	[InputSource['MADI 2']]: 'MADI 2',
+}
+const toInputSourceLabel = (v: unknown): any => inputSourceLabels[v as InputSource] ?? v
+
 export const RfChannelStateMap: StateMap<RfChannel> = {
 	txPower: { feedback: 'rfTxPower', variable: 'tx_power', valueFn: toTxPower },
 	frequency: { feedback: 'rfFrequency', variable: 'frequency', valueFn: toFrequency },
@@ -99,13 +107,16 @@ export const AntennaStateMap: StateMap<Antenna> = {
 }
 
 export const AudioInputStateMap: StateMap<AudioInput> = {
-	source: { variable: 'source', valueFn: (v: unknown): any => v },
+	source: { feedback: 'audioInputSource', variable: 'source', valueFn: toInputSourceLabel },
 	name: { variable: 'name', valueFn: (v: unknown): any => v },
 	iemAudiolinkId: { feedback: 'iemAudioInputLinked', variable: 'iem_link_id', valueFn: (v: unknown): any => v },
 }
 
 export const AudioOutputStateMap: StateMap<AudioOutput> = {
 	micAudiolinkId: { feedback: 'mobileDeviceOutputLinked', variable: 'mic_link_id', valueFn: (v: unknown): any => v },
+	commandModeAudioNetwork: { feedback: 'audioOutputChannel', valueFn: (v: unknown): any => v },
+	commandModeMadi1: { feedback: 'audioOutputChannel', valueFn: (v: unknown): any => v },
+	commandModeMadi2: { feedback: 'audioOutputChannel', valueFn: (v: unknown): any => v },
 }
 
 export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {

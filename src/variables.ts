@@ -12,7 +12,16 @@ import type {
 	BaseStationState,
 	BaseStationSite,
 } from './types.js'
-import { MtType, RfState, RFChannels, RfStateStartup, PsuStatus, MicLowCutHzSEK, MicLowCutHzSKM } from './types.js'
+import {
+	MtType,
+	RfState,
+	RFChannels,
+	RfStateStartup,
+	PsuStatus,
+	MicLowCutHzSEK,
+	MicLowCutHzSKM,
+	InputSource,
+} from './types.js'
 import {
 	StateMap,
 	AudioNetworkStateMap,
@@ -27,6 +36,12 @@ const rfStateStartupLabels: Record<RfStateStartup, string> = {
 	[RfStateStartup.Active]: 'Active',
 	[RfStateStartup.Muted]: 'Muted',
 	[RfStateStartup.LastState]: 'Last State',
+}
+
+const inputSourceLabels: Record<InputSource, string> = {
+	[InputSource.Dante]: 'Dante',
+	[InputSource['MADI 1']]: 'MADI 1',
+	[InputSource['MADI 2']]: 'MADI 2',
 }
 
 const psuStatusLabels: Record<PsuStatus, string> = {
@@ -151,10 +166,20 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 	// Audio Outputs
 	for (const output of self.state.audioOutputs.values()) {
 		const displayId = output.outputId + 1
-		variables.push({
-			variableId: `audio_output_${displayId}_mic_link_id`,
-			name: `Audio Output ${displayId} Mic Link ID`,
-		})
+		variables.push(
+			{
+				variableId: `audio_output_${displayId}_mic_link_id`,
+				name: `Audio Output ${displayId} Mic Link ID`,
+			},
+			{
+				variableId: `audio_output_${displayId}_source`,
+				name: `Audio Output ${displayId} Source`,
+			},
+			{
+				variableId: `audio_output_${displayId}_destinations`,
+				name: `Audio Output ${displayId} Active Channels`,
+			},
+		)
 	}
 
 	// RF Channels
@@ -455,17 +480,42 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 export function getAudioInputVariables(input: AudioInput): Record<string, any> {
 	const displayId = input.inputId + 1
 	return {
-		[`audio_input_${displayId}_source`]: input.source,
+		[`audio_input_${displayId}_source`]: inputSourceLabels[input.source] ?? input.source,
 		[`audio_input_${displayId}_name`]: input.name || 'None',
 		[`audio_input_${displayId}_iem_link_id`]: input.iemAudiolinkId,
 	}
 }
 
-export function getAudioOutputVariables(output: AudioOutput): Record<string, any> {
+/**
+ * Resolve the linked mobile device name for an audio output from its micAudiolinkId.
+ */
+export function getAudioOutputSourceName(output: AudioOutput, mobileDevices: Map<number, MobileDevice>): string {
+	if (output.micAudiolinkId < 0) return 'None'
+	const device = [...mobileDevices.values()].find((d) => d.micAudiolinkId === output.micAudiolinkId)
+	return device?.name ?? 'None'
+}
+
+export function getAudioOutputVariables(
+	output: AudioOutput,
+	mobileDevices: Map<number, MobileDevice>,
+): Record<string, any> {
 	const displayId = output.outputId + 1
 	return {
 		[`audio_output_${displayId}_mic_link_id`]: output.micAudiolinkId,
+		[`audio_output_${displayId}_source`]: getAudioOutputSourceName(output, mobileDevices),
+		[`audio_output_${displayId}_destinations`]: getAudioOutputActiveChannels(output),
 	}
+}
+
+/**
+ * Comma-separated list of active (On) channel names for one audio output.
+ */
+export function getAudioOutputActiveChannels(output: AudioOutput): string {
+	const active: string[] = []
+	if (output.commandModeAudioNetwork === 'On') active.push('Dante')
+	if (output.commandModeMadi1 === 'On') active.push('MADI 1')
+	if (output.commandModeMadi2 === 'On') active.push('MADI 2')
+	return active.length ? active.join(', ') : 'None'
 }
 
 export function getRfChannelVariables(channel: RfChannel): Record<string, any> {
@@ -667,7 +717,7 @@ export function UpdateVariableValues(self: SpecteraInstance): void {
 
 	// Audio Outputs
 	for (const output of self.state.audioOutputs.values()) {
-		values = { ...values, ...getAudioOutputVariables(output) }
+		values = { ...values, ...getAudioOutputVariables(output, self.state.mobileDevices) }
 	}
 
 	// RF Channels

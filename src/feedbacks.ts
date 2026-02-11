@@ -20,6 +20,7 @@ import {
 	MicLineSelectionAuto,
 	MicLowCutHzSEK,
 	InterfaceInputStatus,
+	InputSource,
 } from './types.js'
 import { getChoicesFromEnum, getMobileDeviceChoices, getAudioLinkChoices } from './utils.js'
 import { Color } from './utils.js'
@@ -682,6 +683,88 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				return self.state.audioInputs.get(inputId)?.iemAudiolinkId === device.iemAudiolinkId
 			}
 			return false
+		},
+	}
+
+	feedbacks['audioInputSource'] = {
+		type: 'boolean',
+		name: 'Audio Input - Source',
+		description:
+			'Indicates when the selected audio input is set to the chosen source (same as $(spectera:audio_input_N_source))',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Audio Input',
+				choices: Array.from(self.state.audioInputs.values()).map((i) => ({
+					id: i.inputId,
+					label: i.name || `Input ${i.inputId + 1}`,
+				})),
+				default: 0,
+				id: 'inputId',
+			},
+			{
+				type: 'dropdown',
+				label: 'Source',
+				choices: getChoicesFromEnum(InputSource),
+				default: InputSource.Dante,
+				id: 'source',
+			},
+		],
+		callback: async (feedback) => {
+			const inputId = feedback.options.inputId as number
+			const currentSource = self.state.audioInputs.get(inputId)?.source
+			return currentSource === feedback.options.source
+		},
+	}
+
+	feedbacks['audioOutputChannel'] = {
+		type: 'boolean',
+		name: 'Audio Output - Channel',
+		description: 'Indicates when the selected audio output channel (Dante, MADI 1, MADI 2) is On or Off',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Audio Output',
+				choices: Array.from(self.state.audioOutputs.values()).map((o) => ({
+					id: o.outputId,
+					label: `Output ${o.outputId + 1}`,
+				})),
+				default: 0,
+				id: 'outputId',
+			},
+			{
+				type: 'dropdown',
+				label: 'Channel',
+				choices: [
+					{ id: 'commandModeAudioNetwork', label: 'Dante' },
+					{ id: 'commandModeMadi1', label: 'MADI 1' },
+					{ id: 'commandModeMadi2', label: 'MADI 2' },
+				],
+				default: 'commandModeAudioNetwork',
+				id: 'channel',
+			},
+			{
+				type: 'dropdown',
+				label: 'State',
+				choices: [
+					{ id: 'On', label: 'On' },
+					{ id: 'Off', label: 'Off' },
+				],
+				default: 'On',
+				id: 'state',
+			},
+		],
+		callback: async (feedback) => {
+			const outputId = feedback.options.outputId as number
+			const channel = feedback.options.channel as 'commandModeAudioNetwork' | 'commandModeMadi1' | 'commandModeMadi2'
+			const current = self.state.audioOutputs.get(outputId)?.[channel]
+			return current === feedback.options.state
 		},
 	}
 

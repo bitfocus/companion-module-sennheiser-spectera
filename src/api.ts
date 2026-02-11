@@ -22,7 +22,12 @@ import type {
 import { MtType } from './types.js'
 import type { SpecteraState } from './state.js'
 import { Agent, Dispatcher } from 'undici'
-import { UpdateVariableDefinitions, UpdateVariableValues } from './variables.js'
+import {
+	UpdateVariableDefinitions,
+	UpdateVariableValues,
+	getAudioOutputSourceName,
+	getAudioOutputActiveChannels,
+} from './variables.js'
 import { UpdatePresets } from './presets.js'
 import { UpdateFeedbacks } from './feedbacks.js'
 import { UpdateActions } from './actions.js'
@@ -460,6 +465,9 @@ export class SpecteraApi extends EventEmitter {
 					changedVariables,
 					feedbacksToCheck,
 				)
+				const displayId = value.outputId + 1
+				changedVariables[`audio_output_${displayId}_source`] = getAudioOutputSourceName(value, this.state.mobileDevices)
+				changedVariables[`audio_output_${displayId}_destinations`] = getAudioOutputActiveChannels(value)
 				structureChanged = !oldState
 			} else if (key.startsWith('/api/audio/links/')) {
 				if (value === null) {

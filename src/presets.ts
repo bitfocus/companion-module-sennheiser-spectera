@@ -10,6 +10,7 @@ import {
 	MtType,
 	InterfaceInputStatus,
 	MicAudiolinkMode,
+	InputSource,
 } from './types.js'
 
 function sanitizeName(name: string): string {
@@ -455,6 +456,196 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					},
 				},
 			],
+		}
+	}
+
+	//Audio Inputs
+	presets[`audioInputCurrentSourceHeader`] = {
+		type: 'text',
+		category: 'Audio Inputs',
+		name: `Audio Inputs - Current Source`,
+		text: '',
+	}
+	for (const input of self.state.audioInputs.values()) {
+		presets[`audioInput${input.inputId}CurrentSource`] = {
+			type: 'button',
+			category: 'Audio Inputs',
+			name: `${input.name || `Input ${input.inputId + 1}`} - Current Source`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `${input.name || `IN ${input.inputId + 1}`}\\n$(spectera:audio_input_${input.inputId + 1}_source)`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [],
+					up: [],
+				},
+			],
+			feedbacks: [],
+		}
+	}
+	for (const input of self.state.audioInputs.values()) {
+		presets[`audioInput${input.inputId}SourceHeader`] = {
+			type: 'text',
+			category: 'Audio Inputs',
+			name: `${input.name || `Input ${input.inputId + 1}`} - Select Source`,
+			text: '',
+		}
+		for (const source of [InputSource.Dante, InputSource['MADI 1'], InputSource['MADI 2']] as const) {
+			const sourceLabel =
+				source === InputSource.Dante ? 'Dante' : source === InputSource['MADI 1'] ? 'MADI 1' : 'MADI 2'
+			presets[`audioInput${input.inputId}Source_${source}`] = {
+				type: 'button',
+				category: 'Audio Inputs',
+				name: `${input.name || `Input ${input.inputId + 1}`} - ${sourceLabel}`,
+				style: {
+					bgcolor: Color.Black,
+					color: Color.White,
+					text: `${input.name || `IN ${input.inputId + 1}`}\\nto\\n${sourceLabel}`,
+					size: 11,
+					show_topbar: false,
+				},
+				steps: [
+					{
+						down: [
+							{
+								actionId: 'setAudioInputSource',
+								options: {
+									inputId: input.inputId,
+									source,
+								},
+							},
+						],
+						up: [],
+					},
+				],
+				feedbacks: [
+					{
+						feedbackId: 'audioInputSource',
+						options: {
+							inputId: input.inputId,
+							source,
+						},
+						style: {
+							bgcolor: Color.SpecteraBlue,
+						},
+					},
+				],
+			}
+		}
+	}
+
+	//Audio Outputs
+	presets[`audioOutputCurrentSourceHeader`] = {
+		type: 'text',
+		category: 'Audio Outputs',
+		name: `Audio Outputs - Current Source`,
+		text: '',
+	}
+	for (const output of self.state.audioOutputs.values()) {
+		presets[`audioOutput${output.outputId}CurrentSource`] = {
+			type: 'button',
+			category: 'Audio Outputs',
+			name: `Output ${output.outputId + 1} - Current Source`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `OUT ${output.outputId + 1}\\n$(spectera:audio_output_${output.outputId + 1}_source)`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [],
+					up: [],
+				},
+			],
+			feedbacks: [],
+		}
+	}
+	presets[`audioOutputCurrentChannelHeader`] = {
+		type: 'text',
+		category: 'Audio Outputs',
+		name: `Audio Outputs - Current Destinations`,
+		text: '',
+	}
+	for (const output of self.state.audioOutputs.values()) {
+		presets[`audioOutput${output.outputId}CurrentChannel`] = {
+			type: 'button',
+			category: 'Audio Outputs',
+			name: `Output ${output.outputId + 1} - Current Destinations`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `OUT ${output.outputId + 1}\\n$(spectera:audio_output_${output.outputId + 1}_destinations)`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [],
+					up: [],
+				},
+			],
+			feedbacks: [],
+		}
+	}
+	for (const output of self.state.audioOutputs.values()) {
+		presets[`audioOutput${output.outputId}SourceHeader`] = {
+			type: 'text',
+			category: 'Audio Outputs',
+			name: `Output ${output.outputId + 1} - Select Destination`,
+			text: '',
+		}
+		const audioOutputChannelChoices = [
+			{ id: 'commandModeAudioNetwork', label: 'Dante' },
+			{ id: 'commandModeMadi1', label: 'MADI 1' },
+			{ id: 'commandModeMadi2', label: 'MADI 2' },
+		] as const
+		for (const channel of audioOutputChannelChoices) {
+			presets[`audioOutput${output.outputId}Destination_${channel.id}`] = {
+				type: 'button',
+				category: 'Audio Outputs',
+				name: `Output ${output.outputId + 1} - ${channel.label}`,
+				style: {
+					bgcolor: Color.Black,
+					color: Color.White,
+					text: `OUT ${output.outputId + 1}\\nto\\n${channel.label}`,
+					size: 11,
+					show_topbar: false,
+				},
+				steps: [
+					{
+						down: [
+							{
+								actionId: 'setAudioOutputChannel',
+								options: {
+									outputId: output.outputId,
+									channel: channel.id,
+									mode: 'Toggle',
+								},
+							},
+						],
+						up: [],
+					},
+				],
+				feedbacks: [
+					{
+						feedbackId: 'audioOutputChannel',
+						options: {
+							outputId: output.outputId,
+							channel: channel.id,
+							state: 'On',
+						},
+						style: {
+							bgcolor: Color.SpecteraBlue,
+						},
+					},
+				],
+			}
 		}
 	}
 
