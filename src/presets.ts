@@ -662,7 +662,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 
 		presets[`${deviceVariableId}_MicLinkMove_Header`] = {
 			type: 'text',
-			category: `Instant Switch Mode`,
+			category: `Instrument Switch Mode`,
 			name: `${device.name} (${serial})`,
 			text: '',
 		}
@@ -670,7 +670,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 		for (const output of self.state.audioOutputs.values()) {
 			presets[`${deviceVariableId}_MicLinkMove_Source_${output.outputId}`] = {
 				type: 'button',
-				category: `Instant Switch Mode`,
+				category: `Instrument Switch Mode`,
 				name: `${device.name} Source`,
 				style: {
 					bgcolor: Color.Black,
