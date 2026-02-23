@@ -88,12 +88,13 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 		// Base Station Info
 		{ variableId: 'base_station_state', name: 'Base Station - State' },
 		{ variableId: 'base_station_name', name: 'Base Station - Name' },
-		{ variableId: 'base_station_location', name: 'Base Station - Location' },
-		{ variableId: 'base_station_position', name: 'Base Station - Position' },
-		{ variableId: 'base_station_model', name: 'Base Station - Product Model' },
 		{ variableId: 'base_station_serial', name: 'Base Station - Serial Number' },
-		{ variableId: 'base_station_version', name: 'Base Station - Version' },
 		{ variableId: 'base_station_warnings', name: 'Base Station - Warnings' },
+		// Available data, but hidden for readability
+		//{ variableId: 'base_station_location', name: 'Base Station - Location' },
+		//{ variableId: 'base_station_position', name: 'Base Station - Position' },
+		//{ variableId: 'base_station_model', name: 'Base Station - Product Model' },
+		//{ variableId: 'base_station_version', name: 'Base Station - Version' },
 
 		// Health
 		{ variableId: 'health_psu_1_state', name: 'PSU 1 - State' },
@@ -246,10 +247,10 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 				variableId: `dad_${port}_type`,
 				name: `DAD ${label} - Type`,
 			},
-			{
+			/* {
 				variableId: `dad_${port}_version`,
 				name: `DAD ${label} - Version`,
-			},
+			}, */
 			{
 				variableId: `dad_${port}_identify`,
 				name: `DAD ${label} - Identify`,
@@ -335,28 +336,8 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 				name: `${deviceVariableLabel} - Battery Low`,
 			},
 			{
-				variableId: `${deviceVariableId}_version`,
-				name: `${deviceVariableLabel} - Version`,
-			},
-			{
-				variableId: `${deviceVariableId}_version_mismatch`,
-				name: `${deviceVariableLabel} - Version Mismatch`,
-			},
-			{
-				variableId: `${deviceVariableId}_fcc_id`,
-				name: `${deviceVariableLabel} - FCC ID`,
-			},
-			{
 				variableId: `${deviceVariableId}_led_brightness`,
 				name: `${deviceVariableLabel} - LED Brightness`,
-			},
-			{
-				variableId: `${deviceVariableId}_sw_update_possible`,
-				name: `${deviceVariableLabel} - SW Update Possible`,
-			},
-			{
-				variableId: `${deviceVariableId}_sw_update_progress`,
-				name: `${deviceVariableLabel} - SW Update Progress`,
 			},
 			{
 				variableId: `${deviceVariableId}_mic_audiolink_id`,
@@ -394,6 +375,26 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 				variableId: `${deviceVariableId}_rssi`,
 				name: `${deviceVariableLabel} - RSSI (dBm)`,
 			},
+			/* {
+				variableId: `${deviceVariableId}_version`,
+				name: `${deviceVariableLabel} - Version`,
+			},
+			{
+				variableId: `${deviceVariableId}_version_mismatch`,
+				name: `${deviceVariableLabel} - Version Mismatch`,
+			}, 
+			{
+				variableId: `${deviceVariableId}_fcc_id`,
+				name: `${deviceVariableLabel} - FCC ID`,
+			},
+			{
+				variableId: `${deviceVariableId}_sw_update_possible`,
+				name: `${deviceVariableLabel} - SW Update Possible`,
+			},
+			{
+				variableId: `${deviceVariableId}_sw_update_progress`,
+				name: `${deviceVariableLabel} - SW Update Progress`,
+			}, */
 		)
 
 		// Type specific
@@ -544,11 +545,11 @@ export function getAntennaVariables(antenna: Antenna): Record<string, any> {
 		[`dad_${port}_high_temp_warning`]: antenna.warningHighTemperature,
 		[`dad_${port}_packet_error_warning`]: antenna.warningPacketError,
 		[`dad_${port}_temperature`]: antenna.temperature,
-		[`dad_${port}_version`]: antenna.version,
 		[`dad_${port}_identify`]: antenna.identify,
 		[`dad_${port}_led_brightness`]: antenna.ledBrightness,
 		[`dad_${port}_bindings`]: bindingLabel ?? 'None',
 		[`dad_${port}_mismatch`]: antenna.bindings[0]?.mismatch,
+		//[`dad_${port}_version`]: antenna.version,
 	}
 }
 
@@ -658,8 +659,8 @@ export function getBaseStationStateVariables(state: BaseStationState): Record<st
 export function getBaseStationSiteVariables(site: BaseStationSite): Record<string, any> {
 	return {
 		base_station_name: site.deviceName,
-		base_station_location: site.location || 'Unknown',
-		base_station_position: site.position || 'Unknown',
+		//base_station_location: site.location || 'Unknown',
+		//base_station_position: site.position || 'Unknown',
 	}
 }
 
