@@ -1011,7 +1011,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				// We only create a pair if there is a second input
 				if (!input2) break
 
-				const pairLabel = `INPUT\\n${input1.inputId + 1} + ${input2.inputId + 1}`
+				const pairLabel = `IN ${input1.inputId + 1} + ${input2.inputId + 1}`
 				const pairName = `${input1.name} + ${input2.name} Engineer Mode`
 
 				presets[`${deviceVariableId}_EngMode_Pair_${input1.inputId}_${input2.inputId}`] = {
@@ -1064,7 +1064,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					style: {
 						bgcolor: Color.Black,
 						color: Color.White,
-						text: `INPUT\\n${input.inputId + 1}`,
+						text: `IN ${input.inputId + 1}`,
 						size: 11,
 						show_topbar: false,
 					},

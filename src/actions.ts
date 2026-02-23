@@ -763,6 +763,37 @@ export function UpdateActions(self: SpecteraInstance): void {
 		},
 	}
 
+	actions['mobileDeviceSetName'] = {
+		name: 'Mobile Device - Set Name',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'serial',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
+				choices: mobileDeviceChoices,
+				allowCustom: true,
+			},
+			{
+				type: 'textinput',
+				label: 'Name',
+				default: 'Mobile Device',
+				id: 'name',
+				useVariables: true,
+			},
+		],
+		description: 'Set Name for a Mobile Device',
+		callback: async (action, context) => {
+			if (!self.api) return
+			const serial = await context.parseVariablesInString(action.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
+			if (!device) return
+			await self.api.setMobileDevice(device.mtUid, {
+				name: action.options.name as string,
+			} as Partial<MobileDevice>)
+		},
+	}
+
 	actions['routeAudioInputToMobileDevice'] = {
 		name: 'Audio I/O - Route Input to Mobile Device',
 		options: [
