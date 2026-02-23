@@ -763,8 +763,8 @@ export function UpdateActions(self: SpecteraInstance): void {
 		},
 	}
 
-	actions['mobileDeviceSetName'] = {
-		name: 'Mobile Device - Set Name',
+	actions['mobileDeviceRename'] = {
+		name: 'Mobile Device - Rename',
 		options: [
 			{
 				type: 'dropdown',

@@ -27,6 +27,8 @@ import {
 	UpdateVariableValues,
 	getAudioOutputSourceName,
 	getAudioOutputActiveChannels,
+	getAudioInputIemLinkDevices,
+	getAudioInputIemLinkPrimaryDevice,
 } from './variables.js'
 import { UpdatePresets } from './presets.js'
 import { UpdateFeedbacks } from './feedbacks.js'
@@ -453,6 +455,14 @@ export class SpecteraApi extends EventEmitter {
 					changedVariables,
 					feedbacksToCheck,
 				)
+				changedVariables[`audio_input_${displayId}_iem_link_devices`] = getAudioInputIemLinkDevices(
+					value,
+					this.state.mobileDevices,
+				)
+				changedVariables[`audio_input_${displayId}_iem_link_primary_device`] = getAudioInputIemLinkPrimaryDevice(
+					value,
+					this.state.mobileDevices,
+				)
 				structureChanged = !oldState
 			} else if (key.startsWith('/api/audio/outputs/')) {
 				const oldState = this.state.audioOutputs.get(value.outputId)
@@ -510,6 +520,27 @@ export class SpecteraApi extends EventEmitter {
 				const prefix = `${type}_${serial}_`
 				this.handleStateUpdate(prefix, oldState as any, value, MobileDeviceStateMap, changedVariables, feedbacksToCheck)
 				structureChanged = !oldState || oldState.name !== value.name
+				// Recompute iem_link_devices for any audio input affected by this device's link change
+				const oldIemLinkId = (oldState as any)?.iemAudiolinkId
+				const newIemLinkId = value.iemAudiolinkId
+				if (oldIemLinkId !== newIemLinkId) {
+					for (const input of this.state.audioInputs.values()) {
+						if (
+							(newIemLinkId !== undefined && input.iemAudiolinkId === newIemLinkId) ||
+							(oldIemLinkId !== undefined && input.iemAudiolinkId === oldIemLinkId)
+						) {
+							const displayId = input.inputId + 1
+							changedVariables[`audio_input_${displayId}_iem_link_devices`] = getAudioInputIemLinkDevices(
+								input,
+								this.state.mobileDevices,
+							)
+							changedVariables[`audio_input_${displayId}_iem_link_primary_device`] = getAudioInputIemLinkPrimaryDevice(
+								input,
+								this.state.mobileDevices,
+							)
+						}
+					}
+				}
 			} else if (key === '/api/health/psu') {
 				const oldState = { ...this.state.health.psu }
 				this.state.updatePsuState(value)

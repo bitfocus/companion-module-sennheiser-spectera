@@ -139,6 +139,14 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 				variableId: `audio_input_${displayId}_source`,
 				name: `Audio Input - ${displayId} - Source`,
 			},
+			{
+				variableId: `audio_input_${displayId}_iem_link_devices`,
+				name: `Audio Input - ${displayId} - IEM Link Devices`,
+			},
+			{
+				variableId: `audio_input_${displayId}_iem_link_primary_device`,
+				name: `Audio Input - ${displayId} - IEM Link Primary Device`,
+			},
 		)
 	}
 
@@ -482,12 +490,36 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 	self.setVariableDefinitions(variables)
 }
 
-export function getAudioInputVariables(input: AudioInput): Record<string, any> {
+export function getAudioInputIemLinkDevices(input: AudioInput, mobileDevices: Map<number, MobileDevice>): string {
+	if (input.iemAudiolinkId < 0) return 'None'
+	const names = [...mobileDevices.values()]
+		.filter((d) => d.type === MtType.SEK && 'iemAudiolinkId' in d && d.iemAudiolinkId === input.iemAudiolinkId)
+		.sort()
+	return names.length > 0 ? names.map((d) => d.name).join(', ') : 'None'
+}
+
+export function getAudioInputIemLinkPrimaryDevice(input: AudioInput, mobileDevices: Map<number, MobileDevice>): string {
+	if (input.iemAudiolinkId < 0) return 'None'
+	const devices = [...mobileDevices.values()].filter(
+		(d) => d.type === MtType.SEK && 'iemAudiolinkId' in d && d.iemAudiolinkId === input.iemAudiolinkId,
+	)
+	// Preserve same order as getAudioInputIemLinkDevices (sort by name) so primary is deterministic
+	devices.sort()
+	const device = devices[0]
+	return device?.name ?? 'None'
+}
+
+export function getAudioInputVariables(
+	input: AudioInput,
+	mobileDevices: Map<number, MobileDevice>,
+): Record<string, any> {
 	const displayId = input.inputId + 1
 	return {
 		[`audio_input_${displayId}_source`]: inputSourceLabels[input.source] ?? input.source,
 		[`audio_input_${displayId}_name`]: input.name || 'None',
 		[`audio_input_${displayId}_iem_link_id`]: input.iemAudiolinkId,
+		[`audio_input_${displayId}_iem_link_devices`]: getAudioInputIemLinkDevices(input, mobileDevices),
+		[`audio_input_${displayId}_iem_link_primary_device`]: getAudioInputIemLinkPrimaryDevice(input, mobileDevices),
 	}
 }
 
@@ -717,7 +749,7 @@ export function UpdateVariableValues(self: SpecteraInstance): void {
 
 	// Audio Inputs
 	for (const input of self.state.audioInputs.values()) {
-		values = { ...values, ...getAudioInputVariables(input) }
+		values = { ...values, ...getAudioInputVariables(input, self.state.mobileDevices) }
 	}
 
 	// Audio Outputs

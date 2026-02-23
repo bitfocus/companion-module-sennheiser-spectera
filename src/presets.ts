@@ -483,6 +483,33 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			feedbacks: [],
 		}
 	}
+	presets[`audioInputCurrentDevices`] = {
+		type: 'text',
+		category: 'Audio Inputs',
+		name: `Audio Inputs - Current Devices`,
+		text: '',
+	}
+	for (const input of self.state.audioInputs.values()) {
+		presets[`audioInput${input.inputId}CurrentDevices`] = {
+			type: 'button',
+			category: 'Audio Inputs',
+			name: `${input.name || `Input ${input.inputId + 1}`} - Current Devices`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `${input.name || `IN ${input.inputId + 1}`}\\n$(spectera:audio_input_${input.inputId + 1}_iem_link_devices)`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [],
+					up: [],
+				},
+			],
+			feedbacks: [],
+		}
+	}
 	for (const input of self.state.audioInputs.values()) {
 		presets[`audioInput${input.inputId}SourceHeader`] = {
 			type: 'text',
@@ -709,6 +736,36 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			category: `${category}s`,
 			name: `${device.name} (SN ${serial})`,
 			text: '',
+		}
+
+		presets[`${deviceVariableId}_OverallStatus`] = {
+			type: 'button',
+			category: `${category}s`,
+			name: `${device.name} Overall Status`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `$(spectera:${deviceVariableId}_name)\\n$(spectera:${deviceVariableId}_state)\\nBAT: $(spectera:${deviceVariableId}_battery_level)%\\n$(spectera:${deviceVariableId}_headphone_plug_state)\\n$(spectera:${deviceVariableId}_headphone_volume)dB`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'mobileDeviceConnected',
+					options: {
+						serial: device.serial,
+					},
+					style: {
+						bgcolor: Color.SpecteraGreen,
+					},
+				},
+			],
 		}
 
 		presets[`${deviceVariableId}_Connection`] = {
@@ -994,6 +1051,13 @@ export function UpdatePresets(self: SpecteraInstance): void {
 									serial: device.serial,
 								},
 							},
+							{
+								actionId: 'mobileDeviceRename',
+								options: {
+									serial: device.serial,
+									name: `SEK ${serial}`,
+								},
+							},
 						],
 						up: [],
 					},
@@ -1011,7 +1075,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				// We only create a pair if there is a second input
 				if (!input2) break
 
-				const pairLabel = `IN ${input1.inputId + 1} + ${input2.inputId + 1}`
+				const pairLabel = `IN ${input1.inputId + 1} + ${input2.inputId + 1}\\n$(spectera:audio_input_${input1.inputId + 1}_iem_link_primary_device)`
 				const pairName = `${input1.name} + ${input2.name} Engineer Mode`
 
 				presets[`${deviceVariableId}_EngMode_Pair_${input1.inputId}_${input2.inputId}`] = {
@@ -1034,6 +1098,13 @@ export function UpdatePresets(self: SpecteraInstance): void {
 										inputId: input1.inputId,
 										serial: device.serial,
 										modeId: 7, // LIVE (Stereo)
+									},
+								},
+								{
+									actionId: 'mobileDeviceRename',
+									options: {
+										serial: device.serial,
+										name: `ENG - $(spectera:audio_input_${input1.inputId + 1}_iem_link_primary_device)`,
 									},
 								},
 							],
@@ -1064,7 +1135,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					style: {
 						bgcolor: Color.Black,
 						color: Color.White,
-						text: `IN ${input.inputId + 1}`,
+						text: `IN ${input.inputId + 1}\\n$(spectera:audio_input_${input.inputId + 1}_iem_link_primary_device)`,
 						size: 11,
 						show_topbar: false,
 					},
