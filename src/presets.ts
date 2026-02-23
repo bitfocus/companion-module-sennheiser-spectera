@@ -1055,7 +1055,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								actionId: 'mobileDeviceRename',
 								options: {
 									serial: device.serial,
-									name: `SEK ${serial}`,
+									name: `${device.name}`,
 								},
 							},
 						],
@@ -1101,10 +1101,17 @@ export function UpdatePresets(self: SpecteraInstance): void {
 									},
 								},
 								{
+									actionId: 'setAudioInputSource',
+									options: {
+										inputId: input1.inputId,
+										source: InputSource.Dante,
+									},
+								},
+								{
 									actionId: 'mobileDeviceRename',
 									options: {
 										serial: device.serial,
-										name: `ENG - $(spectera:audio_input_${input1.inputId + 1}_iem_link_primary_device)`,
+										name: `ENG-$(spectera:audio_input_${input1.inputId + 1}_iem_link_primary_device)`,
 									},
 								},
 							],
@@ -1148,6 +1155,20 @@ export function UpdatePresets(self: SpecteraInstance): void {
 										inputId: input.inputId,
 										serial: device.serial,
 										modeId: 4, // LIVE (Mono)
+									},
+								},
+								{
+									actionId: 'setAudioInputSource',
+									options: {
+										inputId: input.inputId,
+										source: InputSource.Dante,
+									},
+								},
+								{
+									actionId: 'mobileDeviceRename',
+									options: {
+										serial: device.serial,
+										name: `ENG-$(spectera:audio_input_${input.inputId + 1}_iem_link_primary_device)`,
 									},
 								},
 							],
