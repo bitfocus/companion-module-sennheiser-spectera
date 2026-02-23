@@ -13,10 +13,6 @@ import {
 	InputSource,
 } from './types.js'
 
-function sanitizeName(name: string): string {
-	return name.replace(/[^a-zA-Z0-9_-]/g, '_')
-}
-
 export function UpdatePresets(self: SpecteraInstance): void {
 	const presets: CompanionPresetDefinitions = {}
 	//DADs
@@ -654,16 +650,15 @@ export function UpdatePresets(self: SpecteraInstance): void {
 	mobileDevices.sort((a, b) => a.name.localeCompare(b.name))
 
 	for (const device of mobileDevices) {
-		const name = sanitizeName(device.name)
 		const type = device.type
 		const serial = device.serial
-		const deviceVariableId = `${type}_${name}_${serial}`
+		const deviceVariableId = `${type}_${serial}`
 		const category = device.type === MtType.SEK ? 'SEK' : 'SKM'
 
 		presets[`${deviceVariableId}_MicLinkMove_Header`] = {
 			type: 'text',
 			category: `Instrument Switch Mode`,
-			name: `${device.name} (${serial})`,
+			name: `${device.name} (SN ${serial})`,
 			text: '',
 		}
 
@@ -675,7 +670,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				style: {
 					bgcolor: Color.Black,
 					color: Color.White,
-					text: `${device.name}\\nto\\nOUT ${output.outputId + 1}`,
+					text: `$(spectera:${deviceVariableId}_name)\\nto\\nOUT ${output.outputId + 1}`,
 					size: 11,
 					show_topbar: false,
 				},
@@ -712,7 +707,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 		presets[`${deviceVariableId}_Header`] = {
 			type: 'text',
 			category: `${category}s`,
-			name: `${device.name} (${serial})`,
+			name: `${device.name} (SN ${serial})`,
 			text: '',
 		}
 
@@ -723,7 +718,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `${device.name}\\nSTATE\\n\\n$(spectera:${deviceVariableId}_state)`,
+				text: `$(spectera:${deviceVariableId}_name)\\nSTATE\\n\\n$(spectera:${deviceVariableId}_state)`,
 				size: 11,
 				show_topbar: false,
 			},
@@ -753,7 +748,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `${device.name}\\nBATTERY\\n\\n$(spectera:${deviceVariableId}_battery_level) %\\n$(spectera:${deviceVariableId}_battery_runtime) min`,
+				text: `$(spectera:${deviceVariableId}_name)\\nBATTERY\\n\\n$(spectera:${deviceVariableId}_battery_level) %\\n$(spectera:${deviceVariableId}_battery_runtime) min`,
 				size: 10,
 				show_topbar: false,
 			},
@@ -783,7 +778,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `${device.name}\\nLAST SEEN\\n\\n$(spectera:${deviceVariableId}_last_connected)`,
+				text: `$(spectera:${deviceVariableId}_name)\\nLAST SEEN\\n\\n$(spectera:${deviceVariableId}_last_connected)`,
 				size: 10,
 				show_topbar: false,
 			},
@@ -803,7 +798,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `${device.name}\\nIDENTIFY`,
+				text: `$(spectera:${deviceVariableId}_name)\\nIDENTIFY`,
 				size: 11,
 				show_topbar: false,
 			},
@@ -841,7 +836,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `${device.name}\\nREVERSE\\nIDENTIFY`,
+				text: `$(spectera:${deviceVariableId}_name)\\nREVERSE\\nIDENTIFY`,
 				size: 11,
 				show_topbar: false,
 			},
@@ -871,7 +866,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `${device.name}\\nIF\\n\\n$(spectera:${deviceVariableId}_interference)`,
+				text: `$(spectera:${deviceVariableId}_name)\\nIF\\n\\n$(spectera:${deviceVariableId}_interference)`,
 				size: 11,
 				show_topbar: false,
 			},
@@ -903,7 +898,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				style: {
 					bgcolor: Color.Black,
 					color: Color.White,
-					text: `${device.name}\\nPHONES\\n\\n$(spectera:${deviceVariableId}_headphone_plug_state)\\n$(spectera:${deviceVariableId}_headphone_volume)dB`,
+					text: `$(spectera:${deviceVariableId}_name)\\nPHONES\\n\\n$(spectera:${deviceVariableId}_headphone_plug_state)\\n$(spectera:${deviceVariableId}_headphone_volume)dB`,
 					size: 11,
 					show_topbar: false,
 				},
@@ -923,7 +918,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				style: {
 					bgcolor: Color.Black,
 					color: Color.White,
-					text: `${device.name}\\nVOL +1`,
+					text: `$(spectera:${deviceVariableId}_name)\\nVOL +1`,
 					size: 11,
 					show_topbar: false,
 				},
@@ -952,7 +947,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				style: {
 					bgcolor: Color.Black,
 					color: Color.White,
-					text: `${device.name}\\nVOL -1`,
+					text: `$(spectera:${deviceVariableId}_name)\\nVOL -1`,
 					size: 11,
 					show_topbar: false,
 				},
@@ -976,7 +971,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			presets[`${deviceVariableId}_EngineerModeHeader`] = {
 				type: 'text',
 				category: `Engineer Mode`,
-				name: `${device.name} (${serial}) - Engineer Mode`,
+				name: `${device.name} (SN ${serial}) - Engineer Mode`,
 				text: '',
 			}
 			presets[`${deviceVariableId}_EngMode_$remove`] = {
@@ -1105,7 +1100,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			presets[`${deviceVariableId}_CopySettingsHeader`] = {
 				type: 'text',
 				category: `Backup Mode`,
-				name: `${device.name} (${serial}) - Backup Mode`,
+				name: `${device.name} (SN ${serial}) - Backup Mode`,
 				text: '',
 			}
 			for (const copyDevice of mobileDevices) {
@@ -1149,7 +1144,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `${device.name}\\nPREAMP GAIN\\n$(spectera:${deviceVariableId}_mic_preamp_gain) dB`,
+				text: `$(spectera:${deviceVariableId}_name)\\nPREAMP GAIN\\n$(spectera:${deviceVariableId}_mic_preamp_gain) dB`,
 				size: 11,
 				show_topbar: false,
 			},
@@ -1169,7 +1164,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `${device.name}\\nGAIN +3`,
+				text: `$(spectera:${deviceVariableId}_name)\\nGAIN +3`,
 				size: 11,
 				show_topbar: false,
 			},
@@ -1198,7 +1193,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `${device.name}\\nGAIN -3`,
+				text: `$(spectera:${deviceVariableId}_name)\\nGAIN -3`,
 				size: 11,
 				show_topbar: false,
 			},

@@ -272,13 +272,16 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 
 	// Mobile Devices
 	for (const device of self.state.mobileDevices.values()) {
-		const name = sanitizeName(device.name)
 		const type = device.type
 		const serial = device.serial
 
-		const deviceVariableId = `${type}_${name}_${serial}`
-		const deviceVariableLabel = `${type} - ${device.name} (${serial})`
+		const deviceVariableId = `${type}_${serial}`
+		const deviceVariableLabel = `${type} - ${device.name} (SN ${serial})`
 		variables.push(
+			{
+				variableId: `${deviceVariableId}_name`,
+				name: `${deviceVariableLabel} - Name`,
+			},
 			{
 				variableId: `${deviceVariableId}_mt_uid`,
 				name: `${deviceVariableLabel} - MT UID`,
@@ -302,10 +305,6 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 			{
 				variableId: `${deviceVariableId}_reverse_identify`,
 				name: `${deviceVariableLabel} - Reverse Identify`,
-			},
-			{
-				variableId: `${deviceVariableId}_serial`,
-				name: `${deviceVariableLabel} - Serial`,
 			},
 			{
 				variableId: `${deviceVariableId}_connected`,
@@ -375,7 +374,12 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 				variableId: `${deviceVariableId}_rssi`,
 				name: `${deviceVariableLabel} - RSSI (dBm)`,
 			},
-			/* {
+			/* 
+			{
+				variableId: `${deviceVariableId}_serial`,
+				name: `${deviceVariableLabel} - Serial`,
+			},
+			{
 				variableId: `${deviceVariableId}_version`,
 				name: `${deviceVariableLabel} - Version`,
 			},
@@ -554,19 +558,18 @@ export function getAntennaVariables(antenna: Antenna): Record<string, any> {
 }
 
 export function getMobileDeviceVariables(device: MobileDevice): Record<string, any> {
-	const name = sanitizeName(device.name)
 	const type = device.type
 	const serial = device.serial
-	const deviceVariableId = `${type}_${name}_${serial}`
+	const deviceVariableId = `${type}_${serial}`
 
 	const variables: Record<string, any> = {
+		[`${deviceVariableId}_name`]: device.name,
 		[`${deviceVariableId}_mt_uid`]: device.mtUid,
 		[`${deviceVariableId}_mt_type`]: device.type,
 		[`${deviceVariableId}_frequency_range`]: device.frequencyRange,
 		[`${deviceVariableId}_rf_channel_id`]: device.rfChannelId,
 		[`${deviceVariableId}_identify`]: device.identify,
 		[`${deviceVariableId}_reverse_identify`]: device.reverseIdentify,
-		[`${deviceVariableId}_serial`]: device.serial,
 		[`${deviceVariableId}_connected`]: device.connected,
 		[`${deviceVariableId}_last_connected`]: device.lastConnected === 'NotAvailable' ? 'Now' : device.lastConnected,
 		[`${deviceVariableId}_sleep`]: device.sleep,
@@ -574,12 +577,7 @@ export function getMobileDeviceVariables(device: MobileDevice): Record<string, a
 		[`${deviceVariableId}_battery_level`]: device.batteryFillLevel === -1 ? 'Off' : device.batteryFillLevel,
 		[`${deviceVariableId}_battery_runtime`]: device.batteryRuntime === -1 ? 'Off' : device.batteryRuntime,
 		[`${deviceVariableId}_battery_low`]: device.batteryLow,
-		[`${deviceVariableId}_version`]: device.version,
-		[`${deviceVariableId}_version_mismatch`]: device.versionMismatch,
-		[`${deviceVariableId}_fcc_id`]: device.fccId,
 		[`${deviceVariableId}_led_brightness`]: device.ledBrightness,
-		[`${deviceVariableId}_sw_update_possible`]: device.swUpdatePossible,
-		[`${deviceVariableId}_sw_update_progress`]: device.swUpdateProgress,
 		[`${deviceVariableId}_mic_audiolink_id`]: device.micAudiolinkId,
 		[`${deviceVariableId}_mic_audiolink_active`]: device.micAudiolinkActive,
 		[`${deviceVariableId}_mic_test_tone_enabled`]: device.micTestToneEnabled,
@@ -592,6 +590,12 @@ export function getMobileDeviceVariables(device: MobileDevice): Record<string, a
 				? device.dominantAntenna.toUpperCase()
 				: 'Not Available',
 		[`${deviceVariableId}_rssi`]: device.rssi,
+		//[`${deviceVariableId}_serial`]: device.serial,
+		//[`${deviceVariableId}_version`]: device.version,
+		//[`${deviceVariableId}_version_mismatch`]: device.versionMismatch,
+		//[`${deviceVariableId}_fcc_id`]: device.fccId,
+		//[`${deviceVariableId}_sw_update_possible`]: device.swUpdatePossible,
+		//[`${deviceVariableId}_sw_update_progress`]: device.swUpdateProgress,
 	}
 
 	if (device.type === MtType.SEK) {
