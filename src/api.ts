@@ -505,10 +505,9 @@ export class SpecteraApi extends EventEmitter {
 			} else if (key.startsWith('/api/mts/paired/all/')) {
 				const oldState = this.state.mobileDevices.get(value.mtUid)
 				this.state.updateMobileDevice(value)
-				const name = value.name.replace(/[^a-zA-Z0-9_-]/g, '_')
 				const type = value.type
 				const serial = value.serial
-				const prefix = `${type}_${name}_${serial}_`
+				const prefix = `${type}_${serial}_`
 				this.handleStateUpdate(prefix, oldState as any, value, MobileDeviceStateMap, changedVariables, feedbacksToCheck)
 				structureChanged = !oldState || oldState.name !== value.name
 			} else if (key === '/api/health/psu') {
