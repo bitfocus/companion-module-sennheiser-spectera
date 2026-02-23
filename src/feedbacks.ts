@@ -22,7 +22,7 @@ import {
 	InterfaceInputStatus,
 	InputSource,
 } from './types.js'
-import { getChoicesFromEnum, getMobileDeviceChoices, getAudioLinkChoices } from './utils.js'
+import { getChoicesFromEnum, getDeviceBySerial, getMobileDeviceChoices, getAudioLinkChoices } from './utils.js'
 import { Color } from './utils.js'
 
 export function UpdateFeedbacks(self: SpecteraInstance): void {
@@ -404,13 +404,15 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
+				id: 'serial',
 				default: mobileDeviceChoices[0].id,
 				choices: mobileDeviceChoices,
+				allowCustom: true,
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			return device?.identify === true
 		},
 	}
@@ -426,13 +428,15 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
+				id: 'serial',
 				default: mobileDeviceChoices[0].id,
 				choices: mobileDeviceChoices,
+				allowCustom: true,
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			return device?.reverseIdentify === true
 		},
 	}
@@ -448,13 +452,15 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
+				id: 'serial',
 				default: mobileDeviceChoices[0].id,
 				choices: mobileDeviceChoices,
+				allowCustom: true,
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			return device?.connected === true
 		},
 	}
@@ -470,9 +476,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
+				id: 'serial',
 				default: mobileDeviceChoices[0].id,
 				choices: mobileDeviceChoices,
+				allowCustom: true,
 			},
 			{
 				type: 'dropdown',
@@ -482,8 +489,9 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				choices: getChoicesFromEnum(MtState),
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			return device?.state === feedback.options.state
 		},
 	}
@@ -499,13 +507,15 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
+				id: 'serial',
 				default: mobileDeviceChoices[0].id,
 				choices: mobileDeviceChoices,
+				allowCustom: true,
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			return device?.batteryLow === true
 		},
 	}
@@ -521,9 +531,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
+				id: 'serial',
 				default: mobileDeviceChoices[0].id,
 				choices: mobileDeviceChoices,
+				allowCustom: true,
 			},
 			{
 				type: 'dropdown',
@@ -533,8 +544,9 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				choices: getChoicesFromEnum(Interference),
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			return device?.interference?.severity === feedback.options.severity
 		},
 	}
@@ -550,9 +562,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
+				id: 'serial',
 				default: mobileDeviceChoices[0].id,
 				choices: mobileDeviceChoices,
+				allowCustom: true,
 			},
 			{
 				type: 'dropdown',
@@ -562,8 +575,9 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				choices: getChoicesFromEnum(AntennaPortId),
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			return device?.dominantAntenna === feedback.options.antenna
 		},
 	}
@@ -579,13 +593,15 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				id: 'serial',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
 				choices: sekMobileDeviceChoices,
+				allowCustom: true,
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			if (device?.type === MtType.SEK) {
 				return device.headphonePlugState === 'Plugged'
 			}
@@ -604,21 +620,25 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'SEK 1',
-				id: 'mtUid1',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				id: 'serial1',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
 				choices: sekMobileDeviceChoices,
+				allowCustom: true,
 			},
 			{
 				type: 'dropdown',
 				label: 'SEK 2',
-				id: 'mtUid2',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				id: 'serial2',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
 				choices: sekMobileDeviceChoices,
+				allowCustom: true,
 			},
 		],
-		callback: async (feedback) => {
-			const device1 = self.state.mobileDevices.get(Number(feedback.options.mtUid1))
-			const device2 = self.state.mobileDevices.get(Number(feedback.options.mtUid2))
+		callback: async (feedback, context) => {
+			const serial1 = await context.parseVariablesInString(feedback.options.serial1 as string)
+			const serial2 = await context.parseVariablesInString(feedback.options.serial2 as string)
+			const device1 = getDeviceBySerial(self.state, serial1)
+			const device2 = getDeviceBySerial(self.state, serial2)
 			if (device1?.type === MtType.SEK && device2?.type === MtType.SEK) {
 				if (device1.iemAudiolinkId !== -1 && device2.iemAudiolinkId !== -1) {
 					return device1.iemAudiolinkId === device2.iemAudiolinkId
@@ -639,13 +659,15 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'SEK',
-				id: 'mtUid',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				id: 'serial',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
 				choices: sekMobileDeviceChoices,
+				allowCustom: true,
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			if (device?.type === MtType.SEK) {
 				return device.iemAudiolinkActive === true
 			}
@@ -664,9 +686,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'SEK',
-				id: 'mtUid',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				id: 'serial',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
 				choices: sekMobileDeviceChoices,
+				allowCustom: true,
 			},
 			{
 				type: 'dropdown',
@@ -676,8 +699,9 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				id: 'inputId',
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			const inputId = Number(feedback.options.inputId)
 			if (device?.type === MtType.SEK && device.iemAudiolinkId !== -1) {
 				return self.state.audioInputs.get(inputId)?.iemAudiolinkId === device.iemAudiolinkId
@@ -779,9 +803,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : 0,
+				id: 'serial',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
 				choices: mobileDeviceChoices,
+				allowCustom: true,
 			},
 			{
 				type: 'dropdown',
@@ -794,8 +819,9 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				id: 'outputId',
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			const outputId = Number(feedback.options.outputId)
 			if (device?.micAudiolinkId !== -1) {
 				return self.state.audioOutputs.get(outputId)?.micAudiolinkId === device?.micAudiolinkId
@@ -874,9 +900,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
+				id: 'serial',
 				default: mobileDeviceChoices[0].id,
 				choices: mobileDeviceChoices,
+				allowCustom: true,
 			},
 			{
 				type: 'textinput',
@@ -885,8 +912,9 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				default: '',
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			return device?.frequencyRange === feedback.options.range
 		},
 	}
@@ -902,9 +930,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
+				id: 'serial',
 				default: mobileDeviceChoices[0].id,
 				choices: mobileDeviceChoices,
+				allowCustom: true,
 			},
 			{
 				type: 'dropdown',
@@ -918,8 +947,9 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				id: 'rfChannelId',
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			const rfChannelId = feedback.options.rfChannelId === -1 ? undefined : (feedback.options.rfChannelId as number)
 			return device?.rfChannelId === rfChannelId
 		},
@@ -936,13 +966,15 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
+				id: 'serial',
 				default: mobileDeviceChoices[0].id,
 				choices: mobileDeviceChoices,
+				allowCustom: true,
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			return device?.sleep === true
 		},
 	}
@@ -958,9 +990,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
+				id: 'serial',
 				default: mobileDeviceChoices[0].id,
 				choices: mobileDeviceChoices,
+				allowCustom: true,
 			},
 			{
 				type: 'textinput',
@@ -970,8 +1003,9 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				useVariables: true,
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			const level = device?.batteryFillLevel
 			return level !== undefined && level <= Number(feedback.options.threshold)
 		},
@@ -988,9 +1022,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
+				id: 'serial',
 				default: mobileDeviceChoices[0].id,
 				choices: mobileDeviceChoices,
+				allowCustom: true,
 			},
 			{
 				type: 'textinput',
@@ -1000,8 +1035,9 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				useVariables: true,
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			const runtime = device?.batteryRuntime
 			return runtime !== undefined && runtime <= Number(feedback.options.threshold)
 		},
@@ -1018,9 +1054,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
+				id: 'serial',
 				default: mobileDeviceChoices[0].id,
 				choices: mobileDeviceChoices,
+				allowCustom: true,
 			},
 			{
 				type: 'dropdown',
@@ -1030,8 +1067,9 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				choices: getChoicesFromEnum(LedBrightness),
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			return device?.ledBrightness === feedback.options.brightness
 		},
 	}
@@ -1047,13 +1085,15 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
+				id: 'serial',
 				default: mobileDeviceChoices[0].id,
 				choices: mobileDeviceChoices,
+				allowCustom: true,
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			return device?.micAudiolinkActive === true
 		},
 	}
@@ -1069,13 +1109,15 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
+				id: 'serial',
 				default: mobileDeviceChoices[0].id,
 				choices: mobileDeviceChoices,
+				allowCustom: true,
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			return device?.micTestToneEnabled === true
 		},
 	}
@@ -1091,9 +1133,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
+				id: 'serial',
 				default: mobileDeviceChoices[0].id,
 				choices: mobileDeviceChoices,
+				allowCustom: true,
 			},
 			{
 				type: 'textinput',
@@ -1102,8 +1145,9 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				default: '-20',
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			return device?.micTestToneLevel === Number(feedback.options.level)
 		},
 	}
@@ -1119,9 +1163,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				id: 'serial',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
 				choices: sekMobileDeviceChoices,
+				allowCustom: true,
 			},
 			{
 				type: 'textinput',
@@ -1130,8 +1175,9 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				default: '-20',
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			if (device?.type === MtType.SEK) {
 				return device.headphoneVolume === Number(feedback.options.volume)
 			}
@@ -1150,9 +1196,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				id: 'serial',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
 				choices: sekMobileDeviceChoices,
+				allowCustom: true,
 			},
 			{
 				type: 'textinput',
@@ -1161,8 +1208,9 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				default: '0',
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			if (device?.type === MtType.SEK) {
 				return device.headphoneBalance === Number(feedback.options.balance)
 			}
@@ -1181,9 +1229,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
+				id: 'serial',
 				default: mobileDeviceChoices[0].id,
 				choices: mobileDeviceChoices,
+				allowCustom: true,
 			},
 			{
 				type: 'textinput',
@@ -1192,8 +1241,9 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				default: '12',
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			return device?.micPreampGain === Number(feedback.options.gain)
 		},
 	}
@@ -1209,9 +1259,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
+				id: 'serial',
 				default: mobileDeviceChoices[0].id,
 				choices: mobileDeviceChoices,
+				allowCustom: true,
 			},
 			{
 				type: 'dropdown',
@@ -1221,8 +1272,9 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				choices: getChoicesFromEnum(MicLowCutHzSEK),
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			const frequency = Number(feedback.options.frequency)
 
 			if (device?.type === MtType.SKM) {
@@ -1249,9 +1301,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				id: 'serial',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
 				choices: sekMobileDeviceChoices,
+				allowCustom: true,
 			},
 			{
 				type: 'textinput',
@@ -1260,8 +1313,9 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				default: '0',
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			if (device?.type === MtType.SEK) {
 				return device.headphoneVolumeLimit === Number(feedback.options.limit)
 			}
@@ -1280,9 +1334,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				id: 'serial',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
 				choices: sekMobileDeviceChoices,
+				allowCustom: true,
 			},
 			{
 				type: 'textinput',
@@ -1291,8 +1346,9 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				default: '0',
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			if (device?.type === MtType.SEK) {
 				return device.headphoneVolumeMax === Number(feedback.options.max)
 			}
@@ -1311,9 +1367,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				id: 'serial',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
 				choices: sekMobileDeviceChoices,
+				allowCustom: true,
 			},
 			{
 				type: 'textinput',
@@ -1322,8 +1379,9 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				default: '0',
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			if (device?.type === MtType.SEK) {
 				return device.headphoneVolumeMin === Number(feedback.options.min)
 			}
@@ -1342,9 +1400,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				id: 'serial',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
 				choices: sekMobileDeviceChoices,
+				allowCustom: true,
 			},
 			{
 				type: 'dropdown',
@@ -1354,8 +1413,9 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				choices: getChoicesFromEnum(MicLineSelection),
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			if (device?.type === MtType.SEK) {
 				return device.micLineSelection === feedback.options.selection
 			}
@@ -1374,9 +1434,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				id: 'serial',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
 				choices: sekMobileDeviceChoices,
+				allowCustom: true,
 			},
 			{
 				type: 'dropdown',
@@ -1386,8 +1447,9 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				choices: getChoicesFromEnum(MicLineSelectionAuto),
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			if (device?.type === MtType.SEK) {
 				return device.micLineSelectionAutoValue === feedback.options.autoValue
 			}
@@ -1406,9 +1468,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Mobile Device',
-				id: 'mtUid',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : 0,
+				id: 'serial',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
 				choices: sekMobileDeviceChoices,
+				allowCustom: true,
 			},
 			{
 				type: 'dropdown',
@@ -1418,8 +1481,9 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				choices: getChoicesFromEnum(CableEmulation),
 			},
 		],
-		callback: async (feedback) => {
-			const device = self.state.mobileDevices.get(Number(feedback.options.mtUid))
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
 			if (device?.type === MtType.SEK) {
 				return device.cableEmulation === feedback.options.emulation
 			}

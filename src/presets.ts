@@ -680,7 +680,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							{
 								actionId: 'routeMobileDeviceToAudioOutput',
 								options: {
-									mtUid: device.mtUid,
+									serial: device.serial,
 									outputId: output.outputId,
 									modeId: MicAudiolinkMode['LIVE (Mono)'],
 								},
@@ -693,7 +693,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					{
 						feedbackId: 'mobileDeviceOutputLinked',
 						options: {
-							mtUid: device.mtUid,
+							serial: device.serial,
 							outputId: output.outputId,
 						},
 						style: {
@@ -732,7 +732,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				{
 					feedbackId: 'mobileDeviceConnected',
 					options: {
-						mtUid: device.mtUid,
+						serial: device.serial,
 					},
 					style: {
 						bgcolor: Color.SpecteraGreen,
@@ -762,7 +762,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				{
 					feedbackId: 'mobileDeviceBatteryLow',
 					options: {
-						mtUid: device.mtUid,
+						serial: device.serial,
 					},
 					style: {
 						bgcolor: Color.SpecteraRed,
@@ -808,7 +808,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						{
 							actionId: 'mobileDeviceIdentify',
 							options: {
-								mtUid: device.mtUid,
+								serial: device.serial,
 								identify: 'true',
 							},
 						},
@@ -820,7 +820,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				{
 					feedbackId: 'mobileDeviceIdentify',
 					options: {
-						mtUid: device.mtUid,
+						serial: device.serial,
 					},
 					style: {
 						bgcolor: Color.SpecteraBlue,
@@ -850,7 +850,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				{
 					feedbackId: 'mobileDeviceReverseIdentify',
 					options: {
-						mtUid: device.mtUid,
+						serial: device.serial,
 					},
 					style: {
 						bgcolor: Color.SpecteraBlue,
@@ -880,7 +880,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				{
 					feedbackId: 'mobileDeviceInterference',
 					options: {
-						mtUid: device.mtUid,
+						serial: device.serial,
 						severity: 'High',
 					},
 					style: {
@@ -928,7 +928,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							{
 								actionId: 'mobileDeviceHeadphoneVolume',
 								options: {
-									mtUid: device.mtUid,
+									serial: device.serial,
 									action: 'adjust',
 									adjustment: '1',
 								},
@@ -957,7 +957,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							{
 								actionId: 'mobileDeviceHeadphoneVolume',
 								options: {
-									mtUid: device.mtUid,
+									serial: device.serial,
 									action: 'adjust',
 									adjustment: '-1',
 								},
@@ -991,7 +991,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							{
 								actionId: 'removeIemAudioLink',
 								options: {
-									mtUid: device.mtUid,
+									serial: device.serial,
 								},
 							},
 						],
@@ -1032,7 +1032,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 									actionId: 'routeAudioInputToMobileDevice',
 									options: {
 										inputId: input1.inputId,
-										mtUid: device.mtUid,
+										serial: device.serial,
 										modeId: 7, // LIVE (Stereo)
 									},
 								},
@@ -1044,7 +1044,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						{
 							feedbackId: 'iemAudioInputLinked',
 							options: {
-								mtUid: device.mtUid,
+								serial: device.serial,
 								inputId: input1.inputId,
 							},
 							style: {
@@ -1075,7 +1075,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 									actionId: 'routeAudioInputToMobileDevice',
 									options: {
 										inputId: input.inputId,
-										mtUid: device.mtUid,
+										serial: device.serial,
 										modeId: 4, // LIVE (Mono)
 									},
 								},
@@ -1087,7 +1087,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						{
 							feedbackId: 'iemAudioInputLinked',
 							options: {
-								mtUid: device.mtUid,
+								serial: device.serial,
 								inputId: input.inputId,
 							},
 							style: {
@@ -1124,8 +1124,8 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								{
 									actionId: 'copyAllMobileDeviceSettings',
 									options: {
-										sourceMtUid: copyDevice.mtUid,
-										targetMtUid: device.mtUid,
+										sourceSerial: copyDevice.serial,
+										targetSerial: device.serial,
 									},
 								},
 							],
@@ -1174,7 +1174,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						{
 							actionId: 'mobileDeviceMicPreampGain',
 							options: {
-								mtUid: device.mtUid,
+								serial: device.serial,
 								action: 'adjust',
 								adjustment: '3',
 							},
@@ -1203,7 +1203,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						{
 							actionId: 'mobileDeviceMicPreampGain',
 							options: {
-								mtUid: device.mtUid,
+								serial: device.serial,
 								action: 'adjust',
 								adjustment: '-3',
 							},

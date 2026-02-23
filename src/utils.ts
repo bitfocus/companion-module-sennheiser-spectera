@@ -1,6 +1,6 @@
 import { combineRgb } from '@companion-module/base'
 import { SpecteraState } from './state.js'
-import { MtType } from './types.js'
+import { MobileDevice, MtType } from './types.js'
 
 export const Color = {
 	Black: combineRgb(0, 0, 0),
@@ -30,20 +30,28 @@ export function getChoicesFromEnum(enumObj: Record<string, string | number>): { 
 	return choices
 }
 
-export function getMobileDeviceChoices(state: SpecteraState, filterType?: MtType): { id: number; label: string }[] {
-	const choices: { id: number; label: string }[] = []
+export function getMobileDeviceChoices(state: SpecteraState, filterType?: MtType): { id: string; label: string }[] {
+	const choices: { id: string; label: string }[] = []
 	for (const device of state.mobileDevices.values()) {
 		if (!filterType || device.type === filterType) {
-			choices.push({ id: device.mtUid, label: `${device.name} (${device.serial})` })
+			choices.push({ id: device.serial ?? String(device.mtUid), label: `${device.name} (${device.serial})` })
 		}
 	}
 
 	choices.sort((a, b) => a.label.localeCompare(b.label))
 
 	if (choices.length === 0) {
-		choices.push({ id: 0, label: 'No Devices Found' })
+		choices.push({ id: '', label: 'No Devices Found' })
 	}
 	return choices
+}
+
+export function getDeviceBySerial(state: SpecteraState, serial: string): MobileDevice | undefined {
+	if (!serial) return undefined
+	for (const device of state.mobileDevices.values()) {
+		if (device.serial === serial) return device
+	}
+	return undefined
 }
 
 export function getAudioLinkChoices(state: SpecteraState): { id: number; label: string }[] {
