@@ -249,6 +249,14 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 				name: `DAD ${label} - Packet Error Warning`,
 			},
 			{
+				variableId: `dad_${port}_interference_severity`,
+				name: `DAD ${label} - Interference Severity`,
+			},
+			{
+				variableId: `dad_${port}_noise_level`,
+				name: `DAD ${label} - Noise + Interference Level`,
+			},
+			{
 				variableId: `dad_${port}_temperature`,
 				name: `DAD ${label} - Temperature`,
 			},
@@ -581,6 +589,8 @@ export function getAntennaVariables(antenna: Antenna): Record<string, any> {
 		[`dad_${port}_error_details`]: antenna.errorStateDetails === 'NA' ? 'None' : antenna.errorStateDetails,
 		[`dad_${port}_high_temp_warning`]: antenna.warningHighTemperature,
 		[`dad_${port}_packet_error_warning`]: antenna.warningPacketError,
+		[`dad_${port}_interference_severity`]: antenna.interference?.severity ?? 'None',
+		[`dad_${port}_noise_level`]: antenna.interferenceTotalPower ?? antenna.interference?.totalPower,
 		[`dad_${port}_temperature`]: antenna.temperature,
 		[`dad_${port}_identify`]: antenna.identify,
 		[`dad_${port}_led_brightness`]: antenna.ledBrightness,

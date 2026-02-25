@@ -521,10 +521,14 @@ export class SpecteraApi extends EventEmitter {
 				)
 				structureChanged = !oldState
 			} else if (key.startsWith('/api/rf/antennas/')) {
-				const oldState = this.state.antennas.get(value.antennaPortId)
-				this.state.updateAntenna(value)
-				const port = value.antennaPortId.replace(/[^a-zA-Z0-9_-]/g, '_')
-				this.handleStateUpdate(`dad_${port}_`, oldState, value, AntennaStateMap, changedVariables, feedbacksToCheck)
+				const antenna: Antenna = {
+					...value,
+					interferenceTotalPower: value.interference?.totalPower,
+				}
+				const oldState = this.state.antennas.get(antenna.antennaPortId)
+				this.state.updateAntenna(antenna)
+				const port = antenna.antennaPortId.replace(/[^a-zA-Z0-9_-]/g, '_')
+				this.handleStateUpdate(`dad_${port}_`, oldState, antenna, AntennaStateMap, changedVariables, feedbacksToCheck)
 				structureChanged = !oldState
 			} else if (key.startsWith('/api/mts/paired/all/')) {
 				const oldState = this.state.mobileDevices.get(value.mtUid)

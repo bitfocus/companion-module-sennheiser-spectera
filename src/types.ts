@@ -204,6 +204,9 @@ export interface Antenna {
 	errorStateDetails?: string
 	warningHighTemperature?: boolean
 	warningPacketError?: boolean
+	interference?: InterferenceDetail
+	/** Set from interference.totalPower so state map and variables can use a single key. */
+	interferenceTotalPower?: number
 	temperature?: number
 	type: string
 	version?: string
@@ -332,8 +335,22 @@ export enum CableEmulation {
 export enum Interference {
 	None = 'None',
 	Low = 'Low',
-	Medium = 'Medium',
+	Mid = 'Mid',
 	High = 'High',
+}
+
+export interface InterferenceDetail {
+	severity: Interference
+	totalPower?: number
+	residual?: {
+		severity: Interference
+		power: number
+	}
+	mainInterferers?: {
+		severity: Interference
+		power: number
+		frequency: number
+	}[]
 }
 
 export type MobileDevice = SEKDevice | SKMDevice

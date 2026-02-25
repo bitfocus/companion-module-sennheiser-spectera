@@ -284,6 +284,61 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			return antennaWarningPacketError === true
 		},
 	}
+	feedbacks['dadInterference'] = {
+		type: 'boolean',
+		name: 'DAD - Interference',
+		description: 'Check for interference severity on an antenna (DAD)',
+		defaultStyle: {
+			bgcolor: Color.SpecteraRed,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'DAD',
+				choices: getChoicesFromEnum(AntennaPortId),
+				default: AntennaPortId.A,
+				id: 'dad',
+			},
+			{
+				type: 'dropdown',
+				label: 'Severity',
+				id: 'severity',
+				default: Interference.High,
+				choices: getChoicesFromEnum(Interference),
+			},
+		],
+		callback: async (feedback) => {
+			const antenna = self.state.antennas.get(feedback.options.dad as AntennaPortId)
+			return (antenna?.interference?.severity ?? 'None') === feedback.options.severity
+		},
+	}
+	feedbacks['dadInterferencePower'] = {
+		type: 'boolean',
+		name: 'DAD - Interference Noise Threshold',
+		description: 'Check for interference noise level on an antenna (DAD)',
+		defaultStyle: {
+			bgcolor: Color.SpecteraRed,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'DAD',
+				choices: getChoicesFromEnum(AntennaPortId),
+				default: AntennaPortId.A,
+				id: 'dad',
+			},
+			{
+				type: 'textinput',
+				label: 'Noise Level Threshold (dBm)',
+				id: 'interferencePower',
+				default: '-80',
+			},
+		],
+		callback: async (feedback) => {
+			const antenna = self.state.antennas.get(feedback.options.dad as AntennaPortId)
+			return (antenna?.interference?.totalPower ?? 0) >= (feedback.options.interferencePower as number)
+		},
+	}
 	feedbacks['dadIdenitify'] = {
 		type: 'boolean',
 		name: 'DAD - Identify',

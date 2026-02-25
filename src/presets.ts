@@ -299,6 +299,57 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				},
 			],
 		}
+		presets[`dad${port}InterferencePower`] = {
+			type: 'button',
+			category: 'RF Configuration',
+			name: `DAD ${dad} Interference Noise Level`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `DAD ${dad}\\nN+I\\n$(spectera:dad_${port}_noise_level) dBm`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'dadInterferencePower',
+					isInverted: true,
+					options: {
+						dad: port,
+						interferencePower: -100,
+					},
+					style: {
+						bgcolor: Color.SpecteraGreen,
+					},
+				},
+				{
+					feedbackId: 'dadInterferencePower',
+					options: {
+						dad: port,
+						interferencePower: -90,
+					},
+					style: {
+						bgcolor: Color.SpecteraOrange,
+					},
+				},
+				{
+					feedbackId: 'dadInterferencePower',
+					options: {
+						dad: port,
+						interferencePower: -80,
+					},
+					style: {
+						bgcolor: Color.SpecteraRed,
+					},
+				},
+			],
+		}
 		presets[`dad${port}Bindings`] = {
 			type: 'button',
 			category: 'RF Configuration',

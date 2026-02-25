@@ -100,6 +100,16 @@ export const AntennaStateMap: StateMap<Antenna> = {
 		variable: 'packet_error_warning',
 		valueFn: (v: unknown): any => v,
 	},
+	interference: {
+		feedback: 'dadInterference',
+		variable: 'interference_severity',
+		valueFn: (v: unknown): any => (v as any)?.severity ?? 'None',
+	},
+	interferenceTotalPower: {
+		feedback: 'dadInterferencePower',
+		variable: 'interference_noise_level',
+		valueFn: (v: unknown): any => v,
+	},
 	temperature: { feedback: 'dadTemperature', variable: 'temperature', valueFn: (v: unknown): any => v },
 	version: { variable: 'version', valueFn: (v: unknown): any => v },
 	identify: { feedback: 'dadIdenitify', variable: 'identify', valueFn: (v: unknown): any => v },
