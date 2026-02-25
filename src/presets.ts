@@ -956,7 +956,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				style: {
 					bgcolor: Color.Black,
 					color: Color.White,
-					text: `$(spectera:${deviceVariableId}_name)\\nPHONES\\n\\n$(spectera:${deviceVariableId}_headphone_plug_state)\\n$(spectera:${deviceVariableId}_headphone_volume)dB`,
+					text: `$(spectera:${deviceVariableId}_name)\\nPHONES\\n$(spectera:${deviceVariableId}_headphone_plug_state)\\n$(spectera:${deviceVariableId}_headphone_volume)dB`,
 					size: 11,
 					show_topbar: false,
 				},
@@ -1026,6 +1026,50 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				],
 				feedbacks: [],
 			}
+
+			presets[`${deviceVariableId}_HeadphoneVolumeRotarty`] = {
+				type: 'button',
+				category: `${category}s`,
+				name: `${device.name} Phone Vol Rotarty`,
+				options: {
+					rotaryActions: true,
+				},
+				style: {
+					bgcolor: Color.Black,
+					color: Color.White,
+					text: `$(spectera:${deviceVariableId}_name)\\nVOL ROTARY`,
+					size: 11,
+					show_topbar: false,
+				},
+				steps: [
+					{
+						down: [],
+						up: [],
+						rotate_left: [
+							{
+								actionId: 'mobileDeviceHeadphoneVolume',
+								options: {
+									serial: device.serial,
+									action: 'adjust',
+									adjustment: '-1',
+								},
+							},
+						],
+						rotate_right: [
+							{
+								actionId: 'mobileDeviceHeadphoneVolume',
+								options: {
+									serial: device.serial,
+									action: 'adjust',
+									adjustment: '1',
+								},
+							},
+						],
+					},
+				],
+				feedbacks: [],
+			}
+
 			presets[`${deviceVariableId}_EngineerModeStereoHeader`] = {
 				type: 'text',
 				category: `Engineer Mode`,
@@ -1344,6 +1388,49 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						},
 					],
 					up: [],
+				},
+			],
+			feedbacks: [],
+		}
+
+		presets[`${deviceVariableId}_HeadphoneGainRotarty`] = {
+			type: 'button',
+			category: `${category}s`,
+			name: `${device.name} Phone Gain Rotarty`,
+			options: {
+				rotaryActions: true,
+			},
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `$(spectera:${deviceVariableId}_name)\\nGAIN ROTARY`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [],
+					up: [],
+					rotate_left: [
+						{
+							actionId: 'mobileDeviceMicPreampGain',
+							options: {
+								serial: device.serial,
+								action: 'adjust',
+								adjustment: '-1',
+							},
+						},
+					],
+					rotate_right: [
+						{
+							actionId: 'mobileDeviceMicPreampGain',
+							options: {
+								serial: device.serial,
+								action: 'adjust',
+								adjustment: '1',
+							},
+						},
+					],
 				},
 			],
 			feedbacks: [],
