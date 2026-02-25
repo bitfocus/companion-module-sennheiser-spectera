@@ -31,7 +31,7 @@ import {
 	WordclockInputStateMap,
 	WordclockOutputStateMap,
 } from './state_maps.js'
-import { formatBatteryRuntimeMinutes } from './utils.js'
+import { formatBatteryRuntimeMinutes, getAntennaFrequency } from './utils.js'
 
 const rfStateStartupLabels: Record<RfStateStartup, string> = {
 	[RfStateStartup.Active]: 'Active',
@@ -255,6 +255,10 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 			{
 				variableId: `dad_${port}_noise_level`,
 				name: `DAD ${label} - Noise + Interference Level`,
+			},
+			{
+				variableId: `dad_${port}_frequency`,
+				name: `DAD ${label} - Frequency (MHz)`,
 			},
 			{
 				variableId: `dad_${port}_temperature`,
@@ -578,10 +582,11 @@ export function getRfChannelVariables(channel: RfChannel): Record<string, any> {
 	}
 }
 
-export function getAntennaVariables(antenna: Antenna): Record<string, any> {
+export function getAntennaVariables(antenna: Antenna, rfChannels: Map<number, RfChannel>): Record<string, any> {
 	const port = sanitizeName(antenna.antennaPortId)
 	const binding = antenna.bindings[0]?.binding
 	const bindingLabel = Object.keys(RFChannels).find((key) => RFChannels[key as keyof typeof RFChannels] === binding)
+	const frequency = getAntennaFrequency(antenna, rfChannels)
 
 	return {
 		[`dad_${port}_state`]: antenna.state,
@@ -591,6 +596,7 @@ export function getAntennaVariables(antenna: Antenna): Record<string, any> {
 		[`dad_${port}_packet_error_warning`]: antenna.warningPacketError,
 		[`dad_${port}_interference_severity`]: antenna.interference?.severity ?? 'None',
 		[`dad_${port}_noise_level`]: antenna.interferenceTotalPower ?? antenna.interference?.totalPower,
+		[`dad_${port}_frequency`]: frequency,
 		[`dad_${port}_temperature`]: antenna.temperature,
 		[`dad_${port}_identify`]: antenna.identify,
 		[`dad_${port}_led_brightness`]: antenna.ledBrightness,
@@ -775,7 +781,7 @@ export function UpdateVariableValues(self: SpecteraInstance): void {
 
 	// Antennas
 	for (const antenna of self.state.antennas.values()) {
-		values = { ...values, ...getAntennaVariables(antenna) }
+		values = { ...values, ...getAntennaVariables(antenna, self.state.rfChannels) }
 	}
 
 	// Mobile Devices

@@ -1,6 +1,6 @@
 import { combineRgb } from '@companion-module/base'
 import { SpecteraState } from './state.js'
-import { MobileDevice, MtType } from './types.js'
+import { Antenna, MobileDevice, MtType, RfChannel, RFChannels } from './types.js'
 
 export const Color = {
 	Black: combineRgb(0, 0, 0),
@@ -115,4 +115,22 @@ export function getAudioLinkChoices(state: SpecteraState): { id: number; label: 
 	choices.sort((a, b) => a.id - b.id)
 
 	return choices
+}
+
+// Map antenna binding enum value to rfChannelId for state.rfChannels lookup.
+function bindingToRfChannelId(binding: RFChannels | undefined): number | undefined {
+	if (binding === undefined) return undefined
+	if (binding === RFChannels['RF Channel 1']) return 0
+	if (binding === RFChannels['RF Channel 2']) return 1
+	return undefined
+}
+
+// DAD frequency (MHz) from antenna binding + RF channel state.
+export function getAntennaFrequency(antenna: Antenna, rfChannels: Map<number, RfChannel>): number | string {
+	const binding = antenna.bindings[0]?.binding
+	if (binding === RFChannels.Scan) return 'Scan'
+	if (binding === RFChannels.Off) return 'Off'
+	const channelId = bindingToRfChannelId(binding)
+	const channel = channelId !== undefined ? rfChannels.get(channelId) : undefined
+	return channel !== undefined ? channel.frequency / 1000 : '—'
 }

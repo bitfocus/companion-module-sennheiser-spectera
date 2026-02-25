@@ -21,6 +21,7 @@ import type {
 	InterfaceStatusWordclock,
 } from './types.js'
 import { MtType } from './types.js'
+import { getAntennaFrequency } from './utils.js'
 import type { SpecteraState } from './state.js'
 import { Agent, Dispatcher } from 'undici'
 import {
@@ -529,6 +530,12 @@ export class SpecteraApi extends EventEmitter {
 				this.state.updateAntenna(antenna)
 				const port = antenna.antennaPortId.replace(/[^a-zA-Z0-9_-]/g, '_')
 				this.handleStateUpdate(`dad_${port}_`, oldState, antenna, AntennaStateMap, changedVariables, feedbacksToCheck)
+				const frequencyVar = `dad_${port}_frequency`
+				const frequencyVal = getAntennaFrequency(antenna, this.state.rfChannels)
+				if (this.variableCache[frequencyVar] !== frequencyVal) {
+					changedVariables[frequencyVar] = frequencyVal
+					this.variableCache[frequencyVar] = frequencyVal
+				}
 				structureChanged = !oldState
 			} else if (key.startsWith('/api/mts/paired/all/')) {
 				const oldState = this.state.mobileDevices.get(value.mtUid)

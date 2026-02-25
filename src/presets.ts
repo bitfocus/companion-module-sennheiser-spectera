@@ -357,7 +357,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `DAD ${dad}\\n\\n$(spectera:dad_${port}_bindings)`,
+				text: `DAD ${dad}\\n\\n$(spectera:dad_${port}_frequency) MHz`,
 				size: 11,
 				show_topbar: false,
 			},
