@@ -46,7 +46,7 @@ export function getMobileDeviceChoices(state: SpecteraState, filterType?: MtType
 	return choices
 }
 
-/** Format battery runtime from minutes to "H:MM". Returns 'Off' for undefined or -1. */
+// Format battery runtime from minutes to "H:MM". Returns 'Off' for undefined or -1. */
 export function formatBatteryRuntimeMinutes(minutes: number | undefined): string {
 	if (minutes === undefined || minutes === -1) return 'Off'
 	return `${Math.floor(minutes / 60)}:${String(minutes % 60).padStart(2, '0')}`

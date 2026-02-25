@@ -1,4 +1,5 @@
 import EventEmitter from 'events'
+import PQueue from 'p-queue'
 import type { SpecteraInstance } from './main.js'
 import type {
 	AudioInput,
@@ -54,6 +55,8 @@ import {
 	WordclockOutputStateMap,
 } from './state_maps.js'
 
+const REQUEST_INTERVAL_MS = 20
+
 export class SpecteraApi extends EventEmitter {
 	private readonly host: string
 	private readonly password: string
@@ -65,6 +68,7 @@ export class SpecteraApi extends EventEmitter {
 	private variableCache: Record<string, string | number | boolean | undefined> = {}
 	private lastLevelUpdateTime = 0
 	private isInitializing = false
+	private readonly requestQueue: { add: <T>(fn: () => Promise<T>) => Promise<T> }
 
 	constructor(instance: SpecteraInstance, state: SpecteraState, host: string, password: string) {
 		super()
@@ -77,6 +81,11 @@ export class SpecteraApi extends EventEmitter {
 				rejectUnauthorized: false,
 			},
 		})
+		this.requestQueue = new (PQueue as any)({
+			concurrency: 1,
+			interval: REQUEST_INTERVAL_MS,
+			intervalCap: 1,
+		})
 	}
 
 	private getAuthHeader(): string {
@@ -85,6 +94,20 @@ export class SpecteraApi extends EventEmitter {
 	}
 
 	async sendRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
+		return this.requestQueue.add(async () => {
+			try {
+				return await this.executeRequest<T>(method, path, body)
+			} catch (err) {
+				this.instance.log(
+					'error',
+					`API Request failed for ${method} ${path}: ${err instanceof Error ? err.message : String(err)}`,
+				)
+				throw err
+			}
+		})
+	}
+
+	private async executeRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
 		const url = `https://${this.host}:443/api${path}`
 		const options: RequestInit = {
 			method,
@@ -101,31 +124,22 @@ export class SpecteraApi extends EventEmitter {
 
 		this.instance.log('debug', `API Request: ${method} ${path} ${body ? JSON.stringify(body) : ''}`)
 
+		const response = await fetch(url, { ...options, dispatcher: this.dispatcher } as any)
+
+		if (!response.ok) {
+			const errorText = await response.text().catch(() => 'Unknown error')
+			this.instance.log('error', `API Request failed for ${method} ${path}: HTTP ${response.status}: ${errorText}`)
+			throw new Error(`HTTP ${response.status}: ${errorText}`)
+		}
+
+		if (response.status === 204 || response.headers.get('content-length') === '0') {
+			return {} as T
+		}
+
 		try {
-			const response = await fetch(url, { ...options, dispatcher: this.dispatcher } as any)
-
-			if (!response.ok) {
-				const errorText = await response.text().catch(() => 'Unknown error')
-				this.instance.log('error', `API Request failed for ${method} ${path}: HTTP ${response.status}: ${errorText}`)
-				throw new Error(`HTTP ${response.status}: ${errorText}`)
-			}
-
-			if (response.status === 204 || response.headers.get('content-length') === '0') {
-				return {} as T
-			}
-
-			try {
-				return (await response.json()) as T
-			} catch {
-				// If JSON parsing fails but status was OK, return empty object
-				return {} as T
-			}
-		} catch (error) {
-			this.instance.log(
-				'error',
-				`API Request failed for ${method} ${path}: ${error instanceof Error ? error.message : String(error)}`,
-			)
-			throw error
+			return (await response.json()) as T
+		} catch {
+			return {} as T
 		}
 	}
 
