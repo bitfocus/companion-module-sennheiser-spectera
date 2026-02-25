@@ -31,6 +31,7 @@ import {
 	WordclockInputStateMap,
 	WordclockOutputStateMap,
 } from './state_maps.js'
+import { formatBatteryRuntimeMinutes } from './utils.js'
 
 const rfStateStartupLabels: Record<RfStateStartup, string> = {
 	[RfStateStartup.Active]: 'Active',
@@ -607,7 +608,7 @@ export function getMobileDeviceVariables(device: MobileDevice): Record<string, a
 		[`${deviceVariableId}_sleep`]: device.sleep,
 		[`${deviceVariableId}_state`]: device.state,
 		[`${deviceVariableId}_battery_level`]: device.batteryFillLevel === -1 ? 'Off' : device.batteryFillLevel,
-		[`${deviceVariableId}_battery_runtime`]: device.batteryRuntime === -1 ? 'Off' : device.batteryRuntime,
+		[`${deviceVariableId}_battery_runtime`]: formatBatteryRuntimeMinutes(device.batteryRuntime),
 		[`${deviceVariableId}_battery_low`]: device.batteryLow,
 		[`${deviceVariableId}_led_brightness`]: device.ledBrightness,
 		[`${deviceVariableId}_mic_audiolink_id`]: device.micAudiolinkId,

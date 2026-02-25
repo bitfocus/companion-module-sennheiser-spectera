@@ -28,6 +28,7 @@ import {
 	MtType,
 	InputSource,
 } from './types.js'
+import { formatBatteryRuntimeMinutes } from './utils.js'
 
 export interface StateMapEntry<T> {
 	feedback?: string
@@ -151,7 +152,7 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 	batteryRuntime: {
 		feedback: 'mobileDeviceBatteryRuntime',
 		variable: 'battery_runtime',
-		valueFn: (v: unknown): any => (v === -1 ? 'Off' : v),
+		valueFn: (v: unknown): any => formatBatteryRuntimeMinutes(typeof v === 'number' ? v : undefined),
 	},
 	batteryLow: { feedback: 'mobileDeviceBatteryLow', variable: 'battery_low', valueFn: (v: unknown): any => v },
 	version: { variable: 'version', valueFn: (v: unknown): any => v },

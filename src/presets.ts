@@ -806,7 +806,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `$(spectera:${deviceVariableId}_name)\\nBATTERY\\n\\n$(spectera:${deviceVariableId}_battery_level) %\\n$(spectera:${deviceVariableId}_battery_runtime) min`,
+				text: `$(spectera:${deviceVariableId}_name)\\nBATTERY\\n\\n$(spectera:${deviceVariableId}_battery_level) %\\n$(spectera:${deviceVariableId}_battery_runtime)`,
 				size: 10,
 				show_topbar: false,
 			},
