@@ -350,6 +350,25 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				},
 			],
 		}
+		presets[`dad${port}MainInterferers`] = {
+			type: 'button',
+			category: 'RF Configuration',
+			name: `DAD ${dad} Main Interferers`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `DAD ${dad}\\n$(spectera:dad_${port}_main_interferers)`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [],
+					up: [],
+				},
+			],
+			feedbacks: [],
+		}
 		presets[`dad${port}Bindings`] = {
 			type: 'button',
 			category: 'RF Configuration',

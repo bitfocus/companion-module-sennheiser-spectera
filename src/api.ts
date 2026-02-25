@@ -530,11 +530,28 @@ export class SpecteraApi extends EventEmitter {
 				this.state.updateAntenna(antenna)
 				const port = antenna.antennaPortId.replace(/[^a-zA-Z0-9_-]/g, '_')
 				this.handleStateUpdate(`dad_${port}_`, oldState, antenna, AntennaStateMap, changedVariables, feedbacksToCheck)
+				//Frequency Lookup
 				const frequencyVar = `dad_${port}_frequency`
 				const frequencyVal = getAntennaFrequency(antenna, this.state.rfChannels)
 				if (this.variableCache[frequencyVar] !== frequencyVal) {
 					changedVariables[frequencyVar] = frequencyVal
 					this.variableCache[frequencyVar] = frequencyVal
+				}
+				//Main Interferers Lookup
+				const mainInterferersVar = `dad_${port}_main_interferers`
+				if (antenna.interference?.mainInterferers && antenna.interference.mainInterferers.length > 0) {
+					const mainInterferersVal = antenna.interference?.mainInterferers
+						?.map((i) => `${(i.frequency / 1000).toFixed(0)}MHz\\n(${i.power}dBm)`)
+						.join('\\n')
+					if (this.variableCache[mainInterferersVar] !== mainInterferersVal) {
+						changedVariables[mainInterferersVar] = mainInterferersVal
+						this.variableCache[mainInterferersVar] = mainInterferersVal
+					}
+				} else {
+					if (this.variableCache[mainInterferersVar] !== 'None') {
+						changedVariables[mainInterferersVar] = 'None'
+						this.variableCache[mainInterferersVar] = 'None'
+					}
 				}
 				structureChanged = !oldState
 			} else if (key.startsWith('/api/mts/paired/all/')) {

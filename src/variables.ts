@@ -261,6 +261,10 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 				name: `DAD ${label} - Frequency (MHz)`,
 			},
 			{
+				variableId: `dad_${port}_main_interferers`,
+				name: `DAD ${label} - Main Interferers`,
+			},
+			{
 				variableId: `dad_${port}_temperature`,
 				name: `DAD ${label} - Temperature`,
 			},
@@ -597,6 +601,9 @@ export function getAntennaVariables(antenna: Antenna, rfChannels: Map<number, Rf
 		[`dad_${port}_interference_severity`]: antenna.interference?.severity ?? 'None',
 		[`dad_${port}_noise_level`]: antenna.interferenceTotalPower ?? antenna.interference?.totalPower,
 		[`dad_${port}_frequency`]: frequency,
+		[`dad_${port}_main_interferers`]:
+			antenna.interference?.mainInterferers?.map((i) => `${i.frequency / 1000}MHz (${i.severity})`).join(', ') ??
+			'None',
 		[`dad_${port}_temperature`]: antenna.temperature,
 		[`dad_${port}_identify`]: antenna.identify,
 		[`dad_${port}_led_brightness`]: antenna.ledBrightness,
