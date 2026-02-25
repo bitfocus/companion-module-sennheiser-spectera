@@ -196,7 +196,7 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 		valueFn: (v: unknown): any => v,
 	},
 	commandState: { variable: 'command_state', valueFn: (v: unknown): any => v },
-	micLqi: { variable: 'mic_lqi', valueFn: (v: unknown): any => v },
+	micLqi: { feedback: 'mobileDeviceMicLqi', variable: 'mic_lqi', valueFn: (v: unknown): any => v },
 	interference: {
 		feedback: 'mobileDeviceInterference',
 		variable: 'interference',
@@ -207,7 +207,7 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 		variable: 'dominant_antenna',
 		valueFn: (v: unknown): any => (typeof v === 'string' && v !== 'NotAvailable' ? v.toUpperCase() : 'Not Available'),
 	},
-	rssi: { variable: 'rssi', valueFn: (v: unknown): any => v },
+	rssi: { feedback: 'mobileDeviceRSSI', variable: 'rssi', valueFn: (v: unknown): any => v },
 	// SEK specific
 	headphoneVolume: {
 		feedback: 'mobileDeviceHeadphoneVolume',
@@ -265,7 +265,7 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 		variable: 'cable_emulation',
 		valueFn: (v: unknown): any => v,
 	},
-	iemLqi: { variable: 'iem_lqi', valueFn: (v: unknown): any => v },
+	iemLqi: { feedback: 'mobileDeviceIemLqi', variable: 'iem_lqi', valueFn: (v: unknown): any => v },
 	// SKM specific
 	commandBehavior: { variable: 'command_behavior', valueFn: (v: unknown): any => v },
 	micModule: { variable: 'mic_module', valueFn: (v: unknown): any => (v as any)?.name },

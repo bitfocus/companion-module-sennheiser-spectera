@@ -984,6 +984,57 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			],
 		}
 
+		presets[`${deviceVariableId}_InterferenceStatus`] = {
+			type: 'button',
+			category: `${category}s`,
+			name: `${device.name} Interference Status`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `$(spectera:${deviceVariableId}_name)\\nDOM: $(spectera:${deviceVariableId}_dominant_antenna)\\nRSSI:$(spectera:${deviceVariableId}_rssi)`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'mobileDeviceMicLqi',
+					options: {
+						serial: device.serial,
+						iemLqiThreshold: 1,
+					},
+					style: {
+						bgcolor: Color.SpecteraRed,
+					},
+				},
+				{
+					feedbackId: 'mobileDeviceMicLqi',
+					options: {
+						serial: device.serial,
+						iemLqiThreshold: 2,
+					},
+					style: {
+						bgcolor: Color.SpecteraOrange,
+					},
+				},
+				{
+					feedbackId: 'mobileDeviceIemLqi',
+					options: {
+						serial: device.serial,
+						iemLqiThreshold: 4,
+					},
+					style: {
+						bgcolor: Color.SpecteraBlue,
+					},
+				},
+			],
+		}
+
 		presets[`${deviceVariableId}_Interference`] = {
 			type: 'button',
 			category: `${category}s`,

@@ -1604,6 +1604,101 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		},
 	}
 
+	feedbacks['mobileDeviceMicLqi'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Mic LQI',
+		description: 'Check Mic LQI value for a mobile device',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'serial',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
+				choices: mobileDeviceChoices,
+				allowCustom: true,
+			},
+			{
+				type: 'textinput',
+				label: 'Mic LQI Threshold (0-4)',
+				id: 'micLqiThreshold',
+				default: '4',
+				useVariables: true,
+			},
+		],
+		callback: async (feedback, context): Promise<boolean> => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
+			if (!device?.micLqi) return false
+			return device.micLqi >= Number(feedback.options.micLqiThreshold)
+		},
+	}
+
+	feedbacks['mobileDeviceIemLqi'] = {
+		type: 'boolean',
+		name: 'Mobile Device - IEM LQI',
+		description: 'Check IEM LQI value for a mobile device',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'serial',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
+				choices: sekMobileDeviceChoices,
+				allowCustom: true,
+			},
+			{
+				type: 'textinput',
+				label: 'IEM LQI Threshold (0-4)',
+				id: 'iemLqiThreshold',
+				default: '4',
+				useVariables: true,
+			},
+		],
+		callback: async (feedback, context): Promise<boolean> => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
+			if (device?.type !== MtType.SEK || !device?.iemLqi) return false
+			return device.iemLqi >= Number(feedback.options.iemLqiThreshold)
+		},
+	}
+
+	feedbacks['mobileDeviceRSSI'] = {
+		type: 'boolean',
+		name: 'Mobile Device - RSSI',
+		description: 'Check RSSI value for a mobile device',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'serial',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
+				choices: sekMobileDeviceChoices,
+				allowCustom: true,
+			},
+			{
+				type: 'textinput',
+				label: 'RSSI Threshold (dBm)',
+				id: 'rssiThreshold',
+				default: '-20',
+			},
+		],
+		callback: async (feedback, context): Promise<boolean> => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
+			if (!device?.rssi) return false
+			return device.rssi >= Number(feedback.options.rssiThreshold)
+		},
+	}
+
 	feedbacks['audioInterfaceStatus'] = {
 		type: 'boolean',
 		name: 'Audio Interface - Status',
