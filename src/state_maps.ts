@@ -107,7 +107,7 @@ export const AntennaStateMap: StateMap<Antenna> = {
 	},
 	interferenceTotalPower: {
 		feedback: 'dadInterferencePower',
-		variable: 'interference_noise_level',
+		variable: 'noise_level',
 		valueFn: (v: unknown): any => v,
 	},
 	temperature: { feedback: 'dadTemperature', variable: 'temperature', valueFn: (v: unknown): any => v },
