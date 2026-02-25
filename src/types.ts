@@ -14,6 +14,7 @@ export enum RFChannels {
 	Off = 'Off',
 	'RF Channel 1' = 'RfChannel0',
 	'RF Channel 2' = 'RfChannel1',
+	'Scan' = 'Scan',
 }
 
 export enum TxPower {

@@ -367,29 +367,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					up: [],
 				},
 			],
-			feedbacks: [
-				{
-					feedbackId: 'dadBindings',
-					options: {
-						dad: port,
-						bindings: RFChannels['Off'],
-					},
-					style: {
-						bgcolor: Color.SpecteraRed,
-					},
-				},
-				{
-					feedbackId: 'dadBindings',
-					isInverted: true,
-					options: {
-						dad: port,
-						bindings: RFChannels['Off'],
-					},
-					style: {
-						bgcolor: Color.SpecteraGreen,
-					},
-				},
-			],
+			feedbacks: [],
 		}
 		presets[`dad${port}BindingSetOff`] = {
 			type: 'button',
@@ -498,6 +476,44 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					options: {
 						dad: port,
 						bindings: RFChannels['RF Channel 2'],
+					},
+					style: {
+						bgcolor: Color.SpecteraGreen,
+					},
+				},
+			],
+		}
+		presets[`dad${port}BindingSetScan`] = {
+			type: 'button',
+			category: 'RF Configuration',
+			name: `DAD ${dad} Binding Set`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `DAD ${dad}\\nto\\nSCAN`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [
+						{
+							actionId: 'dadRfBinding',
+							options: {
+								dad: port,
+								rfChannel: RFChannels['Scan'],
+							},
+						},
+					],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'dadBindings',
+					options: {
+						dad: port,
+						bindings: RFChannels['Scan'],
 					},
 					style: {
 						bgcolor: Color.SpecteraGreen,
