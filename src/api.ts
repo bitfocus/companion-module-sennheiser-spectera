@@ -1,5 +1,6 @@
 import EventEmitter from 'events'
 import PQueue from 'p-queue'
+import { InstanceStatus } from '@companion-module/base'
 import type { SpecteraInstance } from './main.js'
 import type {
 	AudioInput,
@@ -70,6 +71,9 @@ export class SpecteraApi extends EventEmitter {
 	private lastLevelUpdateTime = 0
 	private isInitializing = false
 	private readonly requestQueue: { add: <T>(fn: () => Promise<T>) => Promise<T> }
+	private destroyed = false
+	private reconnectTimer: ReturnType<typeof setTimeout> | null = null
+	private heartbeatInterval: ReturnType<typeof setInterval> | null = null
 
 	constructor(instance: SpecteraInstance, state: SpecteraState, host: string, password: string) {
 		super()
@@ -100,7 +104,7 @@ export class SpecteraApi extends EventEmitter {
 				return await this.executeRequest<T>(method, path, body)
 			} catch (err) {
 				this.instance.log(
-					'error',
+					'debug',
 					`API Request failed for ${method} ${path}: ${err instanceof Error ? err.message : String(err)}`,
 				)
 				throw err
@@ -148,7 +152,7 @@ export class SpecteraApi extends EventEmitter {
 		try {
 			await this.getBaseStationState()
 		} catch (error) {
-			this.instance.log('error', `Login failed: ${error instanceof Error ? error.message : String(error)}`)
+			this.instance.log('debug', `Login failed: ${error instanceof Error ? error.message : String(error)}`)
 			throw error
 		}
 	}
@@ -264,9 +268,20 @@ export class SpecteraApi extends EventEmitter {
 			this.instance.log('error', `Initial data fetch failed: ${error instanceof Error ? error.message : String(error)}`)
 			// We don't throw here to allow the subscription to keep running if the fetch fails
 		}
+
+		this.startHeartbeat()
 	}
 
 	async disconnect(): Promise<void> {
+		this.destroyed = true
+
+		this.stopHeartbeat()
+
+		if (this.reconnectTimer) {
+			clearTimeout(this.reconnectTimer)
+			this.reconnectTimer = null
+		}
+
 		if (this.sessionUUID) {
 			try {
 				await this.sendRequest('DELETE', `/ssc/state/subscriptions/${this.sessionUUID}`)
@@ -285,6 +300,58 @@ export class SpecteraApi extends EventEmitter {
 		}
 
 		this.removeAllListeners()
+	}
+
+	private startHeartbeat(): void {
+		this.stopHeartbeat()
+		this.heartbeatInterval = setInterval(() => void this.runHeartbeat(), 5000)
+	}
+
+	private async runHeartbeat(): Promise<void> {
+		if (this.destroyed) return
+		try {
+			await this.getBaseStationState()
+		} catch (_err) {
+			this.instance.log('warn', 'Connection lost to Spectera.')
+			this.stopHeartbeat()
+			if (this.abortController) {
+				this.abortController.abort()
+				this.abortController = null
+			}
+			this.scheduleReconnect()
+		}
+	}
+
+	private stopHeartbeat(): void {
+		if (this.heartbeatInterval !== null) {
+			clearInterval(this.heartbeatInterval)
+			this.heartbeatInterval = null
+		}
+	}
+
+	private scheduleReconnect(): void {
+		if (this.destroyed) return
+		if (this.reconnectTimer !== null) return
+
+		this.stopHeartbeat()
+		this.instance.updateStatus(InstanceStatus.ConnectionFailure)
+
+		this.reconnectTimer = setTimeout(() => void this.runReconnect(), 5000)
+	}
+
+	private async runReconnect(): Promise<void> {
+		this.reconnectTimer = null
+		if (this.destroyed) return
+		try {
+			await this.performLogin()
+			await this.subscribe()
+			this.startHeartbeat()
+			this.instance.updateStatus(InstanceStatus.Ok)
+			this.instance.log('info', 'Reconnected to Spectera successfully')
+		} catch (err) {
+			this.instance.log('debug', `Reconnect failed: ${err instanceof Error ? err.message : String(err)}`)
+			this.scheduleReconnect()
+		}
 	}
 
 	private async subscribe(): Promise<void> {
@@ -318,11 +385,20 @@ export class SpecteraApi extends EventEmitter {
 				return
 			}
 
-			this.processStream(reader).catch((err) => {
-				if (err.name !== 'AbortError') {
-					this.instance.log('error', `SSE Stream error: ${err.message}`)
-				}
-			})
+			this.processStream(reader)
+				.then(() => {
+					if (!this.destroyed) {
+						this.scheduleReconnect()
+					}
+				})
+				.catch((err) => {
+					if (err.name !== 'AbortError') {
+						this.instance.log('error', `SSE Stream error: ${err.message}`)
+						if (!this.destroyed) {
+							this.scheduleReconnect()
+						}
+					}
+				})
 		} catch (error) {
 			this.instance.log('error', `Subscription failed: ${error instanceof Error ? error.message : String(error)}`)
 			throw error
