@@ -58,7 +58,7 @@ const toMicLowCutLabel = (v: unknown, state: SEKDevice | SKMDevice): string | nu
 	return v as number
 }
 
-const psuStatusLabels: Record<PsuStatus, string> = {
+export const psuStatusLabels: Record<PsuStatus, string> = {
 	[PsuStatus.Connected]: 'Connected',
 	[PsuStatus.Unconnected]: 'Unconnected',
 	[PsuStatus.Disconnected]: 'Disconnected',
@@ -66,7 +66,7 @@ const psuStatusLabels: Record<PsuStatus, string> = {
 const toPsuLabel = (v: unknown): any => psuStatusLabels[v as PsuStatus]
 const joinWarnings = (v: unknown): any => ((v as string[])?.length ? (v as string[]).join(', ') : 'None')
 
-const inputSourceLabels: Record<InputSource, string> = {
+export const inputSourceLabels: Record<InputSource, string> = {
 	[InputSource.Dante]: 'Dante',
 	[InputSource['MADI 1']]: 'MADI 1',
 	[InputSource['MADI 2']]: 'MADI 2',

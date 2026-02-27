@@ -17,6 +17,7 @@ import {
 	TxPower,
 	MicLineSelection,
 	MicLowCutHzSEK,
+	MicLowCutHzSKM,
 	IemAudiolinkMode,
 	MicAudiolinkMode,
 } from './types.js'
@@ -650,13 +651,14 @@ export function UpdateActions(self: SpecteraInstance): void {
 			let frequency = action.options.frequency as number
 			const serial = await context.parseVariablesInString(action.options.serial as string)
 			const device = getDeviceBySerial(self.state, serial)
+			if (!device) return
 
-			if (device?.type === MtType.SKM) {
-				if (frequency === 20 || frequency === 30 || frequency === 60) {
-					frequency = 20
+			if (device.type === MtType.SKM) {
+				// SEK-only values (20=Off, 30Hz) are not valid for SKM; remap to SKM Off (60)
+				if (frequency === Number(MicLowCutHzSEK.Off) || frequency === 30) {
+					frequency = MicLowCutHzSKM.Off
 				}
 			}
-			if (!device) return
 
 			await self.api.setMobileDevice(device.mtUid, { micLowCutHz: frequency } as Partial<MobileDevice>)
 		},

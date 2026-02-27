@@ -253,9 +253,6 @@ export class SpecteraApi extends EventEmitter {
 			this.state.updateMadi2(madi2)
 			this.state.updateWordclock(wordclock)
 
-			this.state.updateMadi2(madi2)
-			this.state.updateWordclock(wordclock)
-
 			this.isInitializing = false
 
 			UpdateVariableDefinitions(this.instance)

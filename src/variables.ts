@@ -12,16 +12,7 @@ import type {
 	BaseStationState,
 	BaseStationSite,
 } from './types.js'
-import {
-	MtType,
-	RfState,
-	RFChannels,
-	RfStateStartup,
-	PsuStatus,
-	MicLowCutHzSEK,
-	MicLowCutHzSKM,
-	InputSource,
-} from './types.js'
+import { MtType, RfState, RFChannels, RfStateStartup, MicLowCutHzSEK, MicLowCutHzSKM } from './types.js'
 import {
 	StateMap,
 	AudioNetworkStateMap,
@@ -30,6 +21,8 @@ import {
 	MadiOutputStateMap,
 	WordclockInputStateMap,
 	WordclockOutputStateMap,
+	inputSourceLabels,
+	psuStatusLabels,
 } from './state_maps.js'
 import { formatBatteryRuntimeMinutes, getAntennaFrequency } from './utils.js'
 
@@ -37,18 +30,6 @@ const rfStateStartupLabels: Record<RfStateStartup, string> = {
 	[RfStateStartup.Active]: 'Active',
 	[RfStateStartup.Muted]: 'Muted',
 	[RfStateStartup.LastState]: 'Last State',
-}
-
-const inputSourceLabels: Record<InputSource, string> = {
-	[InputSource.Dante]: 'Dante',
-	[InputSource['MADI 1']]: 'MADI 1',
-	[InputSource['MADI 2']]: 'MADI 2',
-}
-
-const psuStatusLabels: Record<PsuStatus, string> = {
-	[PsuStatus.Connected]: 'Connected',
-	[PsuStatus.Unconnected]: 'Unconnected',
-	[PsuStatus.Disconnected]: 'Disconnected',
 }
 
 function sanitizeName(name: string): string {
@@ -103,7 +84,6 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 		{ variableId: 'health_temp_state', name: 'Overall Temperature - State' },
 		{ variableId: 'health_fan_1_error', name: 'Fan 1 - Error State' },
 		{ variableId: 'health_fan_2_error', name: 'Fan 2 - Error State' },
-		{ variableId: 'health_fan_3_error', name: 'Fan 3 - Error State' },
 		{ variableId: 'health_fan_3_error', name: 'Fan 3 - Error State' },
 	]
 
@@ -267,10 +247,6 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 			{
 				variableId: `dad_${port}_temperature`,
 				name: `DAD ${label} - Temperature`,
-			},
-			{
-				variableId: `dad_${port}_type`,
-				name: `DAD ${label} - Type`,
 			},
 			/* {
 				variableId: `dad_${port}_version`,
@@ -511,7 +487,7 @@ export function getAudioInputIemLinkDevices(input: AudioInput, mobileDevices: Ma
 	if (input.iemAudiolinkId < 0) return 'None'
 	const names = [...mobileDevices.values()]
 		.filter((d) => d.type === MtType.SEK && 'iemAudiolinkId' in d && d.iemAudiolinkId === input.iemAudiolinkId)
-		.sort()
+		.sort((a, b) => a.name.localeCompare(b.name))
 	return names.length > 0 ? names.map((d) => d.name).join(', ') : 'None'
 }
 
@@ -521,7 +497,7 @@ export function getAudioInputIemLinkPrimaryDevice(input: AudioInput, mobileDevic
 		(d) => d.type === MtType.SEK && 'iemAudiolinkId' in d && d.iemAudiolinkId === input.iemAudiolinkId,
 	)
 	// Preserve same order as getAudioInputIemLinkDevices (sort by name) so primary is deterministic
-	devices.sort()
+	devices.sort((a, b) => a.name.localeCompare(b.name))
 	const device = devices[0]
 	return device?.name ?? 'None'
 }
