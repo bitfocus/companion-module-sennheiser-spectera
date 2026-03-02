@@ -22,7 +22,13 @@ import {
 	InterfaceInputStatus,
 	InputSource,
 } from './types.js'
-import { getChoicesFromEnum, getDeviceBySerial, getMobileDeviceChoices, getAudioLinkChoices } from './utils.js'
+import {
+	getChoicesFromEnum,
+	getDeviceBySerial,
+	getMobileDeviceChoices,
+	getAudioLinkChoices,
+	STEREO_INPUT_OFFSET,
+} from './utils.js'
 import { Color } from './utils.js'
 
 export function UpdateFeedbacks(self: SpecteraInstance): void {
@@ -757,7 +763,8 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		callback: async (feedback, context) => {
 			const serial = await context.parseVariablesInString(feedback.options.serial as string)
 			const device = getDeviceBySerial(self.state, serial)
-			const inputId = Number(feedback.options.inputId)
+			const rawId = Number(feedback.options.inputId)
+			const inputId = rawId >= STEREO_INPUT_OFFSET ? rawId - STEREO_INPUT_OFFSET : rawId
 			if (device?.type === MtType.SEK && device.iemAudiolinkId !== -1) {
 				return self.state.audioInputs.get(inputId)?.iemAudiolinkId === device.iemAudiolinkId
 			}

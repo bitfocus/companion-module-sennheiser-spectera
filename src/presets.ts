@@ -1,7 +1,7 @@
 import { CompanionPresetDefinitions } from '@companion-module/base'
 import { getEngineerPackCount } from './config.js'
 import { SpecteraInstance } from './main.js'
-import { Color } from './utils.js'
+import { Color, STEREO_INPUT_OFFSET } from './utils.js'
 import {
 	RFChannels,
 	AntennaPortId,
@@ -9,6 +9,8 @@ import {
 	DeviceStatus,
 	RfState,
 	MtType,
+	MobileDevice,
+	SEKDevice,
 	InterfaceInputStatus,
 	MicAudiolinkMode,
 	InputSource,
@@ -1556,17 +1558,171 @@ export function UpdatePresets(self: SpecteraInstance): void {
 		}
 	}
 
-	// Engineer Mode: fixed slots (1..N). Serial resolved from config at runtime via $(spectera:engineer_pack_N_serial).
+	// Engineer Mode: shared input list used by both SEK device and engineer pack presets.
 	const sortedInputsForEng = [...self.state.audioInputs.values()].sort((a, b) => a.inputId - b.inputId)
+
+	// Helper to emit the stereo preset entries for a given serial + preset key prefix.
+	const addEngModeStereoPresets = (keyPrefix: string, serial: string, removeLabel: string): void => {
+		presets[`${keyPrefix}_EngineerModeStereoHeader`] = {
+			type: 'text',
+			category: 'Engineer Mode',
+			name: `${removeLabel} - Stereo`,
+			text: '',
+		}
+		presets[`${keyPrefix}_EngMode_remove`] = {
+			type: 'button',
+			category: 'Engineer Mode',
+			name: `${removeLabel} Remove IEM Audio Link`,
+			style: { bgcolor: Color.Black, color: Color.White, text: `REMOVE`, size: 11, show_topbar: false },
+			steps: [
+				{
+					down: [
+						{ actionId: 'removeIemAudioLink', options: { serial } },
+						{ actionId: 'mobileDeviceRename', options: { serial, name: removeLabel } },
+					],
+					up: [],
+				},
+			],
+			feedbacks: [],
+		}
+		for (let i = 0; i < sortedInputsForEng.length; i += 2) {
+			const input1 = sortedInputsForEng[i]
+			const input2 = sortedInputsForEng[i + 1]
+			if (!input2) break
+			const pairLabel = `IN ${input1.inputId + 1} + ${input2.inputId + 1}\\n$(spectera:audio_input_${input1.inputId + 1}_iem_link_primary_device)`
+			presets[`${keyPrefix}_EngMode_Pair_${input1.inputId}_${input2.inputId}`] = {
+				type: 'button',
+				category: 'Engineer Mode',
+				name: `${removeLabel} - Input ${input1.inputId + 1} + ${input2.inputId + 1}`,
+				style: { bgcolor: Color.Black, color: Color.White, text: pairLabel, size: 11, show_topbar: false },
+				steps: [
+					{
+						down: [
+							{
+								actionId: 'routeAudioInputToMobileDevice',
+								options: { inputId: STEREO_INPUT_OFFSET + input1.inputId, serial, modeIdStereo: 7 },
+							},
+							{ actionId: 'setAudioInputSource', options: { inputId: input1.inputId, source: InputSource.Dante } },
+							{
+								actionId: 'mobileDeviceRename',
+								options: {
+									serial,
+									name: `ENG-$(spectera:audio_input_${input1.inputId + 1}_iem_link_primary_device)`,
+								},
+							},
+						],
+						up: [],
+					},
+				],
+				feedbacks: [
+					{
+						feedbackId: 'iemAudioInputLinked',
+						options: { serial, inputId: STEREO_INPUT_OFFSET + input1.inputId },
+						style: { bgcolor: Color.SpecteraBlue },
+					},
+				],
+			}
+		}
+	}
+
+	// Helper to emit the mono preset entries for a given serial + preset key prefix.
+	const addEngModeMonoPresets = (keyPrefix: string, serial: string, removeLabel: string): void => {
+		presets[`${keyPrefix}_EngineerModeMonoHeader`] = {
+			type: 'text',
+			category: 'Engineer Mode',
+			name: `${removeLabel} - Mono`,
+			text: '',
+		}
+		presets[`${keyPrefix}_EngMode_Mono_remove`] = {
+			type: 'button',
+			category: 'Engineer Mode',
+			name: `${removeLabel} Remove IEM Audio Link`,
+			style: { bgcolor: Color.Black, color: Color.White, text: `REMOVE`, size: 11, show_topbar: false },
+			steps: [
+				{
+					down: [
+						{ actionId: 'removeIemAudioLink', options: { serial } },
+						{ actionId: 'mobileDeviceRename', options: { serial, name: removeLabel } },
+					],
+					up: [],
+				},
+			],
+			feedbacks: [],
+		}
+		for (const input of sortedInputsForEng) {
+			presets[`${keyPrefix}_EngMode_${input.inputId}`] = {
+				type: 'button',
+				category: 'Engineer Mode',
+				name: `${removeLabel} - Input ${input.inputId + 1} Engineer Mode`,
+				style: {
+					bgcolor: Color.Black,
+					color: Color.White,
+					text: `IN ${input.inputId + 1}\\n$(spectera:audio_input_${input.inputId + 1}_iem_link_primary_device)`,
+					size: 11,
+					show_topbar: false,
+				},
+				steps: [
+					{
+						down: [
+							{
+								actionId: 'routeAudioInputToMobileDevice',
+								options: { inputId: input.inputId, serial, modeIdMono: 4 },
+							},
+							{ actionId: 'setAudioInputSource', options: { inputId: input.inputId, source: InputSource.Dante } },
+							{
+								actionId: 'mobileDeviceRename',
+								options: {
+									serial,
+									name: `ENG-$(spectera:audio_input_${input.inputId + 1}_iem_link_primary_device)`,
+								},
+							},
+						],
+						up: [],
+					},
+				],
+				feedbacks: [
+					{
+						feedbackId: 'iemAudioInputLinked',
+						options: { serial, inputId: input.inputId },
+						style: { bgcolor: Color.SpecteraBlue },
+					},
+				],
+			}
+		}
+	}
+
+	// Engineer Mode: detected SEK devices (listed before config-defined packs).
+	const sekDevicesForEng = ([...self.state.mobileDevices.values()] as MobileDevice[])
+		.filter((d): d is SEKDevice => d.type === MtType.SEK && !!d.serial)
+		.sort((a, b) => a.name.localeCompare(b.name))
+
+	// SEK stereo pass
+	for (const device of sekDevicesForEng) {
+		addEngModeStereoPresets(`SEK_${device.serial}_eng`, device.serial!, device.name)
+	}
+	// SEK mono pass
+	for (const device of sekDevicesForEng) {
+		addEngModeMonoPresets(`SEK_${device.serial}_eng`, device.serial!, device.name)
+	}
+
+	// Engineer Mode: fixed slots (1..N). Serial resolved from config at runtime via $(spectera:engineer_pack_N_serial).
+	// All stereo presets are emitted first (across all slots), then all mono presets.
 	const engineerPackCount = getEngineerPackCount(self.config)
+	const engineerPackSerials = (self.config.engineerPacks ?? '')
+		.split(/\r?\n|,/)
+		.map((s) => s.trim())
+		.filter(Boolean)
+
+	// --- Stereo pass ---
 	for (let slot = 1; slot <= engineerPackCount; slot++) {
 		const serialVar = `$(spectera:engineer_pack_${slot}_serial)`
-		const nameVar = `$(spectera:engineer_pack_${slot}_name)`
+		const configSerial = engineerPackSerials[slot - 1] ?? ''
+		const serialLabel = configSerial ? `SN: ${configSerial}` : 'SN: not set'
 
 		presets[`engineer_pack_${slot}_EngineerModeStereoHeader`] = {
 			type: 'text',
 			category: 'Engineer Mode',
-			name: `Pack ${slot} - Stereo`,
+			name: `Pack ${slot} (${serialLabel}) - Stereo`,
 			text: '',
 		}
 		presets[`engineer_pack_${slot}_EngMode_remove`] = {
@@ -1613,7 +1769,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						down: [
 							{
 								actionId: 'routeAudioInputToMobileDevice',
-								options: { inputId: input1.inputId, serial: serialVar, modeId: 7 },
+								options: { inputId: STEREO_INPUT_OFFSET + input1.inputId, serial: serialVar, modeIdStereo: 7 },
 							},
 							{
 								actionId: 'setAudioInputSource',
@@ -1633,17 +1789,25 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				feedbacks: [
 					{
 						feedbackId: 'iemAudioInputLinked',
-						options: { serial: serialVar, inputId: input1.inputId },
+						options: { serial: serialVar, inputId: STEREO_INPUT_OFFSET + input1.inputId },
 						style: { bgcolor: Color.SpecteraBlue },
 					},
 				],
 			}
 		}
+	}
+
+	// --- Mono pass ---
+	for (let slot = 1; slot <= engineerPackCount; slot++) {
+		const serialVar = `$(spectera:engineer_pack_${slot}_serial)`
+		const nameVar = `$(spectera:engineer_pack_${slot}_name)`
+		const configSerial = engineerPackSerials[slot - 1] ?? ''
+		const serialLabel = configSerial ? `SN: ${configSerial}` : 'SN: not set'
 
 		presets[`engineer_pack_${slot}_EngineerModeMonoHeader`] = {
 			type: 'text',
 			category: 'Engineer Mode',
-			name: `Pack ${slot} - Mono`,
+			name: `Pack ${slot} (${serialLabel}) - Mono`,
 			text: '',
 		}
 		presets[`engineer_pack_${slot}_EngMode_Mono_remove`] = {
@@ -1686,7 +1850,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						down: [
 							{
 								actionId: 'routeAudioInputToMobileDevice',
-								options: { inputId: input.inputId, serial: serialVar, modeId: 4 },
+								options: { inputId: input.inputId, serial: serialVar, modeIdMono: 4 },
 							},
 							{
 								actionId: 'setAudioInputSource',

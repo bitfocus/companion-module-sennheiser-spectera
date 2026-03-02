@@ -60,59 +60,30 @@ export function getDeviceBySerial(state: SpecteraState, serial: string): MobileD
 	return undefined
 }
 
-export function getAudioLinkChoices(state: SpecteraState): { id: number; label: string }[] {
-	const choices: { id: number; label: string }[] = []
-	/*
-	const inputsByLink = new Map<number, AudioInput[]>()
-	const activeInputIds = new Set<number>()
-	
-		// Group inputs by audio link
-		for (const input of state.audioInputs.values()) {
-			if (!inputsByLink.has(input.iemAudiolinkId)) {
-				inputsByLink.set(input.iemAudiolinkId, [])
-			}
-			inputsByLink.get(input.iemAudiolinkId)?.push(input)
-		}
-	
-		// Process Active Links
-		for (const link of state.audioLinks.values()) {
-			const inputs = inputsByLink.get(link.audiolinkId) || []
-			if (inputs.length === 0) continue
-	
-			// Sort inputs by inputId to ensure deterministic order (1st input is lowest ID)
-			inputs.sort((a, b) => a.inputId - b.inputId)
-	
-			const firstInputId = inputs[0].inputId
-			inputs.forEach((i) => activeInputIds.add(i.inputId))
-	
-			const label = inputs.map((i) => i.name || `Input ${i.inputId + 1}`).join(' & ')
-	
-			choices.push({
-				id: firstInputId,
-				label: `[ACTIVE] ${label}`,
-			})
-		}
-	
-		// Process Free Inputs
-		const allInputs = Array.from(state.audioInputs.values()).sort((a, b) => a.inputId - b.inputId)
-		for (const input of allInputs) {
-			if (!activeInputIds.has(input.inputId)) {
-				choices.push({
-					id: input.inputId,
-					label: input.name || `Input ${input.inputId + 1}`,
-				})
-			}
-		} */
+// Offset added to stereo pair IDs to distinguish them from mono input IDs.
+export const STEREO_INPUT_OFFSET = 1000
 
-	state.audioInputs.forEach((input) => {
+export function getAudioLinkChoices(state: SpecteraState): { id: number; label: string }[] {
+	const sortedInputs = Array.from(state.audioInputs.values()).sort((a, b) => a.inputId - b.inputId)
+	const choices: { id: number; label: string }[] = []
+
+	// Stereo pairs first (consecutive pairs: 0+1, 2+3, etc.)
+	for (let i = 0; i + 1 < sortedInputs.length; i += 2) {
+		const input1 = sortedInputs[i]
+		const input2 = sortedInputs[i + 1]
+		choices.push({
+			id: STEREO_INPUT_OFFSET + input1.inputId,
+			label: `Input ${input1.inputId + 1} + ${input2.inputId + 1}`,
+		})
+	}
+
+	// Mono inputs after
+	for (const input of sortedInputs) {
 		choices.push({
 			id: input.inputId,
 			label: input.name || `Input ${input.inputId + 1}`,
 		})
-	})
-
-	// Sort choices by ID (which is input ID)
-	choices.sort((a, b) => a.id - b.id)
+	}
 
 	return choices
 }

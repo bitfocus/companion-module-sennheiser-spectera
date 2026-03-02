@@ -21,7 +21,13 @@ import {
 	IemAudiolinkMode,
 	MicAudiolinkMode,
 } from './types.js'
-import { getAudioLinkChoices, getChoicesFromEnum, getDeviceBySerial, getMobileDeviceChoices } from './utils.js'
+import {
+	getAudioLinkChoices,
+	getChoicesFromEnum,
+	getDeviceBySerial,
+	getMobileDeviceChoices,
+	STEREO_INPUT_OFFSET,
+} from './utils.js'
 
 export function UpdateActions(self: SpecteraInstance): void {
 	const actions: CompanionActionDefinitions = {}
@@ -796,6 +802,10 @@ export function UpdateActions(self: SpecteraInstance): void {
 		},
 	}
 
+	const audioLinkChoices = getAudioLinkChoices(self.state)
+	const stereoModeChoices = getChoicesFromEnum(IemAudiolinkMode).filter((c) => String(c.label).includes('Stereo'))
+	const monoModeChoices = getChoicesFromEnum(IemAudiolinkMode).filter((c) => String(c.label).includes('Mono'))
+
 	actions['routeAudioInputToMobileDevice'] = {
 		name: 'Audio I/O - Route Input to Mobile Device',
 		options: [
@@ -810,16 +820,25 @@ export function UpdateActions(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Audio Input',
-				choices: getAudioLinkChoices(self.state),
-				default: 0,
+				choices: audioLinkChoices,
+				default: audioLinkChoices.length > 0 ? audioLinkChoices[0].id : 0,
 				id: 'inputId',
 			},
 			{
 				type: 'dropdown',
 				label: 'Link Mode',
-				choices: getChoicesFromEnum(IemAudiolinkMode),
+				choices: stereoModeChoices,
 				default: IemAudiolinkMode['LIVE (Stereo)'],
-				id: 'modeId',
+				id: 'modeIdStereo',
+				isVisibleExpression: `$(options:inputId) >= ${STEREO_INPUT_OFFSET}`,
+			},
+			{
+				type: 'dropdown',
+				label: 'Link Mode',
+				choices: monoModeChoices,
+				default: IemAudiolinkMode['LIVE (Mono)'],
+				id: 'modeIdMono',
+				isVisibleExpression: `$(options:inputId) < ${STEREO_INPUT_OFFSET}`,
 			},
 		],
 		description: 'Route an Audio Input to a Mobile Device (IEM). ',
@@ -828,8 +847,10 @@ export function UpdateActions(self: SpecteraInstance): void {
 			const serial = await context.parseVariablesInString(action.options.serial as string)
 			const device = getDeviceBySerial(self.state, serial)
 			if (!device) return
-			const inputId = Number(action.options.inputId)
-			const modeId = Number(action.options.modeId)
+			const rawInputId = Number(action.options.inputId)
+			const isStereo = rawInputId >= STEREO_INPUT_OFFSET
+			const inputId = isStereo ? rawInputId - STEREO_INPUT_OFFSET : rawInputId
+			const modeId = isStereo ? Number(action.options.modeIdStereo) : Number(action.options.modeIdMono)
 			await self.api.routeAudioInputToMobileDevice(inputId, device.mtUid, modeId)
 		},
 	}
