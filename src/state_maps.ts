@@ -205,7 +205,7 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 	dominantAntenna: {
 		feedback: 'mobileDeviceDominantAntenna',
 		variable: 'dominant_antenna',
-		valueFn: (v: unknown): any => (typeof v === 'string' && v !== 'NotAvailable' ? v.toUpperCase() : 'Not Available'),
+		valueFn: (v: unknown): any => (typeof v === 'string' && v !== 'NotAvailable' ? v.toUpperCase() : 'N/A'),
 	},
 	rssi: { feedback: 'mobileDeviceRSSI', variable: 'rssi', valueFn: (v: unknown): any => v },
 	// SEK specific
@@ -238,7 +238,7 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 	headphonePlugState: {
 		feedback: 'mobileDeviceHeadphonePlugState',
 		variable: 'headphone_plug_state',
-		valueFn: (v: unknown): any => (v === 'NotAvailable' ? 'Not Available' : v),
+		valueFn: (v: unknown): any => (v === 'NotAvailable' ? 'N/A' : v),
 	},
 	headphoneVolumeMax: {
 		feedback: 'mobileDeviceHeadphoneVolumeMax',

@@ -109,10 +109,10 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 	for (const input of self.state.audioInputs.values()) {
 		const displayId = input.inputId + 1
 		variables.push(
-			{
+			/* {
 				variableId: `audio_input_${displayId}_name`,
 				name: `Audio Input - ${displayId} - Name`,
-			},
+			}, */
 			{
 				variableId: `audio_input_${displayId}_iem_link_id`,
 				name: `Audio Input - ${displayId} - IEM Link ID`,
@@ -519,7 +519,7 @@ export function getAudioInputVariables(
 	const displayId = input.inputId + 1
 	return {
 		[`audio_input_${displayId}_source`]: inputSourceLabels[input.source] ?? input.source,
-		[`audio_input_${displayId}_name`]: input.name || 'None',
+		//[`audio_input_${displayId}_name`]: input.name || 'None',
 		[`audio_input_${displayId}_iem_link_id`]: input.iemAudiolinkId,
 		[`audio_input_${displayId}_iem_link_devices`]: getAudioInputIemLinkDevices(input, mobileDevices),
 		[`audio_input_${displayId}_iem_link_primary_device`]: getAudioInputIemLinkPrimaryDevice(input, mobileDevices),
@@ -630,7 +630,7 @@ export function getMobileDeviceVariables(device: MobileDevice): Record<string, a
 		[`${deviceVariableId}_dominant_antenna`]:
 			typeof device.dominantAntenna === 'string' && device.dominantAntenna !== 'NotAvailable'
 				? device.dominantAntenna.toUpperCase()
-				: 'Not Available',
+				: 'N/A',
 		[`${deviceVariableId}_rssi`]: device.rssi,
 		//[`${deviceVariableId}_serial`]: device.serial,
 		//[`${deviceVariableId}_version`]: device.version,
@@ -649,7 +649,7 @@ export function getMobileDeviceVariables(device: MobileDevice): Record<string, a
 		variables[`${deviceVariableId}_iem_audiolink_id`] = device.iemAudiolinkId
 		variables[`${deviceVariableId}_iem_audiolink_active`] = device.iemAudiolinkActive
 		variables[`${deviceVariableId}_headphone_plug_state`] =
-			device.headphonePlugState === 'NotAvailable' ? 'Not Available' : device.headphonePlugState
+			device.headphonePlugState === 'NotAvailable' ? 'N/A' : device.headphonePlugState
 		variables[`${deviceVariableId}_headphone_volume_max`] = device.headphoneVolumeMax
 		variables[`${deviceVariableId}_headphone_volume_min`] = device.headphoneVolumeMin
 		variables[`${deviceVariableId}_mic_line_selection`] = device.micLineSelection
