@@ -1710,12 +1710,12 @@ export function UpdatePresets(self: SpecteraInstance): void {
 	for (let slot = 1; slot <= engineerPackCount; slot++) {
 		const serialVar = `$(spectera:engineer_pack_${slot}_serial)`
 		const configSerial = engineerPackSerials[slot - 1] ?? ''
-		const serialLabel = configSerial ? `SN: ${configSerial}` : 'SN: not set'
+		const serialLabel = configSerial ? `SN: ${configSerial}` : 'SN: No Configured'
 
 		presets[`engineer_pack_${slot}_EngineerModeStereoHeader`] = {
 			type: 'text',
 			category: 'Engineer Mode',
-			name: `Pack ${slot} (${serialLabel}) - Stereo`,
+			name: `Preset Engineer Pack ${slot} (${serialLabel}) - Stereo`,
 			text: '',
 		}
 		presets[`engineer_pack_${slot}_EngMode_remove`] = {
@@ -1749,7 +1749,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			presets[`engineer_pack_${slot}_EngMode_Pair_${input1.inputId}_${input2.inputId}`] = {
 				type: 'button',
 				category: 'Engineer Mode',
-				name: `Pack ${slot} - ${input1.name} + ${input2.name}`,
+				name: `Preset Engineer Pack ${slot} - ${input1.name} + ${input2.name}`,
 				style: {
 					bgcolor: Color.Black,
 					color: Color.White,
@@ -1800,7 +1800,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 		presets[`engineer_pack_${slot}_EngineerModeMonoHeader`] = {
 			type: 'text',
 			category: 'Engineer Mode',
-			name: `Pack ${slot} (${serialLabel}) - Mono`,
+			name: `Preset Engineer Pack ${slot} (${serialLabel}) - Mono`,
 			text: '',
 		}
 		presets[`engineer_pack_${slot}_EngMode_Mono_remove`] = {
