@@ -1576,7 +1576,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			type: 'button',
 			category: 'Engineer Mode',
 			name: `${removeLabel} Remove IEM Audio Link`,
-			style: { bgcolor: Color.Black, color: Color.White, text: `REMOVE`, size: 11, show_topbar: false },
+			style: { bgcolor: Color.SpecteraDarkGray, color: Color.White, text: `REMOVE`, size: 11, show_topbar: false },
 			steps: [
 				{
 					down: [
@@ -1597,7 +1597,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				type: 'button',
 				category: 'Engineer Mode',
 				name: `${removeLabel} - Input ${input1.inputId + 1} + ${input2.inputId + 1}`,
-				style: { bgcolor: Color.Black, color: Color.White, text: pairLabel, size: 11, show_topbar: false },
+				style: { bgcolor: Color.SpecteraDarkGray, color: Color.White, text: pairLabel, size: 11, show_topbar: false },
 				steps: [
 					{
 						down: [
@@ -1640,7 +1640,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			type: 'button',
 			category: 'Engineer Mode',
 			name: `${removeLabel} Remove IEM Audio Link`,
-			style: { bgcolor: Color.Black, color: Color.White, text: `REMOVE`, size: 11, show_topbar: false },
+			style: { bgcolor: Color.SpecteraDarkGray, color: Color.White, text: `REMOVE`, size: 11, show_topbar: false },
 			steps: [
 				{
 					down: [
@@ -1658,7 +1658,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				category: 'Engineer Mode',
 				name: `${removeLabel} - Input ${input.inputId + 1} Engineer Mode`,
 				style: {
-					bgcolor: Color.Black,
+					bgcolor: Color.SpecteraDarkGray,
 					color: Color.White,
 					text: `IN ${input.inputId + 1}\\n$(spectera:audio_input_${input.inputId + 1}_iem_link_primary_device)`,
 					size: 11,
@@ -1733,7 +1733,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			category: 'Engineer Mode',
 			name: `Pack ${slot} Remove IEM Audio Link`,
 			style: {
-				bgcolor: Color.Black,
+				bgcolor: Color.SpecteraDarkGray,
 				color: Color.White,
 				text: `REMOVE`,
 				size: 11,
@@ -1761,7 +1761,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				category: 'Engineer Mode',
 				name: `Preset Engineer Pack ${slot} - ${input1.name} + ${input2.name}`,
 				style: {
-					bgcolor: Color.Black,
+					bgcolor: Color.SpecteraDarkGray,
 					color: Color.White,
 					text: pairLabel,
 					size: 11,
@@ -1818,7 +1818,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			category: 'Engineer Mode',
 			name: `Pack ${slot} Remove IEM Audio Link`,
 			style: {
-				bgcolor: Color.Black,
+				bgcolor: Color.SpecteraDarkGray,
 				color: Color.White,
 				text: `REMOVE`,
 				size: 11,
@@ -1842,7 +1842,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				category: 'Engineer Mode',
 				name: `Pack ${slot} - ${input.name} Engineer Mode`,
 				style: {
-					bgcolor: Color.Black,
+					bgcolor: Color.SpecteraDarkGray,
 					color: Color.White,
 					text: `IN ${input.inputId + 1}\\n$(spectera:audio_input_${input.inputId + 1}_iem_link_primary_device)`,
 					size: 11,
