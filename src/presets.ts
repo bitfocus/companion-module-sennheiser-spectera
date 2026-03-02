@@ -1011,7 +1011,8 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			category: `${category}s`,
 			name: `${device.name} Interference Status`,
 			style: {
-				bgcolor: Color.Black,
+				// Base is Red — represents RSSI < -80 dBm (danger). Feedbacks layer Orange then Blue on top.
+				bgcolor: Color.SpecteraRed,
 				color: Color.White,
 				text: `$(spectera:${deviceVariableId}_name)\\nDOM: $(spectera:${deviceVariableId}_dominant_antenna)\\nRSSI:$(spectera:${deviceVariableId}_rssi)`,
 				size: 11,
@@ -1024,31 +1025,23 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				},
 			],
 			feedbacks: [
+				// RSSI ≥ -80 dBm → Orange (low but not critical; upgrades from Red)
 				{
-					feedbackId: 'mobileDeviceMicLqi',
+					feedbackId: 'mobileDeviceRSSI',
 					options: {
 						serial: device.serial,
-						iemLqiThreshold: 1,
-					},
-					style: {
-						bgcolor: Color.SpecteraRed,
-					},
-				},
-				{
-					feedbackId: 'mobileDeviceMicLqi',
-					options: {
-						serial: device.serial,
-						iemLqiThreshold: 2,
+						rssiThreshold: -80,
 					},
 					style: {
 						bgcolor: Color.SpecteraOrange,
 					},
 				},
+				// RSSI ≥ -70 dBm → Blue (normal/good signal; upgrades from Orange)
 				{
-					feedbackId: 'mobileDeviceIemLqi',
+					feedbackId: 'mobileDeviceRSSI',
 					options: {
 						serial: device.serial,
-						iemLqiThreshold: 4,
+						rssiThreshold: -70,
 					},
 					style: {
 						bgcolor: Color.SpecteraBlue,
