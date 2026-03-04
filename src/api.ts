@@ -550,6 +550,7 @@ export class SpecteraApi extends EventEmitter {
 				changedVariables[`audio_input_${displayId}_iem_link_primary_device`] = getAudioInputIemLinkPrimaryDevice(
 					value,
 					this.state.mobileDevices,
+					this.state,
 				)
 				structureChanged = !oldState
 			} else if (key.startsWith('/api/audio/outputs/')) {
@@ -652,6 +653,7 @@ export class SpecteraApi extends EventEmitter {
 							changedVariables[`audio_input_${displayId}_iem_link_primary_device`] = getAudioInputIemLinkPrimaryDevice(
 								input,
 								this.state.mobileDevices,
+								this.state,
 							)
 						}
 					}

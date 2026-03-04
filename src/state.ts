@@ -27,6 +27,8 @@ export class SpecteraState {
 	public readonly antennas = new Map<string, Antenna>()
 	public readonly mobileDevices = new Map<number, MobileDevice>()
 	public readonly audioLinks = new Map<number, AudioLink>()
+	/** Persisted primary IEM link device name per audio input (inputId -> device name). Only changes when current is None. */
+	public readonly iemLinkPrimaryByInputId = new Map<number, string>()
 	public audioLevels: AudioLevels = { updateCounter: 0 }
 	public health: HealthState = {
 		psu: { psu1: PsuStatusEnum.Unconnected, psu2: PsuStatusEnum.Unconnected },
@@ -122,5 +124,6 @@ export class SpecteraState {
 		this.antennas.clear()
 		this.mobileDevices.clear()
 		this.audioLinks.clear()
+		this.iemLinkPrimaryByInputId.clear()
 	}
 }
