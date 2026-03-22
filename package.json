@@ -1,6 +1,6 @@
 {
 	"name": "sennheiser-spectera",
-	"version": "0.8.0",
+	"version": "0.9.0",
 	"main": "dist/main.js",
 	"type": "module",
 	"scripts": {
@@ -25,18 +25,18 @@
 	"dependencies": {
 		"@companion-module/base": "~1.14.1",
 		"p-queue": "^9.1.0",
-		"undici": "^7.22.0"
+		"undici": "^7.24.4"
 	},
 	"devDependencies": {
 		"@companion-module/tools": "^2.7.1",
-		"@types/node": "^22.19.13",
-		"eslint": "^9.39.3",
+		"@types/node": "^22.19.15",
+		"eslint": "^9.39.4",
 		"husky": "^9.1.7",
-		"lint-staged": "^16.2.7",
+		"lint-staged": "^16.4.0",
 		"prettier": "^3.8.1",
 		"rimraf": "^6.1.3",
 		"typescript": "~5.9.3",
-		"typescript-eslint": "^8.56.1"
+		"typescript-eslint": "^8.57.1"
 	},
 	"prettier": "@companion-module/tools/.prettierrc.json",
 	"lint-staged": {
