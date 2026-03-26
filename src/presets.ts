@@ -1582,7 +1582,13 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			type: 'button',
 			category: 'Engineer Mode',
 			name: `${removeLabel} Remove IEM Audio Link`,
-			style: { bgcolor: baseBg, color: Color.White, text: `REMOVE`, size: 11, show_topbar: false },
+			style: {
+				bgcolor: baseBg,
+				color: Color.White,
+				text: `$(spectera:SEK_${serial}_name)\\n\\nREMOVE`,
+				size: 11,
+				show_topbar: false,
+			},
 			steps: [
 				{
 					down: [
@@ -1598,12 +1604,18 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			const input1 = sortedInputsForEng[i]
 			const input2 = sortedInputsForEng[i + 1]
 			if (!input2) break
-			const pairLabel = `IN ${input1.inputId + 1} + ${input2.inputId + 1}\\n$(spectera:audio_input_${input1.inputId + 1}_iem_link_primary_device)`
+			const pairLabel = `IN ${input1.inputId + 1} + ${input2.inputId + 1}`
 			presets[`${keyPrefix}_EngMode_Pair_${input1.inputId}_${input2.inputId}`] = {
 				type: 'button',
 				category: 'Engineer Mode',
 				name: `${removeLabel} - Input ${input1.inputId + 1} + ${input2.inputId + 1}`,
-				style: { bgcolor: baseBg, color: Color.White, text: pairLabel, size: 11, show_topbar: false },
+				style: {
+					bgcolor: baseBg,
+					color: Color.White,
+					text: `$(spectera:SEK_${serial}_name)\\n\\n${pairLabel}`,
+					size: 11,
+					show_topbar: false,
+				},
 				steps: [
 					{
 						down: [
@@ -1611,12 +1623,12 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								actionId: 'routeAudioInputToMobileDevice',
 								options: { inputId: STEREO_INPUT_OFFSET + input1.inputId, serial, modeIdStereo: 7 },
 							},
-							{ actionId: 'setAudioInputSource', options: { inputId: input1.inputId, source: InputSource.Dante } },
+							{ actionId: 'setAudioInputSource', options: { inputId: input1.inputId, source: 'passthrough' } },
 							{
 								actionId: 'mobileDeviceRename',
 								options: {
 									serial,
-									name: `ENG-$(spectera:audio_input_${input1.inputId + 1}_iem_link_primary_device)`,
+									name: `$(spectera:SEK_${serial}_name)-IN ${input1.inputId + 1}+${input2.inputId + 1}`,
 								},
 							},
 						],
@@ -1628,6 +1640,11 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						feedbackId: 'iemAudioInputLinked',
 						options: { serial, inputId: STEREO_INPUT_OFFSET + input1.inputId },
 						style: { bgcolor: Color.SpecteraBlue },
+					},
+					{
+						feedbackId: 'iemAudioInputNoLinkId',
+						options: { serial },
+						style: { bgcolor: Color.Black },
 					},
 				],
 			}
@@ -1646,7 +1663,13 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			type: 'button',
 			category: 'Engineer Mode',
 			name: `${removeLabel} Remove IEM Audio Link`,
-			style: { bgcolor: baseBg, color: Color.White, text: `REMOVE`, size: 11, show_topbar: false },
+			style: {
+				bgcolor: baseBg,
+				color: Color.White,
+				text: `$(spectera:SEK_${serial}_name)\\n\\nREMOVE`,
+				size: 11,
+				show_topbar: false,
+			},
 			steps: [
 				{
 					down: [
@@ -1666,7 +1689,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				style: {
 					bgcolor: baseBg,
 					color: Color.White,
-					text: `IN ${input.inputId + 1}\\n$(spectera:audio_input_${input.inputId + 1}_iem_link_primary_device)`,
+					text: `$(spectera:SEK_${serial}_name)\\n\\nIN ${input.inputId + 1}`,
 					size: 11,
 					show_topbar: false,
 				},
@@ -1677,12 +1700,12 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								actionId: 'routeAudioInputToMobileDevice',
 								options: { inputId: input.inputId, serial, modeIdMono: 4 },
 							},
-							{ actionId: 'setAudioInputSource', options: { inputId: input.inputId, source: InputSource.Dante } },
+							{ actionId: 'setAudioInputSource', options: { inputId: input.inputId, source: 'passthrough' } },
 							{
 								actionId: 'mobileDeviceRename',
 								options: {
 									serial,
-									name: `ENG-$(spectera:audio_input_${input.inputId + 1}_iem_link_primary_device)`,
+									name: `$(spectera:SEK_${serial}_name)-IN ${input.inputId + 1}`,
 								},
 							},
 						],
@@ -1694,6 +1717,11 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						feedbackId: 'iemAudioInputLinked',
 						options: { serial, inputId: input.inputId },
 						style: { bgcolor: Color.SpecteraBlue },
+					},
+					{
+						feedbackId: 'iemAudioInputNoLinkId',
+						options: { serial },
+						style: { bgcolor: Color.Black },
 					},
 				],
 			}

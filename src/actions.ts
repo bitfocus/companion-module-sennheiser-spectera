@@ -220,13 +220,16 @@ export function UpdateActions(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Source',
-				choices: getChoicesFromEnum(InputSource),
+				choices: getChoicesFromEnum(InputSource).concat([{ id: 'passthrough', label: 'Use Current Source' }]),
 				default: InputSource.Dante,
 				id: 'source',
 			},
 		],
 		description: 'Set the Audio Input Source',
 		callback: async (action) => {
+			if (action.options.source === 'passthrough') {
+				return
+			}
 			if (!self.api) return
 			await self.api.setAudioInput(
 				action.options.inputId as number,

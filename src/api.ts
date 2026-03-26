@@ -31,7 +31,6 @@ import {
 	getAudioOutputSourceName,
 	getAudioOutputActiveChannels,
 	getAudioInputIemLinkDevices,
-	getAudioInputIemLinkPrimaryDevice,
 } from './variables.js'
 import { UpdatePresets } from './presets.js'
 import { UpdateFeedbacks } from './feedbacks.js'
@@ -482,7 +481,10 @@ export class SpecteraApi extends EventEmitter {
 			const newValue = newState[key]
 
 			if (!oldState || oldState[key] !== newValue) {
-				if (entry.feedback) feedbacksToCheck.add(entry.feedback)
+				if (entry.feedback) {
+					const ids = Array.isArray(entry.feedback) ? entry.feedback : [entry.feedback]
+					for (const id of ids) feedbacksToCheck.add(id)
+				}
 
 				if (entry.variable && entry.valueFn) {
 					// Handle absolute vs relative variable names logic if needed, but usually we pass prefix
@@ -560,11 +562,6 @@ export class SpecteraApi extends EventEmitter {
 				changedVariables[`audio_input_${displayId}_iem_link_devices`] = getAudioInputIemLinkDevices(
 					value,
 					this.state.mobileDevices,
-				)
-				changedVariables[`audio_input_${displayId}_iem_link_primary_device`] = getAudioInputIemLinkPrimaryDevice(
-					value,
-					this.state.mobileDevices,
-					this.state,
 				)
 				structureChanged = !oldState
 			} else if (key.startsWith('/api/audio/outputs/')) {
@@ -663,11 +660,6 @@ export class SpecteraApi extends EventEmitter {
 							changedVariables[`audio_input_${displayId}_iem_link_devices`] = getAudioInputIemLinkDevices(
 								input,
 								this.state.mobileDevices,
-							)
-							changedVariables[`audio_input_${displayId}_iem_link_primary_device`] = getAudioInputIemLinkPrimaryDevice(
-								input,
-								this.state.mobileDevices,
-								this.state,
 							)
 						}
 					}

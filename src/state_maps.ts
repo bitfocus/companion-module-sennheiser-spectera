@@ -31,7 +31,7 @@ import {
 import { formatBatteryRuntimeMinutes } from './utils.js'
 
 export interface StateMapEntry<T> {
-	feedback?: string
+	feedback?: string | string[]
 	variable?: string // suffix
 	valueFn?: (val: any, state: T) => string | number | boolean | undefined
 }
@@ -120,7 +120,11 @@ export const AntennaStateMap: StateMap<Antenna> = {
 export const AudioInputStateMap: StateMap<AudioInput> = {
 	source: { feedback: 'audioInputSource', variable: 'source', valueFn: toInputSourceLabel },
 	name: { variable: 'name', valueFn: (v: unknown): any => v },
-	iemAudiolinkId: { feedback: 'iemAudioInputLinked', variable: 'iem_link_id', valueFn: (v: unknown): any => v },
+	iemAudiolinkId: {
+		feedback: ['iemAudioInputLinked', 'iemAudioInputNoLinkId'],
+		variable: 'iem_link_id',
+		valueFn: (v: unknown): any => v,
+	},
 }
 
 export const AudioOutputStateMap: StateMap<AudioOutput> = {
@@ -229,7 +233,11 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 		variable: 'mic_lowcut_hz',
 		valueFn: toMicLowCutLabel,
 	},
-	iemAudiolinkId: { feedback: 'iemAudioInputLinked', variable: 'iem_audiolink_id', valueFn: (v: unknown): any => v },
+	iemAudiolinkId: {
+		feedback: ['iemAudioInputLinked', 'iemAudioInputNoLinkId'],
+		variable: 'iem_audiolink_id',
+		valueFn: (v: unknown): any => v,
+	},
 	iemAudiolinkActive: {
 		feedback: 'iemAudioLinkActive',
 		variable: 'iem_audiolink_active',

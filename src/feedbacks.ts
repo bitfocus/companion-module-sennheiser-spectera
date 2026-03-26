@@ -772,11 +772,37 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		},
 	}
 
+	feedbacks['iemAudioInputNoLinkId'] = {
+		type: 'boolean',
+		name: 'SEK - IEM No Active Link ID',
+		description: 'Indicates if the IEM audio input has no active link ID',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'SEK',
+				id: 'serial',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
+				choices: sekMobileDeviceChoices,
+				allowCustom: true,
+			},
+		],
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
+			if (device?.type === MtType.SEK && device.iemAudiolinkId === -1) {
+				return true
+			}
+			return false
+		},
+	}
+
 	feedbacks['audioInputSource'] = {
 		type: 'boolean',
 		name: 'Audio Input - Source',
-		description:
-			'Indicates when the selected audio input is set to the chosen source (same as $(spectera:audio_input_N_source))',
+		description: 'Indicates when the selected audio input is set to the chosen source',
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
 		},
