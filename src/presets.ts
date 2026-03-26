@@ -19,13 +19,14 @@ import {
 export function UpdatePresets(self: SpecteraInstance): void {
 	const presets: CompanionPresetDefinitions = {}
 
+	const rfChannelChoices = [
+		{ label: 'RF Channel 1', id: 0 },
+		{ label: 'RF Channel 2', id: 1 },
+	]
 	//RF Channels
-	for (const channelName of Object.keys(RFChannels)) {
-		const channelId = RFChannels[channelName as keyof typeof RFChannels]
-		if (channelId === RFChannels.Off) continue
-
-		const channelIndex = channelId === RFChannels['RF Channel 1'] ? 0 : 1
-		const channelLabel = channelName
+	for (const channel of rfChannelChoices) {
+		const channelIndex = channel.id
+		const channelLabel = channel.label
 
 		presets[`rf${channelIndex}Header`] = {
 			type: 'text',
