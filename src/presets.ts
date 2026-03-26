@@ -1173,16 +1173,19 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			presets[`${deviceVariableId}_HeadphoneVolumeRotarty`] = {
 				type: 'button',
 				category: `${category}s`,
-				name: `${device.name} Phone Vol Rotarty`,
+				name: `${device.name} Phones Volume Rotary Knob`,
 				options: {
 					rotaryActions: true,
 				},
 				style: {
 					bgcolor: Color.Black,
 					color: Color.White,
-					text: `$(spectera:${deviceVariableId}_name)\\nVOL ROTARY`,
+					text: `$(spectera:${deviceVariableId}_name)\\nVOL\\n$(spectera:${deviceVariableId}_headphone_volume)dB`,
 					size: 11,
 					show_topbar: false,
+				},
+				previewStyle: {
+					text: `$(spectera:${deviceVariableId}_name)\\nPHONES VOLUME ROTARY KNOB`,
 				},
 				steps: [
 					{
@@ -1331,19 +1334,22 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			feedbacks: [],
 		}
 
-		presets[`${deviceVariableId}_HeadphoneGainRotarty`] = {
+		presets[`${deviceVariableId}_PreampGainRotarty`] = {
 			type: 'button',
 			category: `${category}s`,
-			name: `${device.name} Phone Gain Rotarty`,
+			name: `${device.name} Preamp Gain Rotary Knob`,
 			options: {
 				rotaryActions: true,
 			},
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `$(spectera:${deviceVariableId}_name)\\nGAIN ROTARY`,
+				text: `$(spectera:${deviceVariableId}_name)\\nPREAMP GAIN\\n$(spectera:${deviceVariableId}_mic_preamp_gain)dB`,
 				size: 11,
 				show_topbar: false,
+			},
+			previewStyle: {
+				text: `$(spectera:${deviceVariableId}_name)\\nPREAMP GAIN ROTARY KNOB`,
 			},
 			steps: [
 				{
