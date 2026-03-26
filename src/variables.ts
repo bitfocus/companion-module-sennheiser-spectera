@@ -25,8 +25,7 @@ import {
 	psuStatusLabels,
 } from './state_maps.js'
 import type { SpecteraState } from './state.js'
-import { getEngineerPackCount } from './config.js'
-import { formatBatteryRuntimeMinutes, getAntennaFrequency, getDeviceBySerial } from './utils.js'
+import { formatBatteryRuntimeMinutes, getAntennaFrequency } from './utils.js'
 
 const rfStateStartupLabels: Record<RfStateStartup, string> = {
 	[RfStateStartup.Active]: 'Active',
@@ -481,16 +480,6 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 			)
 		}
 	}
-
-	// Engineer Pack slots (for setup-before-you-have-packs workflow)
-	const engineerPackCount = getEngineerPackCount(self.config)
-	for (let slot = 1; slot <= engineerPackCount; slot++) {
-		variables.push(
-			{ variableId: `engineer_pack_${slot}_serial`, name: `Engineer Pack ${slot} - Serial` },
-			{ variableId: `engineer_pack_${slot}_name`, name: `Engineer Pack ${slot} - Name` },
-		)
-	}
-
 	self.setVariableDefinitions(variables)
 }
 
@@ -798,19 +787,6 @@ export function UpdateVariableValues(self: SpecteraInstance): void {
 	// Mobile Devices
 	for (const device of self.state.mobileDevices.values()) {
 		values = { ...values, ...getMobileDeviceVariables(device) }
-	}
-
-	// Engineer Pack slots: serial from config (newline or comma separated), name from device or placeholder
-	const engineerSerials = (self.config.engineerPacks ?? '')
-		.split(/\r?\n|,/)
-		.map((s) => s.trim())
-		.filter(Boolean)
-	const engineerPackCount = getEngineerPackCount(self.config)
-	for (let slot = 1; slot <= engineerPackCount; slot++) {
-		const serial = engineerSerials[slot - 1] ?? ''
-		values[`engineer_pack_${slot}_serial`] = serial
-		const device = serial ? getDeviceBySerial(self.state, serial) : undefined
-		values[`engineer_pack_${slot}_name`] = device?.name ?? `Pack ${slot} (not set)`
 	}
 
 	self.setVariableValues(values)
