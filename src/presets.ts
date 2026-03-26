@@ -95,6 +95,45 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			feedbacks: [],
 		}
 
+		presets[`rf${channelIndex}BackupFrequency`] = {
+			type: 'button',
+			category: 'RF Configuration',
+			name: `${channelLabel} Backup Frequency`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `${channelLabel}\\nBACKUP FREQ (Setup in Button)`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [
+						{
+							actionId: 'rfFrequency',
+							options: {
+								rfChannel: channelIndex,
+								frequency: '',
+							},
+						},
+					],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'rfFrequency',
+					options: {
+						rfChannel: channelIndex,
+						frequency: '',
+					},
+					style: {
+						bgcolor: Color.SpecteraGreen,
+					},
+				},
+			],
+		}
+
 		presets[`rf${channelIndex}TxPowerInfo`] = {
 			type: 'button',
 			category: 'RF Configuration',
@@ -233,46 +272,14 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			name: `DAD ${dad}`,
 			text: '',
 		}
-		presets[`dad${port}State`] = {
+		presets[`dad${port}InterferencePower`] = {
 			type: 'button',
 			category: 'RF Configuration',
-			name: `DAD ${dad} State`,
+			name: `DAD ${dad} Interference Noise Level`,
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `DAD ${dad}\\n\\n$(spectera:dad_${port}_state)`,
-				size: 11,
-				show_topbar: false,
-			},
-			steps: [
-				{
-					down: [],
-					up: [],
-				},
-			],
-			feedbacks: [
-				...Object.values(DeviceStatus).map((state) => {
-					return {
-						feedbackId: 'dadState',
-						options: {
-							dad: port,
-							state: state,
-						},
-						style: {
-							bgcolor: state === DeviceStatus.Initialized ? Color.SpecteraGreen : Color.SpecteraRed,
-						},
-					}
-				}),
-			],
-		}
-		presets[`dad${port}Identify`] = {
-			type: 'button',
-			category: 'RF Configuration',
-			name: `DAD ${dad} Identify`,
-			style: {
-				bgcolor: Color.Black,
-				color: Color.White,
-				text: `DAD ${dad}\\nIDENTIFY`,
+				text: `DAD ${dad}\\nN+I\\n$(spectera:dad_${port}_noise_level) dBm`,
 				size: 11,
 				show_topbar: false,
 			},
@@ -292,40 +299,10 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			],
 			feedbacks: [
 				{
-					feedbackId: 'dadIdenitify',
-					options: {
-						dad: port,
-					},
-					style: {
-						bgcolor: Color.SpecteraBlue,
-					},
-				},
-			],
-		}
-		presets[`dad${port}InterferencePower`] = {
-			type: 'button',
-			category: 'RF Configuration',
-			name: `DAD ${dad} Interference Noise Level`,
-			style: {
-				bgcolor: Color.Black,
-				color: Color.White,
-				text: `DAD ${dad}\\nN+I\\n$(spectera:dad_${port}_noise_level) dBm`,
-				size: 11,
-				show_topbar: false,
-			},
-			steps: [
-				{
-					down: [],
-					up: [],
-				},
-			],
-			feedbacks: [
-				{
 					feedbackId: 'dadInterferencePower',
-					isInverted: true,
 					options: {
 						dad: port,
-						interferencePower: -100,
+						interferencePower: -99,
 					},
 					style: {
 						bgcolor: Color.SpecteraGreen,
@@ -335,10 +312,10 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					feedbackId: 'dadInterferencePower',
 					options: {
 						dad: port,
-						interferencePower: -90,
+						interferencePower: -86,
 					},
 					style: {
-						bgcolor: Color.SpecteraOrange,
+						bgcolor: Color.DarkGreen,
 					},
 				},
 				{
@@ -348,7 +325,74 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						interferencePower: -80,
 					},
 					style: {
+						bgcolor: Color.SpecteraOrange,
+					},
+				},
+				{
+					feedbackId: 'dadInterferencePower',
+					options: {
+						dad: port,
+						interferencePower: -70,
+					},
+					style: {
 						bgcolor: Color.SpecteraRed,
+					},
+				},
+			],
+		}
+		presets[`dad${port}Frequency`] = {
+			type: 'button',
+			category: 'RF Configuration',
+			name: `DAD ${dad} Frequency`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `DAD ${dad}\\n\\n$(spectera:dad_${port}_frequency) MHz`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [
+						{
+							actionId: 'dadIdentify',
+							options: {
+								dad: port,
+								identify: 'true',
+							},
+						},
+					],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'dadState',
+					options: {
+						dad: port,
+						state: DeviceStatus.Initialized,
+					},
+					style: {
+						bgcolor: Color.SpecteraGreen,
+					},
+				},
+				{
+					feedbackId: 'dadState',
+					options: {
+						dad: port,
+						state: DeviceStatus.Unconnected,
+					},
+					style: {
+						bgcolor: Color.SpecteraRed,
+					},
+				},
+				{
+					feedbackId: 'dadWarningPacketError',
+					options: {
+						dad: port,
+					},
+					style: {
+						bgcolor: Color.SpecteraOrange,
 					},
 				},
 			],
@@ -366,35 +410,133 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			},
 			steps: [
 				{
-					down: [],
+					down: [
+						{
+							actionId: 'dadIdentify',
+							options: {
+								dad: port,
+								identify: 'true',
+							},
+						},
+					],
 					up: [],
 				},
 			],
-			feedbacks: [],
+			feedbacks: [
+				{
+					feedbackId: 'dadInterferencePower',
+					options: {
+						dad: port,
+						interferencePower: -99,
+					},
+					style: {
+						bgcolor: Color.SpecteraGreen,
+					},
+				},
+				{
+					feedbackId: 'dadInterferencePower',
+					options: {
+						dad: port,
+						interferencePower: -86,
+					},
+					style: {
+						bgcolor: Color.DarkGreen,
+					},
+				},
+				{
+					feedbackId: 'dadInterferencePower',
+					options: {
+						dad: port,
+						interferencePower: -80,
+					},
+					style: {
+						bgcolor: Color.SpecteraOrange,
+					},
+				},
+				{
+					feedbackId: 'dadInterferencePower',
+					options: {
+						dad: port,
+						interferencePower: -70,
+					},
+					style: {
+						bgcolor: Color.SpecteraRed,
+					},
+				},
+			],
 		}
-		presets[`dad${port}Bindings`] = {
+		presets[`dad${port}FrequencyNoise`] = {
 			type: 'button',
 			category: 'RF Configuration',
-			name: `DAD ${dad} Bindings`,
+			name: `DAD ${dad} Frequency & Noise Level`,
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `DAD ${dad}\\n\\n$(spectera:dad_${port}_frequency) MHz`,
+				text: `DAD ${dad}\\n\\n$(spectera:dad_${port}_frequency) MHz\\n\\n$(spectera:dad_${port}_noise_level) dBm`,
 				size: 11,
 				show_topbar: false,
 			},
 			steps: [
 				{
-					down: [],
+					down: [
+						{
+							actionId: 'dadIdentify',
+							options: {
+								dad: port,
+								identify: 'true',
+							},
+						},
+					],
 					up: [],
 				},
 			],
-			feedbacks: [],
+			feedbacks: [
+				{
+					feedbackId: 'dadInterferencePower',
+					options: {
+						dad: port,
+						interferencePower: -99,
+					},
+					style: {
+						bgcolor: Color.SpecteraGreen,
+					},
+				},
+				{
+					feedbackId: 'dadInterferencePower',
+					options: {
+						dad: port,
+						interferencePower: -86,
+					},
+					style: {
+						bgcolor: Color.DarkGreen,
+					},
+				},
+				{
+					feedbackId: 'dadInterferencePower',
+					options: {
+						dad: port,
+						interferencePower: -80,
+					},
+					style: {
+						bgcolor: Color.SpecteraOrange,
+					},
+				},
+				{
+					feedbackId: 'dadInterferencePower',
+					options: {
+						dad: port,
+						interferencePower: -70,
+					},
+					style: {
+						bgcolor: Color.SpecteraRed,
+					},
+				},
+			],
 		}
 		presets[`dad${port}BindingSetOff`] = {
 			type: 'button',
 			category: 'RF Configuration',
-			name: `DAD ${dad} Binding Set`,
+			name: `DAD ${dad} Binding Set OFF`,
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
@@ -432,7 +574,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 		presets[`dad${port}BindingSetRF1`] = {
 			type: 'button',
 			category: 'RF Configuration',
-			name: `DAD ${dad} Binding Set`,
+			name: `DAD ${dad} Binding Set RF 1`,
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
@@ -470,7 +612,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 		presets[`dad${port}BindingSetRF2`] = {
 			type: 'button',
 			category: 'RF Configuration',
-			name: `DAD ${dad} Binding Set`,
+			name: `DAD ${dad} Binding Set RF 2`,
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
@@ -508,7 +650,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 		presets[`dad${port}BindingSetScan`] = {
 			type: 'button',
 			category: 'RF Configuration',
-			name: `DAD ${dad} Binding Set`,
+			name: `DAD ${dad} SCAN`,
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
@@ -538,7 +680,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						bindings: RFChannels['Scan'],
 					},
 					style: {
-						bgcolor: Color.SpecteraGreen,
+						bgcolor: Color.SpecteraOrange,
 					},
 				},
 			],
