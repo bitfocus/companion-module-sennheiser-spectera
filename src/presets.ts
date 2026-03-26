@@ -1571,7 +1571,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 	const sortedInputsForEng = [...self.state.audioInputs.values()].sort((a, b) => a.inputId - b.inputId)
 
 	// Helper to emit the stereo preset entries for a given serial + preset key prefix.
-	const addEngModeStereoPresets = (keyPrefix: string, serial: string, removeLabel: string): void => {
+	const addEngModeStereoPresets = (keyPrefix: string, serial: string, removeLabel: string, baseBg: number): void => {
 		presets[`${keyPrefix}_EngineerModeStereoHeader`] = {
 			type: 'text',
 			category: 'Engineer Mode',
@@ -1582,7 +1582,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			type: 'button',
 			category: 'Engineer Mode',
 			name: `${removeLabel} Remove IEM Audio Link`,
-			style: { bgcolor: Color.SpecteraDarkGray, color: Color.White, text: `REMOVE`, size: 11, show_topbar: false },
+			style: { bgcolor: baseBg, color: Color.White, text: `REMOVE`, size: 11, show_topbar: false },
 			steps: [
 				{
 					down: [
@@ -1603,7 +1603,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				type: 'button',
 				category: 'Engineer Mode',
 				name: `${removeLabel} - Input ${input1.inputId + 1} + ${input2.inputId + 1}`,
-				style: { bgcolor: Color.SpecteraDarkGray, color: Color.White, text: pairLabel, size: 11, show_topbar: false },
+				style: { bgcolor: baseBg, color: Color.White, text: pairLabel, size: 11, show_topbar: false },
 				steps: [
 					{
 						down: [
@@ -1635,7 +1635,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 	}
 
 	// Helper to emit the mono preset entries for a given serial + preset key prefix.
-	const addEngModeMonoPresets = (keyPrefix: string, serial: string, removeLabel: string): void => {
+	const addEngModeMonoPresets = (keyPrefix: string, serial: string, removeLabel: string, baseBg: number): void => {
 		presets[`${keyPrefix}_EngineerModeMonoHeader`] = {
 			type: 'text',
 			category: 'Engineer Mode',
@@ -1646,7 +1646,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			type: 'button',
 			category: 'Engineer Mode',
 			name: `${removeLabel} Remove IEM Audio Link`,
-			style: { bgcolor: Color.SpecteraDarkGray, color: Color.White, text: `REMOVE`, size: 11, show_topbar: false },
+			style: { bgcolor: baseBg, color: Color.White, text: `REMOVE`, size: 11, show_topbar: false },
 			steps: [
 				{
 					down: [
@@ -1664,7 +1664,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				category: 'Engineer Mode',
 				name: `${removeLabel} - Input ${input.inputId + 1} Engineer Mode`,
 				style: {
-					bgcolor: Color.SpecteraDarkGray,
+					bgcolor: baseBg,
 					color: Color.White,
 					text: `IN ${input.inputId + 1}\\n$(spectera:audio_input_${input.inputId + 1}_iem_link_primary_device)`,
 					size: 11,
@@ -1705,13 +1705,17 @@ export function UpdatePresets(self: SpecteraInstance): void {
 		.filter((d): d is SEKDevice => d.type === MtType.SEK && !!d.serial)
 		.sort((a, b) => a.name.localeCompare(b.name))
 
-	// SEK stereo pass
-	for (const device of sekDevicesForEng) {
-		addEngModeStereoPresets(`SEK_${device.serial}_eng`, device.serial!, device.name)
+	// SEK stereo pass (all stereo sections first)
+	for (let i = 0; i < sekDevicesForEng.length; i++) {
+		const device = sekDevicesForEng[i]
+		const engPackBg = i % 2 === 0 ? Color.SpecteraDarkGray : Color.LightGray
+		addEngModeStereoPresets(`SEK_${device.serial}_eng`, device.serial!, device.name, engPackBg)
 	}
-	// SEK mono pass
-	for (const device of sekDevicesForEng) {
-		addEngModeMonoPresets(`SEK_${device.serial}_eng`, device.serial!, device.name)
+	// SEK mono pass (all mono sections after stereo)
+	for (let i = 0; i < sekDevicesForEng.length; i++) {
+		const device = sekDevicesForEng[i]
+		const engPackBg = i % 2 === 0 ? Color.SpecteraDarkGray : Color.LightGray
+		addEngModeMonoPresets(`SEK_${device.serial}_eng`, device.serial!, device.name, engPackBg)
 	}
 
 	// Audio Interfaces
