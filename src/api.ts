@@ -187,6 +187,12 @@ export class SpecteraApi extends EventEmitter {
 		// Start subscription
 		await this.subscribe()
 
+		await this.fetchInitialState()
+
+		this.startHeartbeat()
+	}
+
+	private async fetchInitialState(): Promise<void> {
 		this.isInitializing = true
 
 		try {
@@ -263,10 +269,7 @@ export class SpecteraApi extends EventEmitter {
 		} catch (error) {
 			this.isInitializing = false
 			this.instance.log('error', `Initial data fetch failed: ${error instanceof Error ? error.message : String(error)}`)
-			// We don't throw here to allow the subscription to keep running if the fetch fails
 		}
-
-		this.startHeartbeat()
 	}
 
 	async disconnect(): Promise<void> {
@@ -340,8 +343,19 @@ export class SpecteraApi extends EventEmitter {
 		this.reconnectTimer = null
 		if (this.destroyed) return
 		try {
+			// Clean up old subscription before reconnecting
+			if (this.sessionUUID) {
+				try {
+					await this.sendRequest('DELETE', `/ssc/state/subscriptions/${this.sessionUUID}`)
+				} catch (_err) {
+					this.instance.log('debug', 'Failed to delete old subscription during reconnect (may already be expired)')
+				}
+				this.sessionUUID = null
+			}
+
 			await this.performLogin()
 			await this.subscribe()
+			await this.fetchInitialState()
 			this.startHeartbeat()
 			this.instance.updateStatus(InstanceStatus.Ok)
 			this.instance.log('info', 'Reconnected to Spectera successfully')
