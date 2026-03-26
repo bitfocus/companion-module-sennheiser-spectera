@@ -26,6 +26,7 @@ import {
 	getChoicesFromEnum,
 	getDeviceBySerial,
 	getMobileDeviceChoices,
+	sanitizeMobileDeviceName,
 	STEREO_INPUT_OFFSET,
 } from './utils.js'
 
@@ -796,8 +797,10 @@ export function UpdateActions(self: SpecteraInstance): void {
 			const serial = await context.parseVariablesInString(action.options.serial as string)
 			const device = getDeviceBySerial(self.state, serial)
 			if (!device) return
+			const rawName = await context.parseVariablesInString(action.options.name as string)
+			const sanitizedName = sanitizeMobileDeviceName(rawName)
 			await self.api.setMobileDevice(device.mtUid, {
-				name: action.options.name as string,
+				name: sanitizedName,
 			} as Partial<MobileDevice>)
 		},
 	}

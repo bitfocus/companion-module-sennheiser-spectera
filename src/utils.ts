@@ -46,6 +46,11 @@ export function getMobileDeviceChoices(state: SpecteraState, filterType?: MtType
 	return choices
 }
 
+// Mobile device display name: alphanumeric plus * + -, max length 16 characters
+export function sanitizeMobileDeviceName(raw: string): string {
+	return raw.replace(/[^A-Za-z0-9*+-]/g, '').slice(0, 16)
+}
+
 // Format battery runtime from minutes to "H:MM". Returns 'Off' for undefined or -1. */
 export function formatBatteryRuntimeMinutes(minutes: number | undefined): string {
 	if (minutes === undefined || minutes === -1) return 'Off'
