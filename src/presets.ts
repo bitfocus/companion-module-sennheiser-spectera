@@ -742,6 +742,54 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			feedbacks: [],
 		}
 	}
+	presets[`audioInputAllInputsSourceHeader`] = {
+		type: 'text',
+		category: 'Audio Inputs',
+		name: `All Inputs - Select Source`,
+		text: '',
+	}
+	for (const source of [InputSource.Dante, InputSource['MADI 1'], InputSource['MADI 2']] as const) {
+		const sourceLabel = source === InputSource.Dante ? 'Dante' : source === InputSource['MADI 1'] ? 'MADI 1' : 'MADI 2'
+		const allInputIds = Array.from(self.state.audioInputs.values()).map((input) => input.inputId)
+		presets[`audioInputAllInputsSource_${source}`] = {
+			type: 'button',
+			category: 'Audio Inputs',
+			name: `All Inputs - ${sourceLabel}`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `ALL INPUTS\\nto\\n${sourceLabel}`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [
+						{
+							actionId: 'setAudioInputSource',
+							options: {
+								inputId: allInputIds,
+								source,
+							},
+						},
+					],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'audioInputSource',
+					options: {
+						inputId: 0,
+						source,
+					},
+					style: {
+						bgcolor: Color.SpecteraBlue,
+					},
+				},
+			],
+		}
+	}
 	for (const input of self.state.audioInputs.values()) {
 		presets[`audioInput${input.inputId}SourceHeader`] = {
 			type: 'text',
@@ -769,7 +817,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							{
 								actionId: 'setAudioInputSource',
 								options: {
-									inputId: input.inputId,
+									inputId: [input.inputId],
 									source,
 								},
 							},
@@ -1765,7 +1813,10 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								actionId: 'routeAudioInputToMobileDevice',
 								options: { inputId: STEREO_INPUT_OFFSET + input1.inputId, serial, modeIdStereo: 7 },
 							},
-							{ actionId: 'setAudioInputSource', options: { inputId: input1.inputId, source: 'passthrough' } },
+							{
+								actionId: 'setAudioInputSource',
+								options: { inputId: [input1.inputId, input2.inputId], source: 'passthrough' },
+							},
 							{
 								actionId: 'mobileDeviceRename',
 								options: {
@@ -1842,7 +1893,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								actionId: 'routeAudioInputToMobileDevice',
 								options: { inputId: input.inputId, serial, modeIdMono: 4 },
 							},
-							{ actionId: 'setAudioInputSource', options: { inputId: input.inputId, source: 'passthrough' } },
+							{ actionId: 'setAudioInputSource', options: { inputId: [input.inputId], source: 'passthrough' } },
 							{
 								actionId: 'mobileDeviceRename',
 								options: {

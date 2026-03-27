@@ -208,13 +208,13 @@ export function UpdateActions(self: SpecteraInstance): void {
 		name: 'Audio Input - Source',
 		options: [
 			{
-				type: 'dropdown',
+				type: 'multidropdown',
 				label: 'Audio Input',
 				choices: Array.from(self.state.audioInputs.values()).map((i) => ({
 					id: i.inputId,
 					label: i.name || `Input ${i.inputId + 1}`,
 				})),
-				default: 0,
+				default: [0],
 				id: 'inputId',
 			},
 			{
@@ -231,12 +231,11 @@ export function UpdateActions(self: SpecteraInstance): void {
 				return
 			}
 			if (!self.api) return
-			await self.api.setAudioInput(
-				action.options.inputId as number,
-				{
+			for (const inputId of action.options.inputId as number[]) {
+				await self.api.setAudioInput(inputId, {
 					source: action.options.source as InputSource,
-				} as Partial<AudioInput>,
-			)
+				} as Partial<AudioInput>)
+			}
 		},
 	}
 
