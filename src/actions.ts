@@ -945,6 +945,52 @@ export function UpdateActions(self: SpecteraInstance): void {
 		},
 	}
 
+	/* actions['routeMobileDeviceToAudioOutput'] = {
+		name: 'Audio I/O - Instrument Switch Mode',
+		description: 'Route a Mobile Device to an Audio Output. If already linked, disconnect it from the output. ',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'serial',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
+				choices: mobileDeviceChoices,
+				allowCustom: true,
+			},
+			{
+				type: 'dropdown',
+				label: 'Audio Output',
+				choices: Array.from(self.state.audioOutputs.values()).map((o) => ({
+					id: o.outputId,
+					label: `Output ${o.outputId + 1}`,
+				})),
+				default: 0,
+				id: 'outputId',
+			},
+			{
+				type: 'dropdown',
+				label: 'Link Mode',
+				choices: getChoicesFromEnum(MicAudiolinkMode),
+				default: MicAudiolinkMode['LIVE (Mono)'],
+				id: 'modeId',
+			},
+		],
+		callback: async (action, context) => {
+			if (!self.api) return
+			const serial = await context.parseVariablesInString(action.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
+			if (!device) return
+			const outputId = Number(action.options.outputId)
+			const modeId = Number(action.options.modeId)
+			const outputLinkId = self.state.audioOutputs.get(outputId)?.micAudiolinkId
+			if (outputLinkId === device.micAudiolinkId) {
+				await self.api.setAudioOutput(outputId, { micAudiolinkId: -1 })
+			} else {
+				await self.api.routeMobileDeviceToAudioOutput(device.mtUid, outputId, modeId)
+			}
+		},
+	} */
+
 	const audioOutputChannelChoices = [
 		{ id: 'commandModeAudioNetwork', label: 'Dante' },
 		{ id: 'commandModeMadi1', label: 'MADI 1' },

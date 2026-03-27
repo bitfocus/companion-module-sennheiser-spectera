@@ -962,6 +962,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 		const deviceVariableId = `${type}_${serial}`
 		const category = device.type === MtType.SEK ? 'SEK' : 'SKM'
 
+		//Instrument Switch Mode
 		presets[`${deviceVariableId}_MicLinkMove_Header`] = {
 			type: 'text',
 			category: `Instrument Switch Mode`,
@@ -1020,6 +1021,66 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			}
 		}
 
+		//Backup Mode
+		presets[`${deviceVariableId}_CopySettingsHeader`] = {
+			type: 'text',
+			category: `Backup Mode`,
+			name: `${device.name} (SN ${serial}) - Backup Mode`,
+			text: '',
+		}
+		for (const copyDevice of mobileDevices) {
+			if (copyDevice.mtUid === device.mtUid) {
+				continue
+			}
+			presets[`${deviceVariableId}_BackupMode_${copyDevice.mtUid}`] = {
+				type: 'button',
+				category: `Backup Mode`,
+				name: `${copyDevice.name} Backup Mode`,
+				style: {
+					bgcolor: Color.Black,
+					color: Color.White,
+					text: `$(spectera:${copyDevice.type}_${copyDevice.serial}_name)\\nto\\n$(spectera:${device.type}_${device.serial}_name)`,
+					size: 11,
+					show_topbar: false,
+				},
+				steps: [
+					{
+						down: [
+							{
+								actionId: 'copyAllMobileDeviceSettings',
+								options: {
+									sourceSerial: copyDevice.serial,
+									targetSerial: device.serial,
+								},
+							},
+						],
+						up: [],
+					},
+				],
+				feedbacks: [
+					{
+						feedbackId: 'mobileDeviceConnected',
+						options: {
+							serial: copyDevice.serial,
+						},
+						style: {
+							bgcolor: Color.LightGray,
+						},
+					},
+					{
+						feedbackId: 'mobileDeviceMicAudiolinkActive',
+						options: {
+							serial: copyDevice.serial,
+						},
+						style: {
+							bgcolor: Color.SpecteraOrange,
+						},
+					},
+				],
+			}
+		}
+
+		//SEK / SKM Presets
 		presets[`${deviceVariableId}_Header`] = {
 			type: 'text',
 			category: `${category}s`,
@@ -1413,64 +1474,6 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					},
 				],
 				feedbacks: [],
-			}
-
-			presets[`${deviceVariableId}_CopySettingsHeader`] = {
-				type: 'text',
-				category: `Backup Mode`,
-				name: `${device.name} (SN ${serial}) - Backup Mode`,
-				text: '',
-			}
-			for (const copyDevice of mobileDevices) {
-				if (copyDevice.mtUid === device.mtUid) {
-					continue
-				}
-				presets[`${deviceVariableId}_BackupMode_${copyDevice.mtUid}`] = {
-					type: 'button',
-					category: `Backup Mode`,
-					name: `${copyDevice.name} Backup Mode`,
-					style: {
-						bgcolor: Color.Black,
-						color: Color.White,
-						text: `$(spectera:${copyDevice.type}_${copyDevice.serial}_name)\\nto\\n$(spectera:${device.type}_${device.serial}_name)`,
-						size: 11,
-						show_topbar: false,
-					},
-					steps: [
-						{
-							down: [
-								{
-									actionId: 'copyAllMobileDeviceSettings',
-									options: {
-										sourceSerial: copyDevice.serial,
-										targetSerial: device.serial,
-									},
-								},
-							],
-							up: [],
-						},
-					],
-					feedbacks: [
-						{
-							feedbackId: 'mobileDeviceConnected',
-							options: {
-								serial: copyDevice.serial,
-							},
-							style: {
-								bgcolor: Color.LightGray,
-							},
-						},
-						{
-							feedbackId: 'mobileDeviceMicAudiolinkActive',
-							options: {
-								serial: copyDevice.serial,
-							},
-							style: {
-								bgcolor: Color.SpecteraOrange,
-							},
-						},
-					],
-				}
 			}
 		}
 
