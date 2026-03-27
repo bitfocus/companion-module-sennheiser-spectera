@@ -7,6 +7,8 @@ import type {
 	AudioOutput,
 	RfChannel,
 	MobileDevice,
+	SEKDevice,
+	SKMDevice,
 	Antenna,
 	AudioLink,
 	PsuState,
@@ -567,15 +569,15 @@ export class SpecteraApi extends EventEmitter {
 			} else if (key.startsWith('/api/audio/outputs/')) {
 				const oldState = this.state.audioOutputs.get(value.outputId)
 				this.state.updateAudioOutput(value)
+				const displayId = value.outputId + 1
 				this.handleStateUpdate(
-					`audio_output_${value.outputId}_`,
+					`audio_output_${displayId}_`,
 					oldState,
 					value,
 					AudioOutputStateMap,
 					changedVariables,
 					feedbacksToCheck,
 				)
-				const displayId = value.outputId + 1
 				changedVariables[`audio_output_${displayId}_source`] = getAudioOutputSourceName(value, this.state.mobileDevices)
 				changedVariables[`audio_output_${displayId}_destinations`] = getAudioOutputActiveChannels(value)
 				structureChanged = !oldState
@@ -933,53 +935,8 @@ export class SpecteraApi extends EventEmitter {
 	}
 
 	async createAudioLink(config: { modeId: number; rfChannelId: number }): Promise<number> {
-		const url = `https://${this.host}:443/api/audio/links`
-		const options: RequestInit = {
-			method: 'POST',
-			headers: {
-				Authorization: this.getAuthHeader(),
-				Accept: 'application/json',
-				'Content-Type': 'application/json',
-			},
-			body: JSON.stringify(config),
-		}
-
-		this.instance.log('debug', `API Request: POST ${url} ${JSON.stringify(config)}`)
-
-		try {
-			const response = await fetch(url, { ...options, dispatcher: this.dispatcher } as any)
-
-			if (!response.ok) {
-				const errorText = await response.text().catch(() => 'Unknown error')
-				this.instance.log('error', `Create Audio Link failed: HTTP ${response.status}: ${errorText}`)
-				throw new Error(`HTTP ${response.status}: ${errorText}`)
-			}
-
-			if (response.status === 201) {
-				const location = response.headers.get('Location')
-				if (location) {
-					const id = parseInt(location, 10)
-					if (!isNaN(id)) {
-						return id
-					}
-					// If it's a URL like /api/audio/links/123
-					const parts = location.split('/')
-					const lastPart = parts[parts.length - 1]
-					const extractedId = parseInt(lastPart, 10)
-					if (!isNaN(extractedId)) {
-						return extractedId
-					}
-				}
-			}
-
-			throw new Error('Failed to retrieve new Audio Link ID from response')
-		} catch (error) {
-			this.instance.log(
-				'error',
-				`Create Audio Link Request failed: ${error instanceof Error ? error.message : String(error)}`,
-			)
-			throw error
-		}
+		const result = await this.sendRequest<AudioLink>('POST', '/audio/links', config)
+		return result.audiolinkId
 	}
 
 	async updateAudioLink(config: { audiolinkId: number; modeId: number }): Promise<void> {
@@ -1145,26 +1102,26 @@ export class SpecteraApi extends EventEmitter {
 		}
 
 		// Common properties
-		const payload: any = {
+		const payload: Partial<MobileDevice> = {
 			name: sourceDevice.name,
 			ledBrightness: sourceDevice.ledBrightness,
-			micPreampGain: (sourceDevice as any).micPreampGain,
+			micPreampGain: sourceDevice.micPreampGain,
 			micAudiolinkId: sourceDevice.micAudiolinkId,
 		}
 
 		if (sourceDevice.type === MtType.SEK && targetDevice.type === MtType.SEK) {
-			const sourceSEK = sourceDevice as any
-			payload.headphoneVolume = sourceSEK.headphoneVolume
-			payload.headphoneBalance = sourceSEK.headphoneBalance
-			payload.headphoneVolumeLimit = sourceSEK.headphoneVolumeLimit
-			payload.micLineSelection = sourceSEK.micLineSelection
-			payload.micLowCutHz = sourceSEK.micLowCutHz
-			payload.cableEmulation = sourceSEK.cableEmulation
-			payload.iemAudiolinkId = sourceSEK.iemAudiolinkId
+			const sourceSEK = sourceDevice
+			;(payload as Partial<SEKDevice>).headphoneVolume = sourceSEK.headphoneVolume
+			;(payload as Partial<SEKDevice>).headphoneBalance = sourceSEK.headphoneBalance
+			;(payload as Partial<SEKDevice>).headphoneVolumeLimit = sourceSEK.headphoneVolumeLimit
+			;(payload as Partial<SEKDevice>).micLineSelection = sourceSEK.micLineSelection
+			;(payload as Partial<SEKDevice>).micLowCutHz = sourceSEK.micLowCutHz
+			;(payload as Partial<SEKDevice>).cableEmulation = sourceSEK.cableEmulation
+			;(payload as Partial<SEKDevice>).iemAudiolinkId = sourceSEK.iemAudiolinkId
 		} else if (sourceDevice.type === MtType.SKM && targetDevice.type === MtType.SKM) {
-			const sourceSKM = sourceDevice as any
-			payload.micLowCutHz = sourceSKM.micLowCutHz
-			payload.commandBehavior = sourceSKM.commandBehavior
+			const sourceSKM = sourceDevice
+			;(payload as Partial<SKMDevice>).micLowCutHz = sourceSKM.micLowCutHz
+			;(payload as Partial<SKMDevice>).commandBehavior = sourceSKM.commandBehavior
 		} else {
 			this.instance.log(
 				'info',
@@ -1172,12 +1129,14 @@ export class SpecteraApi extends EventEmitter {
 			)
 		}
 
+		const iemAudiolinkId = sourceDevice.type === MtType.SEK ? (payload as Partial<SEKDevice>).iemAudiolinkId : undefined
+
 		try {
 			// If we are moving a Mic Audio Link, we must unassign it from the source first
 			if (payload.micAudiolinkId && payload.micAudiolinkId > 0) {
 				try {
 					this.instance.log('debug', `Copy Settings: Unassigning Mic Link ${payload.micAudiolinkId} from source`)
-					await this.setMobileDevice(sourceMtUid, { micAudiolinkId: -1 } as any)
+					await this.setMobileDevice(sourceMtUid, { micAudiolinkId: -1 } as Partial<MobileDevice>)
 				} catch (err) {
 					this.instance.log(
 						'warn',
@@ -1187,10 +1146,10 @@ export class SpecteraApi extends EventEmitter {
 			}
 
 			// Same for IEM Link, if it's an SEK
-			if (payload.iemAudiolinkId && payload.iemAudiolinkId > 0) {
+			if (iemAudiolinkId && iemAudiolinkId > 0) {
 				try {
-					this.instance.log('debug', `Copy Settings: Unassigning IEM Link ${payload.iemAudiolinkId} from source`)
-					await this.setMobileDevice(sourceMtUid, { iemAudiolinkId: -1 } as any)
+					this.instance.log('debug', `Copy Settings: Unassigning IEM Link ${iemAudiolinkId} from source`)
+					await this.setMobileDevice(sourceMtUid, { iemAudiolinkId: -1 } as Partial<MobileDevice>)
 				} catch (err) {
 					this.instance.log(
 						'warn',
@@ -1215,7 +1174,7 @@ export class SpecteraApi extends EventEmitter {
 			return
 		}
 
-		const iemAudiolinkId = (sourceDevice as any).iemAudiolinkId
+		const iemAudiolinkId = sourceDevice.type === MtType.SEK ? sourceDevice.iemAudiolinkId : undefined
 
 		if (sourceDevice.rfChannelId !== targetDevice.rfChannelId) {
 			this.instance.log('warn', 'Copy IEM Mix: Devices are on different RF Channels, this might fail')

@@ -1,6 +1,6 @@
 import { CompanionPresetDefinitions } from '@companion-module/base'
 import { SpecteraInstance } from './main.js'
-import { Color, STEREO_INPUT_OFFSET } from './utils.js'
+import { audioOutputChannelChoices, Color, STEREO_INPUT_OFFSET } from './utils.js'
 import {
 	RFChannels,
 	AntennaPortId,
@@ -903,11 +903,6 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			name: `Output ${output.outputId + 1} - Select Destination`,
 			text: '',
 		}
-		const audioOutputChannelChoices = [
-			{ id: 'commandModeAudioNetwork', label: 'Dante' },
-			{ id: 'commandModeMadi1', label: 'MADI 1' },
-			{ id: 'commandModeMadi2', label: 'MADI 2' },
-		] as const
 		for (const channel of audioOutputChannelChoices) {
 			presets[`audioOutput${output.outputId}Destination_${channel.id}`] = {
 				type: 'button',

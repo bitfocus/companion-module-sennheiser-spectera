@@ -22,6 +22,7 @@ import {
 	MicAudiolinkMode,
 } from './types.js'
 import {
+	audioOutputChannelChoices,
 	getAudioLinkChoices,
 	getChoicesFromEnum,
 	getDeviceBySerial,
@@ -33,6 +34,11 @@ import {
 export function UpdateActions(self: SpecteraInstance): void {
 	const actions: CompanionActionDefinitions = {}
 
+	const rfChannelChoices = [
+		{ label: 'RF Channel 1', id: 0 },
+		{ label: 'RF Channel 2', id: 1 },
+	]
+
 	//RF Actions
 	actions['setRfChannelState'] = {
 		name: 'RF - State',
@@ -40,10 +46,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'RF Channel',
-				choices: [
-					{ label: 'RF Channel 1', id: 0 },
-					{ label: 'RF Channel 2', id: 1 },
-				],
+				choices: rfChannelChoices,
 				default: 0,
 				id: 'rfChannel',
 			},
@@ -74,10 +77,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'RF Channel',
-				choices: [
-					{ label: 'RF Channel 1', id: 0 },
-					{ label: 'RF Channel 2', id: 1 },
-				],
+				choices: rfChannelChoices,
 				default: 0,
 				id: 'rfChannel',
 			},
@@ -108,10 +108,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'RF Channel',
-				choices: [
-					{ label: 'RF Channel 1', id: 0 },
-					{ label: 'RF Channel 2', id: 1 },
-				],
+				choices: rfChannelChoices,
 				default: 0,
 				id: 'rfChannel',
 			},
@@ -142,10 +139,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'RF Channel',
-				choices: [
-					{ label: 'RF Channel 1', id: 0 },
-					{ label: 'RF Channel 2', id: 1 },
-				],
+				choices: rfChannelChoices,
 				default: 0,
 				id: 'rfChannel',
 			},
@@ -176,10 +170,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'RF Channel',
-				choices: [
-					{ label: 'RF Channel 1', id: 0 },
-					{ label: 'RF Channel 2', id: 1 },
-				],
+				choices: rfChannelChoices,
 				default: 0,
 				id: 'rfChannel',
 			},
@@ -359,11 +350,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'RF Channel',
-				choices: [
-					{ label: 'Off', id: -1 },
-					{ label: 'RF Channel 1', id: 0 },
-					{ label: 'RF Channel 2', id: 1 },
-				],
+				choices: [{ label: 'Off', id: -1 }, ...rfChannelChoices],
 				default: 0,
 				id: 'rfChannel',
 			},
@@ -990,12 +977,6 @@ export function UpdateActions(self: SpecteraInstance): void {
 			}
 		},
 	} */
-
-	const audioOutputChannelChoices = [
-		{ id: 'commandModeAudioNetwork', label: 'Dante' },
-		{ id: 'commandModeMadi1', label: 'MADI 1' },
-		{ id: 'commandModeMadi2', label: 'MADI 2' },
-	] as const
 
 	actions['setAudioOutputChannel'] = {
 		name: 'Audio Output - Set Channel',

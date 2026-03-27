@@ -15,6 +15,12 @@ export const Color = {
 	SpecteraOrange: combineRgb(255, 167, 38),
 }
 
+export const audioOutputChannelChoices = [
+	{ id: 'commandModeAudioNetwork', label: 'Dante' },
+	{ id: 'commandModeMadi1', label: 'MADI 1' },
+	{ id: 'commandModeMadi2', label: 'MADI 2' },
+] as const
+
 export function getChoicesFromEnum(enumObj: Record<string, string | number>): { id: string | number; label: string }[] {
 	const choices: { id: string | number; label: string }[] = []
 
