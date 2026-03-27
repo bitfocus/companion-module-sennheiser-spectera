@@ -5,7 +5,7 @@ import { Antenna, MobileDevice, MtType, RfChannel, RFChannels } from './types.js
 export const Color = {
 	Black: combineRgb(0, 0, 0),
 	White: combineRgb(255, 255, 255),
-	LightGray: combineRgb(70, 72, 82),
+	LightGray: combineRgb(72, 72, 72),
 	DarkGreen: combineRgb(75, 127, 76),
 	SpecteraDarkGray: combineRgb(40, 41, 46),
 	SpecteraLightGray: combineRgb(46, 48, 54),

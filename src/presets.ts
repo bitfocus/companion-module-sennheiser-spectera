@@ -998,6 +998,15 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				],
 				feedbacks: [
 					{
+						feedbackId: 'mobileDeviceConnected',
+						options: {
+							serial: device.serial,
+						},
+						style: {
+							bgcolor: Color.LightGray,
+						},
+					},
+					{
 						feedbackId: 'mobileDeviceOutputLinked',
 						options: {
 							serial: device.serial,
@@ -1423,7 +1432,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					style: {
 						bgcolor: Color.Black,
 						color: Color.White,
-						text: `${copyDevice.name}\\nOVERRIDE`,
+						text: `$(spectera:${copyDevice.type}_${copyDevice.serial}_name)\\nto\\n$(spectera:${device.type}_${device.serial}_name)`,
 						size: 11,
 						show_topbar: false,
 					},
@@ -1441,7 +1450,26 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							up: [],
 						},
 					],
-					feedbacks: [],
+					feedbacks: [
+						{
+							feedbackId: 'mobileDeviceConnected',
+							options: {
+								serial: copyDevice.serial,
+							},
+							style: {
+								bgcolor: Color.LightGray,
+							},
+						},
+						{
+							feedbackId: 'mobileDeviceMicAudiolinkActive',
+							options: {
+								serial: copyDevice.serial,
+							},
+							style: {
+								bgcolor: Color.SpecteraOrange,
+							},
+						},
+					],
 				}
 			}
 		}
