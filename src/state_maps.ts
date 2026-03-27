@@ -13,6 +13,8 @@ import type {
 	SEKDevice,
 	SKMDevice,
 	AudioLink,
+	InterferenceDetail,
+	MicModule,
 	InterfaceStatusAudioNetwork,
 	InterfaceStatusMadi,
 	InterfaceStatusWordclock,
@@ -30,26 +32,31 @@ import {
 } from './types.js'
 import { formatBatteryRuntimeMinutes } from './utils.js'
 
+export type VariableValue = string | number | boolean | undefined
+
 export interface StateMapEntry<T> {
 	feedback?: string | string[]
 	variable?: string // suffix
-	valueFn?: (val: any, state: T) => string | number | boolean | undefined
+	valueFn?: (val: unknown, state: T) => VariableValue
 }
 
 export type StateMap<T> = Partial<Record<keyof T, StateMapEntry<T>>>
 
+/** Identity transform — passes the value through unchanged. */
+const passthrough = (v: unknown): VariableValue => v as VariableValue
+
 // Helper transformers
-const toTxPower = (v: unknown): any => v
-const toFrequency = (v: unknown): any => (v as number) / 1000
-const toStateLabel = (v: unknown): any => (v === RfState.Active ? 'Active' : 'Muted')
-const toStartupStateLabel = (v: unknown): any =>
+const toTxPower = passthrough
+const toFrequency = (v: unknown): VariableValue => (v as number) / 1000
+const toStateLabel = (v: unknown): VariableValue => (v === RfState.Active ? 'Active' : 'Muted')
+const toStartupStateLabel = (v: unknown): VariableValue =>
 	v ? (v === RfStateStartup.Active ? 'Active' : v === RfStateStartup.Muted ? 'Muted' : 'Last State') : 'Unknown'
-const toBindingLabel = (v: unknown): any => {
+const toBindingLabel = (v: unknown): VariableValue => {
 	const binding = (v as AntennaBinding[])?.[0]?.binding
 	return Object.keys(RFChannels).find((key) => RFChannels[key as keyof typeof RFChannels] === binding) ?? 'None'
 }
-const toAudioLinkModeLabel = (v: unknown): any => AudiolinkModeId[v as number] ?? 'Unknown'
-const toMicLowCutLabel = (v: unknown, state: SEKDevice | SKMDevice): string | number => {
+const toAudioLinkModeLabel = (v: unknown): VariableValue => AudiolinkModeId[v as number] ?? 'Unknown'
+const toMicLowCutLabel = (v: unknown, state: SEKDevice | SKMDevice): VariableValue => {
 	if (state.type === MtType.SEK) {
 		return v === MicLowCutHzSEK.Off ? 'Off' : (v as number)
 	} else if (state.type === MtType.SKM) {
@@ -63,170 +70,170 @@ export const psuStatusLabels: Record<PsuStatus, string> = {
 	[PsuStatus.Unconnected]: 'Unconnected',
 	[PsuStatus.Disconnected]: 'Disconnected',
 }
-const toPsuLabel = (v: unknown): any => psuStatusLabels[v as PsuStatus]
-const joinWarnings = (v: unknown): any => ((v as string[])?.length ? (v as string[]).join(', ') : 'None')
+const toPsuLabel = (v: unknown): VariableValue => psuStatusLabels[v as PsuStatus]
+const joinWarnings = (v: unknown): VariableValue => ((v as string[])?.length ? (v as string[]).join(', ') : 'None')
 
 export const inputSourceLabels: Record<InputSource, string> = {
 	[InputSource.Dante]: 'Dante',
 	[InputSource['MADI 1']]: 'MADI 1',
 	[InputSource['MADI 2']]: 'MADI 2',
 }
-const toInputSourceLabel = (v: unknown): any => inputSourceLabels[v as InputSource] ?? v
+const toInputSourceLabel = (v: unknown): VariableValue => inputSourceLabels[v as InputSource] ?? (v as string)
 
 export const RfChannelStateMap: StateMap<RfChannel> = {
 	txPower: { feedback: 'rfTxPower', variable: 'tx_power', valueFn: toTxPower },
 	frequency: { feedback: 'rfFrequency', variable: 'frequency', valueFn: toFrequency },
-	bandwidthMode: { feedback: 'rfBandwidthMode', variable: 'bandwidth_mode', valueFn: (v: unknown): any => v },
+	bandwidthMode: { feedback: 'rfBandwidthMode', variable: 'bandwidth_mode', valueFn: passthrough },
 	rfRestrictionViolation: {
 		feedback: 'rfRestrictionViolation',
 		variable: 'rf_restriction_violation',
-		valueFn: (v: unknown): any => v,
+		valueFn: passthrough,
 	},
 	rfState: { feedback: 'rfState', variable: 'state', valueFn: toStateLabel },
 	rfStateOnStartup: { feedback: 'rfStateOnStartup', variable: 'startup_state', valueFn: toStartupStateLabel },
 }
 
 export const AntennaStateMap: StateMap<Antenna> = {
-	state: { feedback: 'dadState', variable: 'state', valueFn: (v: unknown): any => v },
-	type: { variable: 'type', valueFn: (v: unknown): any => v },
-	errorStateDetails: { variable: 'error_details', valueFn: (v: unknown): any => v },
+	state: { feedback: 'dadState', variable: 'state', valueFn: passthrough },
+	type: { variable: 'type', valueFn: passthrough },
+	errorStateDetails: { variable: 'error_details', valueFn: passthrough },
 	warningHighTemperature: {
 		feedback: 'dadWarningHighTemperature',
 		variable: 'high_temp_warning',
-		valueFn: (v: unknown): any => v,
+		valueFn: passthrough,
 	},
 	warningPacketError: {
 		feedback: 'dadWarningPacketError',
 		variable: 'packet_error_warning',
-		valueFn: (v: unknown): any => v,
+		valueFn: passthrough,
 	},
 	interference: {
 		feedback: 'dadInterference',
 		variable: 'interference_severity',
-		valueFn: (v: unknown): any => (v as any)?.severity ?? 'None',
+		valueFn: (v: unknown): VariableValue => (v as InterferenceDetail | undefined)?.severity ?? 'None',
 	},
 	interferenceTotalPower: {
 		feedback: 'dadInterferencePower',
 		variable: 'noise_level',
-		valueFn: (v: unknown): any => v,
+		valueFn: passthrough,
 	},
-	temperature: { feedback: 'dadTemperature', variable: 'temperature', valueFn: (v: unknown): any => v },
-	version: { variable: 'version', valueFn: (v: unknown): any => v },
-	identify: { feedback: 'dadIdenitify', variable: 'identify', valueFn: (v: unknown): any => v },
-	ledBrightness: { feedback: 'dadLedBrightness', variable: 'led_brightness', valueFn: (v: unknown): any => v },
+	temperature: { feedback: 'dadTemperature', variable: 'temperature', valueFn: passthrough },
+	version: { variable: 'version', valueFn: passthrough },
+	identify: { feedback: 'dadIdenitify', variable: 'identify', valueFn: passthrough },
+	ledBrightness: { feedback: 'dadLedBrightness', variable: 'led_brightness', valueFn: passthrough },
 	bindings: { feedback: 'dadBindings', variable: 'bindings', valueFn: toBindingLabel },
 }
 
 export const AudioInputStateMap: StateMap<AudioInput> = {
 	source: { feedback: 'audioInputSource', variable: 'source', valueFn: toInputSourceLabel },
-	name: { variable: 'name', valueFn: (v: unknown): any => v },
+	name: { variable: 'name', valueFn: passthrough },
 	iemAudiolinkId: {
 		feedback: ['iemAudioInputLinked', 'iemAudioInputNoLinkId'],
 		variable: 'iem_link_id',
-		valueFn: (v: unknown): any => v,
+		valueFn: passthrough,
 	},
 }
 
 export const AudioOutputStateMap: StateMap<AudioOutput> = {
-	micAudiolinkId: { feedback: 'mobileDeviceOutputLinked', variable: 'mic_link_id', valueFn: (v: unknown): any => v },
-	commandModeAudioNetwork: { feedback: 'audioOutputChannel', valueFn: (v: unknown): any => v },
-	commandModeMadi1: { feedback: 'audioOutputChannel', valueFn: (v: unknown): any => v },
-	commandModeMadi2: { feedback: 'audioOutputChannel', valueFn: (v: unknown): any => v },
+	micAudiolinkId: { feedback: 'mobileDeviceOutputLinked', variable: 'mic_link_id', valueFn: passthrough },
+	commandModeAudioNetwork: { feedback: 'audioOutputChannel', valueFn: passthrough },
+	commandModeMadi1: { feedback: 'audioOutputChannel', valueFn: passthrough },
+	commandModeMadi2: { feedback: 'audioOutputChannel', valueFn: passthrough },
 }
 
 export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
-	mtUid: { variable: 'mt_uid', valueFn: (v: unknown): any => v },
-	type: { variable: 'mt_type', valueFn: (v: unknown): any => v },
+	mtUid: { variable: 'mt_uid', valueFn: passthrough },
+	type: { variable: 'mt_type', valueFn: passthrough },
 	frequencyRange: {
 		feedback: 'mobileDeviceFrequencyRange',
 		variable: 'frequency_range',
-		valueFn: (v: unknown): any => v,
+		valueFn: passthrough,
 	},
-	rfChannelId: { feedback: 'mobileDeviceRfChannelId', variable: 'rf_channel_id', valueFn: (v: unknown): any => v },
-	identify: { feedback: 'mobileDeviceIdentify', variable: 'identify', valueFn: (v: unknown): any => v },
+	rfChannelId: { feedback: 'mobileDeviceRfChannelId', variable: 'rf_channel_id', valueFn: passthrough },
+	identify: { feedback: 'mobileDeviceIdentify', variable: 'identify', valueFn: passthrough },
 	reverseIdentify: {
 		feedback: 'mobileDeviceReverseIdentify',
 		variable: 'reverse_identify',
-		valueFn: (v: unknown): any => v,
+		valueFn: passthrough,
 	},
-	serial: { variable: 'serial', valueFn: (v: unknown): any => v },
-	connected: { feedback: 'mobileDeviceConnected', variable: 'connected', valueFn: (v: unknown): any => v },
+	serial: { variable: 'serial', valueFn: passthrough },
+	connected: { feedback: 'mobileDeviceConnected', variable: 'connected', valueFn: passthrough },
 	lastConnected: {
 		feedback: 'mobileDeviceLastConnected',
 		variable: 'last_connected',
-		valueFn: (v: unknown): any => v,
+		valueFn: passthrough,
 	},
-	sleep: { feedback: 'mobileDeviceSleep', variable: 'sleep', valueFn: (v: unknown): any => v },
-	state: { feedback: 'mobileDeviceState', variable: 'state', valueFn: (v: unknown): any => v },
+	sleep: { feedback: 'mobileDeviceSleep', variable: 'sleep', valueFn: passthrough },
+	state: { feedback: 'mobileDeviceState', variable: 'state', valueFn: passthrough },
 	batteryFillLevel: {
 		feedback: 'mobileDeviceBatteryLevel',
 		variable: 'battery_level',
-		valueFn: (v: unknown): any => (v === -1 ? 'Off' : v),
+		valueFn: (v: unknown): VariableValue => (v === -1 ? 'Off' : (v as VariableValue)),
 	},
 	batteryRuntime: {
 		feedback: 'mobileDeviceBatteryRuntime',
 		variable: 'battery_runtime',
-		valueFn: (v: unknown): any => formatBatteryRuntimeMinutes(typeof v === 'number' ? v : undefined),
+		valueFn: (v: unknown): VariableValue => formatBatteryRuntimeMinutes(typeof v === 'number' ? v : undefined),
 	},
-	batteryLow: { feedback: 'mobileDeviceBatteryLow', variable: 'battery_low', valueFn: (v: unknown): any => v },
-	version: { variable: 'version', valueFn: (v: unknown): any => v },
-	versionMismatch: { variable: 'version_mismatch', valueFn: (v: unknown): any => v },
-	fccId: { variable: 'fcc_id', valueFn: (v: unknown): any => v },
+	batteryLow: { feedback: 'mobileDeviceBatteryLow', variable: 'battery_low', valueFn: passthrough },
+	version: { variable: 'version', valueFn: passthrough },
+	versionMismatch: { variable: 'version_mismatch', valueFn: passthrough },
+	fccId: { variable: 'fcc_id', valueFn: passthrough },
 	ledBrightness: {
 		feedback: 'mobileDeviceLedBrightness',
 		variable: 'led_brightness',
-		valueFn: (v: unknown): any => v,
+		valueFn: passthrough,
 	},
-	swUpdatePossible: { variable: 'sw_update_possible', valueFn: (v: unknown): any => v },
-	swUpdateProgress: { variable: 'sw_update_progress', valueFn: (v: unknown): any => v },
+	swUpdatePossible: { variable: 'sw_update_possible', valueFn: passthrough },
+	swUpdateProgress: { variable: 'sw_update_progress', valueFn: passthrough },
 	micAudiolinkId: {
 		feedback: 'mobileDeviceMicAudiolinkId',
 		variable: 'mic_audiolink_id',
-		valueFn: (v: unknown): any => v,
+		valueFn: passthrough,
 	},
 	micAudiolinkActive: {
 		feedback: 'mobileDeviceMicAudiolinkActive',
 		variable: 'mic_audiolink_active',
-		valueFn: (v: unknown): any => v,
+		valueFn: passthrough,
 	},
 	micTestToneEnabled: {
 		feedback: 'mobileDeviceMicTestToneEnabled',
 		variable: 'mic_test_tone_enabled',
-		valueFn: (v: unknown): any => v,
+		valueFn: passthrough,
 	},
 	micTestToneLevel: {
 		feedback: 'mobileDeviceMicTestToneLevel',
 		variable: 'mic_test_tone_level',
-		valueFn: (v: unknown): any => v,
+		valueFn: passthrough,
 	},
-	commandState: { variable: 'command_state', valueFn: (v: unknown): any => v },
-	micLqi: { feedback: 'mobileDeviceMicLqi', variable: 'mic_lqi', valueFn: (v: unknown): any => v },
+	commandState: { variable: 'command_state', valueFn: passthrough },
+	micLqi: { feedback: 'mobileDeviceMicLqi', variable: 'mic_lqi', valueFn: passthrough },
 	interference: {
 		feedback: 'mobileDeviceInterference',
 		variable: 'interference',
-		valueFn: (v: unknown): any => (v as any)?.severity,
+		valueFn: (v: unknown): VariableValue => (v as InterferenceDetail | undefined)?.severity,
 	},
 	dominantAntenna: {
 		feedback: 'mobileDeviceDominantAntenna',
 		variable: 'dominant_antenna',
-		valueFn: (v: unknown): any => (typeof v === 'string' && v !== 'NotAvailable' ? v.toUpperCase() : 'N/A'),
+		valueFn: (v: unknown): VariableValue => (typeof v === 'string' && v !== 'NotAvailable' ? v.toUpperCase() : 'N/A'),
 	},
-	rssi: { feedback: 'mobileDeviceRSSI', variable: 'rssi', valueFn: (v: unknown): any => v },
+	rssi: { feedback: 'mobileDeviceRSSI', variable: 'rssi', valueFn: passthrough },
 	// SEK specific
 	headphoneVolume: {
 		feedback: 'mobileDeviceHeadphoneVolume',
 		variable: 'headphone_volume',
-		valueFn: (v: unknown): any => v,
+		valueFn: passthrough,
 	},
 	headphoneBalance: {
 		feedback: 'mobileDeviceHeadphoneBalance',
 		variable: 'headphone_balance',
-		valueFn: (v: unknown): any => v,
+		valueFn: passthrough,
 	},
 	micPreampGain: {
 		feedback: 'mobileDeviceMicPreampGain',
 		variable: 'mic_preamp_gain',
-		valueFn: (v: unknown): any => v,
+		valueFn: passthrough,
 	},
 	micLowCutHz: {
 		feedback: 'mobileDeviceMicLowCutHz',
@@ -236,47 +243,50 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 	iemAudiolinkId: {
 		feedback: ['iemAudioInputLinked', 'iemAudioInputNoLinkId'],
 		variable: 'iem_audiolink_id',
-		valueFn: (v: unknown): any => v,
+		valueFn: passthrough,
 	},
 	iemAudiolinkActive: {
 		feedback: 'iemAudioLinkActive',
 		variable: 'iem_audiolink_active',
-		valueFn: (v: unknown): any => v,
+		valueFn: passthrough,
 	},
 	headphonePlugState: {
 		feedback: 'mobileDeviceHeadphonePlugState',
 		variable: 'headphone_plug_state',
-		valueFn: (v: unknown): any => (v === 'NotAvailable' ? 'N/A' : v),
+		valueFn: (v: unknown): VariableValue => (v === 'NotAvailable' ? 'N/A' : (v as VariableValue)),
 	},
 	headphoneVolumeMax: {
 		feedback: 'mobileDeviceHeadphoneVolumeMax',
 		variable: 'headphone_volume_max',
-		valueFn: (v: unknown): any => v,
+		valueFn: passthrough,
 	},
 	headphoneVolumeMin: {
 		feedback: 'mobileDeviceHeadphoneVolumeMin',
 		variable: 'headphone_volume_min',
-		valueFn: (v: unknown): any => v,
+		valueFn: passthrough,
 	},
 	micLineSelection: {
 		feedback: 'mobileDeviceMicLineSelection',
 		variable: 'mic_line_selection',
-		valueFn: (v: unknown): any => v,
+		valueFn: passthrough,
 	},
 	micLineSelectionAutoValue: {
 		feedback: 'mobileDeviceMicLineSelectionAutoValue',
 		variable: 'mic_line_selection_auto_value',
-		valueFn: (v: unknown): any => v,
+		valueFn: passthrough,
 	},
 	cableEmulation: {
 		feedback: 'mobileDeviceCableEmulation',
 		variable: 'cable_emulation',
-		valueFn: (v: unknown): any => v,
+		valueFn: passthrough,
 	},
-	iemLqi: { feedback: 'mobileDeviceIemLqi', variable: 'iem_lqi', valueFn: (v: unknown): any => v },
+	iemLqi: { feedback: 'mobileDeviceIemLqi', variable: 'iem_lqi', valueFn: passthrough },
 	// SKM specific
-	commandBehavior: { variable: 'command_behavior', valueFn: (v: unknown): any => v },
-	micModule: { variable: 'mic_module', valueFn: (v: unknown): any => (v as any)?.name },
+	commandBehavior: { variable: 'command_behavior', valueFn: passthrough },
+	micModule: {
+		variable: 'mic_module',
+		valueFn: (v: unknown): VariableValue => (v as MicModule | undefined)?.name,
+	},
 }
 
 export const PsuStateMap: StateMap<PsuState> = {
@@ -287,79 +297,82 @@ export const PsuStateMap: StateMap<PsuState> = {
 // Special case: Fan state is dynamic per fan ID, variables are constructed manually in helper if needed or key mapping
 // For fans, value is FanState.
 export const FanStateMap: StateMap<FanState> = {
-	errorState: { variable: 'error', valueFn: (v: unknown): any => (v as any).value },
+	errorState: {
+		variable: 'error',
+		valueFn: (v: unknown): VariableValue => (v as FanState['errorState'])?.value,
+	},
 }
 
 export const TempStateMap: StateMap<TempState> = {
-	value: { variable: 'health_temp_state', valueFn: (v: unknown): any => v },
+	value: { variable: 'health_temp_state', valueFn: passthrough },
 }
 
 export const BaseStationIdentityMap: StateMap<BaseStationIdentity> = {
-	product: { variable: 'base_station_model', valueFn: (v: unknown): any => v },
-	serial: { variable: 'base_station_serial', valueFn: (v: unknown): any => v },
-	hardwareRevision: { variable: 'base_station_version', valueFn: (v: unknown): any => v },
+	product: { variable: 'base_station_model', valueFn: passthrough },
+	serial: { variable: 'base_station_serial', valueFn: passthrough },
+	hardwareRevision: { variable: 'base_station_version', valueFn: passthrough },
 }
 
 export const BaseStationStateMap: StateMap<BaseStationState> = {
-	state: { feedback: 'baseStationState', variable: 'base_station_state', valueFn: (v: unknown): any => v },
+	state: { feedback: 'baseStationState', variable: 'base_station_state', valueFn: passthrough },
 	warnings: { feedback: 'baseStationWarnings', variable: 'base_station_warnings', valueFn: joinWarnings },
 }
 
 export const BaseStationSiteMap: StateMap<BaseStationSite> = {
-	deviceName: { variable: 'base_station_name', valueFn: (v: unknown): any => v },
-	location: { variable: 'base_station_location', valueFn: (v: any): any => v },
-	position: { variable: 'base_station_position', valueFn: (v: any): any => v },
+	deviceName: { variable: 'base_station_name', valueFn: passthrough },
+	location: { variable: 'base_station_location', valueFn: passthrough },
+	position: { variable: 'base_station_position', valueFn: passthrough },
 }
 
 export const AudioLinkStateMap: StateMap<AudioLink> = {
-	audiolinkId: { variable: 'id', valueFn: (v: unknown): any => v },
-	rfChannelId: { variable: 'rf_channel_id', valueFn: (v: unknown): any => v },
+	audiolinkId: { variable: 'id', valueFn: passthrough },
+	rfChannelId: { variable: 'rf_channel_id', valueFn: passthrough },
 	modeId: { variable: 'mode', valueFn: toAudioLinkModeLabel },
 }
 
 export const AudioNetworkStateMap: StateMap<InterfaceStatusAudioNetwork> = {
-	status: { feedback: 'audioInterfaceStatus', variable: 'status', valueFn: (v: unknown): any => v },
-	sampleRateHz: { variable: 'sample_rate', valueFn: (v: unknown): any => v },
-	mute: { variable: 'mute', valueFn: (v: unknown): any => v },
+	status: { feedback: 'audioInterfaceStatus', variable: 'status', valueFn: passthrough },
+	sampleRateHz: { variable: 'sample_rate', valueFn: passthrough },
+	mute: { variable: 'mute', valueFn: passthrough },
 }
 
 export const MadiStateMap: StateMap<Pick<InterfaceStatusMadi, 'moduleType'>> = {
-	moduleType: { variable: 'module_type', valueFn: (v: unknown): any => v },
+	moduleType: { variable: 'module_type', valueFn: passthrough },
 }
 
 export const MadiInputStateMap: StateMap<InterfaceStatusMadi['inputStatus']> = {
-	status: { feedback: 'audioInterfaceStatus', variable: 'input_status', valueFn: (v: unknown): any => v },
-	sampleRateHz: { variable: 'input_sample_rate', valueFn: (v: unknown): any => v },
-	mute: { variable: 'input_mute', valueFn: (v: unknown): any => v },
-	channels: { variable: 'input_channels', valueFn: (v: unknown): any => v },
-	fewerChannelsThanUsed: { variable: 'input_fewer_channels_than_used', valueFn: (v: unknown): any => v },
+	status: { feedback: 'audioInterfaceStatus', variable: 'input_status', valueFn: passthrough },
+	sampleRateHz: { variable: 'input_sample_rate', valueFn: passthrough },
+	mute: { variable: 'input_mute', valueFn: passthrough },
+	channels: { variable: 'input_channels', valueFn: passthrough },
+	fewerChannelsThanUsed: { variable: 'input_fewer_channels_than_used', valueFn: passthrough },
 }
 
 export const MadiOutputStateMap: StateMap<InterfaceStatusMadi['outputStatus']> = {
-	clockSource: { variable: 'output_clock_source', valueFn: (v: unknown): any => v },
+	clockSource: { variable: 'output_clock_source', valueFn: passthrough },
 	clockSourceStatus: {
 		feedback: 'audioInterfaceStatus',
 		variable: 'output_clock_source_status',
-		valueFn: (v: unknown): any => v,
+		valueFn: passthrough,
 	},
-	fallbackToInternalClockActive: { variable: 'output_fallback_active', valueFn: (v: unknown): any => v },
-	sampleRateHz: { variable: 'output_sample_rate', valueFn: (v: unknown): any => v },
-	mute: { variable: 'output_mute', valueFn: (v: unknown): any => v },
-	channels: { variable: 'output_channels', valueFn: (v: unknown): any => v },
+	fallbackToInternalClockActive: { variable: 'output_fallback_active', valueFn: passthrough },
+	sampleRateHz: { variable: 'output_sample_rate', valueFn: passthrough },
+	mute: { variable: 'output_mute', valueFn: passthrough },
+	channels: { variable: 'output_channels', valueFn: passthrough },
 }
 
 export const WordclockInputStateMap: StateMap<InterfaceStatusWordclock['inputStatus']> = {
-	status: { feedback: 'audioInterfaceStatus', variable: 'input_status', valueFn: (v: unknown): any => v },
-	sampleRateHz: { variable: 'input_sample_rate', valueFn: (v: unknown): any => v },
+	status: { feedback: 'audioInterfaceStatus', variable: 'input_status', valueFn: passthrough },
+	sampleRateHz: { variable: 'input_sample_rate', valueFn: passthrough },
 }
 
 export const WordclockOutputStateMap: StateMap<InterfaceStatusWordclock['outputStatus']> = {
-	clockSource: { variable: 'output_clock_source', valueFn: (v: unknown): any => v },
+	clockSource: { variable: 'output_clock_source', valueFn: passthrough },
 	clockSourceStatus: {
 		feedback: 'audioInterfaceStatus',
 		variable: 'output_clock_source_status',
-		valueFn: (v: unknown): any => v,
+		valueFn: passthrough,
 	},
-	fallbackToInternalClockActive: { variable: 'output_fallback_active', valueFn: (v: unknown): any => v },
-	sampleRateHz: { variable: 'output_sample_rate', valueFn: (v: unknown): any => v },
+	fallbackToInternalClockActive: { variable: 'output_fallback_active', valueFn: passthrough },
+	sampleRateHz: { variable: 'output_sample_rate', valueFn: passthrough },
 }

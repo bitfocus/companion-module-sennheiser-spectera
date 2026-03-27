@@ -15,6 +15,7 @@ import type {
 import { MtType, RfState, RFChannels, RfStateStartup, MicLowCutHzSEK, MicLowCutHzSKM } from './types.js'
 import {
 	StateMap,
+	VariableValue,
 	AudioNetworkStateMap,
 	MadiStateMap,
 	MadiInputStateMap,
@@ -53,8 +54,8 @@ function addVariablesFromMap<T>(
 	}
 }
 
-function getVariablesFromMap<T>(map: StateMap<T>, state: T, prefix: string): Record<string, any> {
-	const values: Record<string, any> = {}
+function getVariablesFromMap<T>(map: StateMap<T>, state: T, prefix: string): Record<string, VariableValue> {
+	const values: Record<string, VariableValue> = {}
 	for (const key of Object.keys(map) as (keyof T)[]) {
 		const entry = map[key]
 		if (entry?.variable && entry.valueFn) {
@@ -489,7 +490,7 @@ export function getAudioInputIemLinkDevices(input: AudioInput, mobileDevices: Ma
 export function getAudioInputVariables(
 	input: AudioInput,
 	mobileDevices: Map<number, MobileDevice>,
-): Record<string, any> {
+): Record<string, VariableValue> {
 	const displayId = input.inputId + 1
 	return {
 		[`audio_input_${displayId}_source`]: inputSourceLabels[input.source] ?? input.source,
@@ -511,7 +512,7 @@ export function getAudioOutputSourceName(output: AudioOutput, mobileDevices: Map
 export function getAudioOutputVariables(
 	output: AudioOutput,
 	mobileDevices: Map<number, MobileDevice>,
-): Record<string, any> {
+): Record<string, VariableValue> {
 	const displayId = output.outputId + 1
 	return {
 		[`audio_output_${displayId}_mic_link_id`]: output.micAudiolinkId,
@@ -531,7 +532,7 @@ export function getAudioOutputActiveChannels(output: AudioOutput): string {
 	return active.length ? active.join(', ') : 'None'
 }
 
-export function getRfChannelVariables(channel: RfChannel): Record<string, any> {
+export function getRfChannelVariables(channel: RfChannel): Record<string, VariableValue> {
 	const displayId = channel.rfChannelId + 1
 	return {
 		[`rf_channel_${displayId}_tx_power`]: channel.txPower,
@@ -545,7 +546,10 @@ export function getRfChannelVariables(channel: RfChannel): Record<string, any> {
 	}
 }
 
-export function getAntennaVariables(antenna: Antenna, rfChannels: Map<number, RfChannel>): Record<string, any> {
+export function getAntennaVariables(
+	antenna: Antenna,
+	rfChannels: Map<number, RfChannel>,
+): Record<string, VariableValue> {
 	const port = sanitizeName(antenna.antennaPortId)
 	const binding = antenna.bindings[0]?.binding
 	const bindingLabel = Object.keys(RFChannels).find((key) => RFChannels[key as keyof typeof RFChannels] === binding)
@@ -572,12 +576,12 @@ export function getAntennaVariables(antenna: Antenna, rfChannels: Map<number, Rf
 	}
 }
 
-export function getMobileDeviceVariables(device: MobileDevice): Record<string, any> {
+export function getMobileDeviceVariables(device: MobileDevice): Record<string, VariableValue> {
 	const type = device.type
 	const serial = device.serial
 	const deviceVariableId = `${type}_${serial}`
 
-	const variables: Record<string, any> = {
+	const variables: Record<string, VariableValue> = {
 		[`${deviceVariableId}_name`]: device.name,
 		[`${deviceVariableId}_mt_uid`]: device.mtUid,
 		[`${deviceVariableId}_mt_type`]: device.type,
@@ -634,33 +638,33 @@ export function getMobileDeviceVariables(device: MobileDevice): Record<string, a
 		variables[`${deviceVariableId}_mic_lowcut_hz`] =
 			device.micLowCutHz === MicLowCutHzSKM.Off ? 'Off' : device.micLowCutHz
 		variables[`${deviceVariableId}_command_behavior`] = device.commandBehavior
-		variables[`${deviceVariableId}_mic_module`] = device.micModule
+		variables[`${deviceVariableId}_mic_module`] = device.micModule?.name
 	}
 
 	return variables
 }
 
-export function getPsuVariables(state: PsuState): Record<string, any> {
+export function getPsuVariables(state: PsuState): Record<string, VariableValue> {
 	return {
 		health_psu_1_state: psuStatusLabels[state.psu1],
 		health_psu_2_state: psuStatusLabels[state.psu2],
 	}
 }
 
-export function getTempVariables(state: TempState): Record<string, any> {
+export function getTempVariables(state: TempState): Record<string, VariableValue> {
 	return {
 		health_temp_state: state.value,
 	}
 }
 
-export function getFanVariables(fanId: string, state: FanState): Record<string, any> {
+export function getFanVariables(fanId: string, state: FanState): Record<string, VariableValue> {
 	const fanNumber = fanId.split('_')[1]
 	return {
 		[`health_fan_${fanNumber}_error`]: state.errorState.value,
 	}
 }
 
-export function getBaseStationIdentityVariables(identity: BaseStationIdentity): Record<string, any> {
+export function getBaseStationIdentityVariables(identity: BaseStationIdentity): Record<string, VariableValue> {
 	return {
 		base_station_model: identity.product,
 		base_station_serial: identity.serial,
@@ -668,14 +672,14 @@ export function getBaseStationIdentityVariables(identity: BaseStationIdentity): 
 	}
 }
 
-export function getBaseStationStateVariables(state: BaseStationState): Record<string, any> {
+export function getBaseStationStateVariables(state: BaseStationState): Record<string, VariableValue> {
 	return {
 		base_station_state: state.state,
 		base_station_warnings: state.warnings?.length ? state.warnings.join(', ') : 'None',
 	}
 }
 
-export function getBaseStationSiteVariables(site: BaseStationSite): Record<string, any> {
+export function getBaseStationSiteVariables(site: BaseStationSite): Record<string, VariableValue> {
 	return {
 		base_station_name: site.deviceName,
 		//base_station_location: site.location || 'Unknown',

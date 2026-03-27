@@ -19,6 +19,7 @@ import {
 	MicLineSelection,
 	MicLineSelectionAuto,
 	MicLowCutHzSEK,
+	MicLowCutHzSKM,
 	InterfaceInputStatus,
 	InputSource,
 } from './types.js'
@@ -1364,17 +1365,18 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			const serial = await context.parseVariablesInString(feedback.options.serial as string)
 			const device = getDeviceBySerial(self.state, serial)
 			const frequency = Number(feedback.options.frequency)
+			if (!device) return false
+			const deviceHz = Number(device.micLowCutHz)
 
-			if (device?.type === MtType.SKM) {
-				const deviceVal = (device as any).micLowCutHz
+			if (device.type === MtType.SKM) {
 				if (frequency === 20 || frequency === 30 || frequency === 60) {
 					// Treat 20, 30, and 60 as matching "Off" (60 for SKM)
-					return deviceVal === 60
+					return device.micLowCutHz === MicLowCutHzSKM.Off
 				}
-				return deviceVal === frequency
+				return deviceHz === frequency
 			}
 
-			return (device as any)?.micLowCutHz === frequency
+			return deviceHz === frequency
 		},
 	}
 

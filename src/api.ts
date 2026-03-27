@@ -39,6 +39,7 @@ import { UpdateFeedbacks } from './feedbacks.js'
 import { UpdateActions } from './actions.js'
 import {
 	StateMap,
+	VariableValue,
 	RfChannelStateMap,
 	AntennaStateMap,
 	AudioInputStateMap,
@@ -469,7 +470,7 @@ export class SpecteraApi extends EventEmitter {
 		oldState: T | undefined,
 		newState: T,
 		map: StateMap<T>,
-		changedVariables: Record<string, any>,
+		changedVariables: Record<string, VariableValue>,
 		feedbacksToCheck: Set<string>,
 	) {
 		const keysToCheck = oldState
@@ -647,10 +648,17 @@ export class SpecteraApi extends EventEmitter {
 				const type = value.type
 				const serial = value.serial
 				const prefix = `${type}_${serial}_`
-				this.handleStateUpdate(prefix, oldState as any, value, MobileDeviceStateMap, changedVariables, feedbacksToCheck)
+				this.handleStateUpdate(
+					prefix,
+					oldState as (SEKDevice & SKMDevice) | undefined,
+					value,
+					MobileDeviceStateMap,
+					changedVariables,
+					feedbacksToCheck,
+				)
 				structureChanged = !oldState || oldState.name !== value.name
 				// Recompute iem_link_devices for any audio input affected by this device's link change
-				const oldIemLinkId = (oldState as any)?.iemAudiolinkId
+				const oldIemLinkId = oldState?.type === MtType.SEK ? oldState.iemAudiolinkId : undefined
 				const newIemLinkId = value.iemAudiolinkId
 				if (oldIemLinkId !== newIemLinkId) {
 					for (const input of this.state.audioInputs.values()) {
