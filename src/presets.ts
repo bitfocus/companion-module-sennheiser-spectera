@@ -13,6 +13,7 @@ import {
 	InterfaceInputStatus,
 	MicAudiolinkMode,
 	InputSource,
+	MtState,
 } from './types.js'
 
 export function UpdatePresets(self: SpecteraInstance): void {
@@ -1083,6 +1084,94 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			text: '',
 		}
 
+		if (device.type === MtType.SEK) {
+			presets[`${deviceVariableId}_MainInfo`] = {
+				type: 'button',
+				category: `${category}s`,
+				name: `${device.name} Overall Status`,
+				style: {
+					bgcolor: Color.Black,
+					color: Color.White,
+					text: `$(spectera:${deviceVariableId}_name)\\nIEM-LQI-$(spectera:${deviceVariableId}_iem_lqi)\\nBAT: $(spectera:${deviceVariableId}_battery_level) %\\n$(spectera:${deviceVariableId}_headphone_plug_state)\\n$(spectera:${deviceVariableId}_headphone_volume) dB`,
+					size: 11,
+					show_topbar: false,
+				},
+				steps: [
+					{
+						down: [
+							{
+								actionId: 'mobileDeviceIdentify',
+								options: {
+									serial: device.serial,
+									identify: 'true',
+								},
+							},
+						],
+						up: [],
+					},
+				],
+				feedbacks: [
+					{
+						feedbackId: 'mobileDeviceHeadphonePlugState',
+						isInverted: true,
+						options: {
+							serial: device.serial,
+						},
+						style: {
+							bgcolor: Color.SpecteraRed,
+						},
+					},
+					{
+						feedbackId: 'mobileDeviceHeadphonePlugState',
+						options: {
+							serial: device.serial,
+						},
+						style: {
+							bgcolor: Color.SpecteraBlue,
+						},
+					},
+					{
+						feedbackId: 'iemAudioLinkActive',
+						isInverted: true,
+						options: {
+							serial: device.serial,
+						},
+						style: {
+							bgcolor: Color.Black,
+						},
+					},
+				],
+			}
+		} else if (device.type === MtType.SKM) {
+			presets[`${deviceVariableId}_MainInfo`] = {
+				type: 'button',
+				category: `${category}s`,
+				name: `${device.name} Overall Status`,
+				style: {
+					bgcolor: Color.Black,
+					color: Color.White,
+					text: `$(spectera:${deviceVariableId}_name)\\nMIC-LQI-$(spectera:${deviceVariableId}_mic_lqi)\\nBAT: $(spectera:${deviceVariableId}_battery_level) %\\n$(spectera:${deviceVariableId}_headphone_plug_state)\\n$(spectera:${deviceVariableId}_headphone_volume) dB`,
+					size: 11,
+					show_topbar: false,
+				},
+				steps: [
+					{
+						down: [
+							{
+								actionId: 'mobileDeviceIdentify',
+								options: {
+									serial: device.serial,
+									identify: 'true',
+								},
+							},
+						],
+						up: [],
+					},
+				],
+				feedbacks: [],
+			}
+		}
+
 		presets[`${deviceVariableId}_OverallStatus`] = {
 			type: 'button',
 			category: `${category}s`,
@@ -1120,7 +1209,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `$(spectera:${deviceVariableId}_name)\\nSTATE\\n\\n$(spectera:${deviceVariableId}_state)`,
+				text: `$(spectera:${deviceVariableId}_name)\\nSTATE\\n$(spectera:${deviceVariableId}_state)\\nLAST SEEN\\n$(spectera:${deviceVariableId}_last_connected)`,
 				size: 11,
 				show_topbar: false,
 			},
@@ -1162,6 +1251,36 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			],
 			feedbacks: [
 				{
+					feedbackId: 'mobileDeviceBatteryLevel',
+					options: {
+						serial: device.serial,
+						threshold: 100,
+					},
+					style: {
+						bgcolor: Color.SpecteraGreen,
+					},
+				},
+				{
+					feedbackId: 'mobileDeviceBatteryLevel',
+					options: {
+						serial: device.serial,
+						threshold: 70,
+					},
+					style: {
+						bgcolor: Color.DarkGreen,
+					},
+				},
+				{
+					feedbackId: 'mobileDeviceBatteryLevel',
+					options: {
+						serial: device.serial,
+						threshold: 40,
+					},
+					style: {
+						bgcolor: Color.SpecteraOrange,
+					},
+				},
+				{
 					feedbackId: 'mobileDeviceBatteryLow',
 					options: {
 						serial: device.serial,
@@ -1170,27 +1289,17 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						bgcolor: Color.SpecteraRed,
 					},
 				},
-			],
-		}
-
-		presets[`${deviceVariableId}_LastConnected`] = {
-			type: 'button',
-			category: `${category}s`,
-			name: `${device.name} Last Connected`,
-			style: {
-				bgcolor: Color.Black,
-				color: Color.White,
-				text: `$(spectera:${deviceVariableId}_name)\\nLAST SEEN\\n\\n$(spectera:${deviceVariableId}_last_connected)`,
-				size: 10,
-				show_topbar: false,
-			},
-			steps: [
 				{
-					down: [],
-					up: [],
+					feedbackId: 'mobileDeviceState',
+					options: {
+						serial: device.serial,
+						state: MtState.Disconnected,
+					},
+					style: {
+						bgcolor: Color.Black,
+					},
 				},
 			],
-			feedbacks: [],
 		}
 
 		presets[`${deviceVariableId}_Identify`] = {
@@ -1228,37 +1337,52 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						bgcolor: Color.SpecteraBlue,
 					},
 				},
-			],
-		}
-
-		presets[`${deviceVariableId}_ReverseIdentify`] = {
-			type: 'button',
-			category: `${category}s`,
-			name: `${device.name} Reverse Identify`,
-			style: {
-				bgcolor: Color.Black,
-				color: Color.White,
-				text: `$(spectera:${deviceVariableId}_name)\\nREVERSE\\nIDENTIFY`,
-				size: 11,
-				show_topbar: false,
-			},
-			steps: [
-				{
-					down: [],
-					up: [],
-				},
-			],
-			feedbacks: [
 				{
 					feedbackId: 'mobileDeviceReverseIdentify',
 					options: {
 						serial: device.serial,
 					},
 					style: {
-						bgcolor: Color.SpecteraBlue,
+						bgcolor: Color.White,
+						color: Color.Black,
 					},
 				},
 			],
+		}
+
+		presets[`${deviceVariableId}_Rename`] = {
+			type: 'button',
+			category: `${category}s`,
+			name: `${device.name} Rename`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `RENAME ${serial}`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [
+						{
+							actionId: 'mobileDeviceRename',
+							options: {
+								serial: device.serial,
+								name: 'Message',
+							},
+						},
+						{
+							actionId: 'mobileDeviceRename',
+							options: {
+								serial: device.serial,
+								name: `${device.name}`,
+							},
+						},
+					],
+					up: [],
+				},
+			],
+			feedbacks: [],
 		}
 
 		presets[`${deviceVariableId}_InterferenceStatus`] = {
@@ -1322,7 +1446,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `$(spectera:${deviceVariableId}_name)\\nIF\\n\\n$(spectera:${deviceVariableId}_interference)`,
+				text: `$(spectera:${deviceVariableId}_name)\\nInterference\\n\\n$(spectera:${deviceVariableId}_interference)`,
 				size: 11,
 				show_topbar: false,
 			},
@@ -1343,10 +1467,111 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						bgcolor: Color.SpecteraRed,
 					},
 				},
+				{
+					feedbackId: 'mobileDeviceInterference',
+					options: {
+						serial: device.serial,
+						severity: 'High',
+					},
+					style: {
+						bgcolor: Color.SpecteraOrange,
+					},
+				},
+				{
+					feedbackId: 'mobileDeviceInterference',
+					options: {
+						serial: device.serial,
+						severity: 'Low',
+					},
+					style: {
+						bgcolor: Color.DarkGreen,
+					},
+				},
+				{
+					feedbackId: 'mobileDeviceInterference',
+					options: {
+						serial: device.serial,
+						severity: 'None',
+					},
+					style: {
+						bgcolor: Color.SpecteraGreen,
+					},
+				},
+				{
+					feedbackId: 'mobileDeviceState',
+					options: {
+						serial: device.serial,
+						state: MtState.Disconnected,
+					},
+					style: {
+						bgcolor: Color.Black,
+					},
+				},
 			],
 		}
 
 		if (device.type === MtType.SEK) {
+			presets[`${deviceVariableId}_IEM_LQI`] = {
+				type: 'button',
+				category: `${category}s`,
+				name: `${device.name} IEM LQI`,
+				style: {
+					bgcolor: Color.Black,
+					color: Color.White,
+					text: `$(spectera:${deviceVariableId}_name)\\nIEM LQI\\n$(spectera:${deviceVariableId}_iem_lqi)`,
+					size: 11,
+					show_topbar: false,
+				},
+				steps: [
+					{
+						down: [],
+						up: [],
+					},
+				],
+				feedbacks: [
+					{
+						feedbackId: 'mobileDeviceIemLqi',
+						options: {
+							serial: device.serial,
+							iemLqiThreshold: 1,
+						},
+						style: {
+							bgcolor: Color.SpecteraRed,
+						},
+					},
+					{
+						feedbackId: 'mobileDeviceIemLqi',
+						options: {
+							serial: device.serial,
+							iemLqiThreshold: 2,
+						},
+						style: {
+							bgcolor: Color.SpecteraOrange,
+						},
+					},
+					{
+						feedbackId: 'mobileDeviceIemLqi',
+						options: {
+							serial: device.serial,
+							iemLqiThreshold: 3,
+						},
+						style: {
+							bgcolor: Color.DarkGreen,
+						},
+					},
+					{
+						feedbackId: 'mobileDeviceIemLqi',
+						options: {
+							serial: device.serial,
+							iemLqiThreshold: 4,
+						},
+						style: {
+							bgcolor: Color.SpecteraGreen,
+						},
+					},
+				],
+			}
+
 			presets[`${deviceVariableId}_HeadphoneVolumeInfo`] = {
 				type: 'button',
 				category: `${category}s`,
@@ -1364,7 +1589,37 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						up: [],
 					},
 				],
-				feedbacks: [],
+				feedbacks: [
+					{
+						feedbackId: 'mobileDeviceHeadphonePlugState',
+						isInverted: true,
+						options: {
+							serial: device.serial,
+						},
+						style: {
+							bgcolor: Color.SpecteraRed,
+						},
+					},
+					{
+						feedbackId: 'mobileDeviceHeadphonePlugState',
+						options: {
+							serial: device.serial,
+						},
+						style: {
+							bgcolor: Color.SpecteraBlue,
+						},
+					},
+					{
+						feedbackId: 'iemAudioLinkActive',
+						isInverted: true,
+						options: {
+							serial: device.serial,
+						},
+						style: {
+							bgcolor: Color.Black,
+						},
+					},
+				],
 			}
 
 			presets[`${deviceVariableId}_HeadphoneVolumeUp`] = {
@@ -1393,7 +1648,37 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						up: [],
 					},
 				],
-				feedbacks: [],
+				feedbacks: [
+					{
+						feedbackId: 'mobileDeviceHeadphonePlugState',
+						isInverted: true,
+						options: {
+							serial: device.serial,
+						},
+						style: {
+							bgcolor: Color.SpecteraRed,
+						},
+					},
+					{
+						feedbackId: 'mobileDeviceHeadphonePlugState',
+						options: {
+							serial: device.serial,
+						},
+						style: {
+							bgcolor: Color.SpecteraBlue,
+						},
+					},
+					{
+						feedbackId: 'iemAudioLinkActive',
+						isInverted: true,
+						options: {
+							serial: device.serial,
+						},
+						style: {
+							bgcolor: Color.Black,
+						},
+					},
+				],
 			}
 
 			presets[`${deviceVariableId}_HeadphoneVolumeDown`] = {
@@ -1422,7 +1707,96 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						up: [],
 					},
 				],
-				feedbacks: [],
+				feedbacks: [
+					{
+						feedbackId: 'mobileDeviceHeadphonePlugState',
+						isInverted: true,
+						options: {
+							serial: device.serial,
+						},
+						style: {
+							bgcolor: Color.SpecteraRed,
+						},
+					},
+					{
+						feedbackId: 'mobileDeviceHeadphonePlugState',
+						options: {
+							serial: device.serial,
+						},
+						style: {
+							bgcolor: Color.SpecteraBlue,
+						},
+					},
+					{
+						feedbackId: 'iemAudioLinkActive',
+						isInverted: true,
+						options: {
+							serial: device.serial,
+						},
+						style: {
+							bgcolor: Color.Black,
+						},
+					},
+				],
+			}
+
+			presets[`${deviceVariableId}_HeadphoneVolumeSet`] = {
+				type: 'button',
+				category: `${category}s`,
+				name: `${device.name} Phone Vol -1`,
+				style: {
+					bgcolor: Color.Black,
+					color: Color.White,
+					text: `$(spectera:${deviceVariableId}_name)\\SET -20`,
+					size: 11,
+					show_topbar: false,
+				},
+				steps: [
+					{
+						down: [
+							{
+								actionId: 'mobileDeviceHeadphoneVolume',
+								options: {
+									serial: device.serial,
+									action: 'set',
+									adjustment: '-20',
+								},
+							},
+						],
+						up: [],
+					},
+				],
+				feedbacks: [
+					{
+						feedbackId: 'mobileDeviceHeadphonePlugState',
+						isInverted: true,
+						options: {
+							serial: device.serial,
+						},
+						style: {
+							bgcolor: Color.SpecteraRed,
+						},
+					},
+					{
+						feedbackId: 'mobileDeviceHeadphonePlugState',
+						options: {
+							serial: device.serial,
+						},
+						style: {
+							bgcolor: Color.SpecteraBlue,
+						},
+					},
+					{
+						feedbackId: 'iemAudioLinkActive',
+						isInverted: true,
+						options: {
+							serial: device.serial,
+						},
+						style: {
+							bgcolor: Color.Black,
+						},
+					},
+				],
 			}
 
 			presets[`${deviceVariableId}_HeadphoneVolumeRotarty`] = {
@@ -1468,8 +1842,99 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						],
 					},
 				],
-				feedbacks: [],
+				feedbacks: [
+					{
+						feedbackId: 'mobileDeviceHeadphonePlugState',
+						isInverted: true,
+						options: {
+							serial: device.serial,
+						},
+						style: {
+							bgcolor: Color.SpecteraRed,
+						},
+					},
+					{
+						feedbackId: 'mobileDeviceHeadphonePlugState',
+						options: {
+							serial: device.serial,
+						},
+						style: {
+							bgcolor: Color.SpecteraBlue,
+						},
+					},
+					{
+						feedbackId: 'iemAudioLinkActive',
+						isInverted: true,
+						options: {
+							serial: device.serial,
+						},
+						style: {
+							bgcolor: Color.Black,
+						},
+					},
+				],
 			}
+		}
+
+		presets[`${deviceVariableId}_Mic_LQI`] = {
+			type: 'button',
+			category: `${category}s`,
+			name: `${device.name} Mic LQI`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `$(spectera:${deviceVariableId}_name)\\nMIC LQI\\n$(spectera:${deviceVariableId}_mic_lqi)`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'mobileDeviceMicLqi',
+					options: {
+						serial: device.serial,
+						micLqiThreshold: 1,
+					},
+					style: {
+						bgcolor: Color.SpecteraRed,
+					},
+				},
+				{
+					feedbackId: 'mobileDeviceIemLqi',
+					options: {
+						serial: device.serial,
+						micLqiThreshold: 2,
+					},
+					style: {
+						bgcolor: Color.SpecteraOrange,
+					},
+				},
+				{
+					feedbackId: 'mobileDeviceIemLqi',
+					options: {
+						serial: device.serial,
+						micLqiThreshold: 3,
+					},
+					style: {
+						bgcolor: Color.DarkGreen,
+					},
+				},
+				{
+					feedbackId: 'mobileDeviceIemLqi',
+					options: {
+						serial: device.serial,
+						micLqiThreshold: 4,
+					},
+					style: {
+						bgcolor: Color.SpecteraGreen,
+					},
+				},
+			],
 		}
 
 		presets[`${deviceVariableId}_GainInfo`] = {
@@ -1489,7 +1954,17 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					up: [],
 				},
 			],
-			feedbacks: [],
+			feedbacks: [
+				{
+					feedbackId: 'mobileDeviceMicAudiolinkActive',
+					options: {
+						serial: device.serial,
+					},
+					style: {
+						bgcolor: Color.LightGray,
+					},
+				},
+			],
 		}
 
 		presets[`${deviceVariableId}_GainUp`] = {
@@ -1518,7 +1993,17 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					up: [],
 				},
 			],
-			feedbacks: [],
+			feedbacks: [
+				{
+					feedbackId: 'mobileDeviceMicAudiolinkActive',
+					options: {
+						serial: device.serial,
+					},
+					style: {
+						bgcolor: Color.LightGray,
+					},
+				},
+			],
 		}
 
 		presets[`${deviceVariableId}_GainDown`] = {
@@ -1547,7 +2032,56 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					up: [],
 				},
 			],
-			feedbacks: [],
+			feedbacks: [
+				{
+					feedbackId: 'mobileDeviceMicAudiolinkActive',
+					options: {
+						serial: device.serial,
+					},
+					style: {
+						bgcolor: Color.LightGray,
+					},
+				},
+			],
+		}
+
+		presets[`${deviceVariableId}_GainSet`] = {
+			type: 'button',
+			category: `${category}s`,
+			name: `${device.name} Gain Set -20`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `$(spectera:${deviceVariableId}_name)\\SET -20`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [
+						{
+							actionId: 'mobileDeviceMicPreampGain',
+							options: {
+								serial: device.serial,
+								action: 'set',
+								adjustment: '-20',
+							},
+						},
+					],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'mobileDeviceMicAudiolinkActive',
+					options: {
+						serial: device.serial,
+					},
+					style: {
+						bgcolor: Color.LightGray,
+					},
+				},
+			],
 		}
 
 		presets[`${deviceVariableId}_PreampGainRotarty`] = {
@@ -1593,7 +2127,17 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					],
 				},
 			],
-			feedbacks: [],
+			feedbacks: [
+				{
+					feedbackId: 'mobileDeviceMicAudiolinkActive',
+					options: {
+						serial: device.serial,
+					},
+					style: {
+						bgcolor: Color.LightGray,
+					},
+				},
+			],
 		}
 	}
 
