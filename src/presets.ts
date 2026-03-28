@@ -1371,6 +1371,11 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								name: 'Message',
 							},
 						},
+					],
+					up: [],
+				},
+				{
+					down: [
 						{
 							actionId: 'mobileDeviceRename',
 							options: {
