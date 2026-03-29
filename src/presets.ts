@@ -1752,7 +1752,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				style: {
 					bgcolor: Color.Black,
 					color: Color.White,
-					text: `$(spectera:${deviceVariableId}_name)\\SET -20`,
+					text: `$(spectera:${deviceVariableId}_name)\\nSET -20`,
 					size: 11,
 					show_topbar: false,
 				},
@@ -2057,7 +2057,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `$(spectera:${deviceVariableId}_name)\\SET -20`,
+				text: `$(spectera:${deviceVariableId}_name)\\nSET -20`,
 				size: 11,
 				show_topbar: false,
 			},

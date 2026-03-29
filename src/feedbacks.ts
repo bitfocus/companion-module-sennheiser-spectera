@@ -673,7 +673,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 
 	feedbacks['iemAudioLinkMatch'] = {
 		type: 'boolean',
-		name: 'SEK - IEM Audio Link Match',
+		name: 'Mobile Device - IEM Audio Link Match',
 		description: 'Indicates if two SEKs share the same audio link',
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
@@ -712,7 +712,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 
 	feedbacks['iemAudioLinkActive'] = {
 		type: 'boolean',
-		name: 'SEK - IEM Audio Link Active',
+		name: 'Mobile Device - IEM Audio Link Active',
 		description: 'Indicates if the IEM audio link is active',
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
@@ -739,7 +739,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 
 	feedbacks['iemAudioInputLinked'] = {
 		type: 'boolean',
-		name: 'SEK - IEM Audio Input Linked',
+		name: 'Mobile Device - IEM Audio Input Linked',
 		description: 'Indicates if the IEM audio input is linked to the SEK',
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
@@ -775,7 +775,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 
 	feedbacks['iemAudioInputNoLinkId'] = {
 		type: 'boolean',
-		name: 'SEK - IEM No Active Link ID',
+		name: 'Mobile Device - IEM No Active Link ID',
 		description: 'Indicates if the IEM audio input has no active link ID',
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
