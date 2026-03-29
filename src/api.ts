@@ -489,7 +489,16 @@ export class SpecteraApi extends EventEmitter {
 					for (const id of ids) feedbacksToCheck.add(id)
 				}
 
-				if (entry.variable && entry.valueFn) {
+				if (entry.variableSuffixes?.length) {
+					for (const { suffix, valueFn } of entry.variableSuffixes) {
+						const fullVarName = `${idPrefix}${suffix}`
+						const val = valueFn(newValue, newState)
+						if (this.variableCache[fullVarName] !== val) {
+							changedVariables[fullVarName] = val
+							this.variableCache[fullVarName] = val
+						}
+					}
+				} else if (entry.variable && entry.valueFn) {
 					// Handle absolute vs relative variable names logic if needed, but usually we pass prefix
 					const fullVarName = `${idPrefix}${entry.variable}`
 					const val = entry.valueFn(newValue, newState)

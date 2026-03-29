@@ -45,7 +45,14 @@ function addVariablesFromMap<T>(
 ): void {
 	for (const key of Object.keys(map) as (keyof T)[]) {
 		const entry = map[key]
-		if (entry?.variable) {
+		if (entry?.variableSuffixes?.length) {
+			for (const { suffix } of entry.variableSuffixes) {
+				variables.push({
+					variableId: `${prefix}${suffix}`,
+					name: `${labelPrefix} - ${String(key)} (${suffix})`,
+				})
+			}
+		} else if (entry?.variable) {
 			variables.push({
 				variableId: `${prefix}${entry.variable}`,
 				name: `${labelPrefix} - ${String(key)}`,
@@ -58,7 +65,11 @@ function getVariablesFromMap<T>(map: StateMap<T>, state: T, prefix: string): Rec
 	const values: Record<string, VariableValue> = {}
 	for (const key of Object.keys(map) as (keyof T)[]) {
 		const entry = map[key]
-		if (entry?.variable && entry.valueFn) {
+		if (entry?.variableSuffixes?.length) {
+			for (const { suffix, valueFn } of entry.variableSuffixes) {
+				values[`${prefix}${suffix}`] = valueFn(state[key], state)
+			}
+		} else if (entry?.variable && entry.valueFn) {
 			const val = entry.valueFn(state[key], state)
 			values[`${prefix}${entry.variable}`] = val
 		}
@@ -242,8 +253,12 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 				name: `DAD ${label} - Main Interferers`,
 			},
 			{
-				variableId: `dad_${port}_temperature`,
-				name: `DAD ${label} - Temperature`,
+				variableId: `dad_${port}_temp_celsius`,
+				name: `DAD ${label} - Temperature (°C)`,
+			},
+			{
+				variableId: `dad_${port}_temp_fahrenheit`,
+				name: `DAD ${label} - Temperature (°F)`,
 			},
 			/* {
 				variableId: `dad_${port}_version`,
@@ -567,7 +582,9 @@ export function getAntennaVariables(
 		[`dad_${port}_main_interferers`]:
 			antenna.interference?.mainInterferers?.map((i) => `${i.frequency / 1000}MHz (${i.severity})`).join(', ') ??
 			'None',
-		[`dad_${port}_temperature`]: antenna.temperature,
+		[`dad_${port}_temp_celsius`]: antenna.temperature && antenna.temperature > -55 ? antenna.temperature : 'Off',
+		[`dad_${port}_temp_fahrenheit`]:
+			antenna.temperature && antenna.temperature > -55 ? (antenna.temperature * 9) / 5 + 32 : 'Off',
 		[`dad_${port}_identify`]: antenna.identify,
 		[`dad_${port}_led_brightness`]: antenna.ledBrightness,
 		[`dad_${port}_bindings`]: bindingLabel ?? 'None',

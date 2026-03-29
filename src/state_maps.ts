@@ -37,6 +37,8 @@ export type VariableValue = string | number | boolean | undefined
 export interface StateMapEntry<T> {
 	feedback?: string | string[]
 	variable?: string // suffix
+	/** Multiple Companion variables from one field (suffixes appended to the instance prefix). */
+	variableSuffixes?: Array<{ suffix: string; valueFn: (val: unknown, state: T) => VariableValue }>
 	valueFn?: (val: unknown, state: T) => VariableValue
 }
 
@@ -80,6 +82,10 @@ export const inputSourceLabels: Record<InputSource, string> = {
 }
 const toInputSourceLabel = (v: unknown): VariableValue => inputSourceLabels[v as InputSource] ?? (v as string)
 
+const dadTempActive = (v: unknown): boolean => Boolean(v && (v as number) > -55)
+const toDadTempCelsius = (v: unknown): VariableValue => (dadTempActive(v) ? (v as number) : 'Off')
+const toDadTempFahrenheit = (v: unknown): VariableValue => (dadTempActive(v) ? ((v as number) * 9) / 5 + 32 : 'Off')
+
 export const RfChannelStateMap: StateMap<RfChannel> = {
 	txPower: { feedback: 'rfTxPower', variable: 'tx_power', valueFn: toTxPower },
 	frequency: { feedback: 'rfFrequency', variable: 'frequency', valueFn: toFrequency },
@@ -117,7 +123,13 @@ export const AntennaStateMap: StateMap<Antenna> = {
 		variable: 'noise_level',
 		valueFn: passthrough,
 	},
-	temperature: { feedback: 'dadTemperature', variable: 'temperature', valueFn: passthrough },
+	temperature: {
+		feedback: 'dadTemperature',
+		variableSuffixes: [
+			{ suffix: 'temp_celsius', valueFn: toDadTempCelsius },
+			{ suffix: 'temp_fahrenheit', valueFn: toDadTempFahrenheit },
+		],
+	},
 	version: { variable: 'version', valueFn: passthrough },
 	identify: { feedback: 'dadIdenitify', variable: 'identify', valueFn: passthrough },
 	ledBrightness: { feedback: 'dadLedBrightness', variable: 'led_brightness', valueFn: passthrough },
