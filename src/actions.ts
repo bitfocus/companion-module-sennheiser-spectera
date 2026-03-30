@@ -932,9 +932,9 @@ export function UpdateActions(self: SpecteraInstance): void {
 		},
 	}
 
-	/* actions['routeMobileDeviceToAudioOutput'] = {
+	actions['instrumentSwitchMobileDeviceToOutput'] = {
 		name: 'Audio I/O - Instrument Switch Mode',
-		description: 'Route a Mobile Device to an Audio Output. If already linked, disconnect it from the output. ',
+		description: 'Route a Mobile Device to an Audio Output. If already linked, disconnect it from the output.',
 		options: [
 			{
 				type: 'dropdown',
@@ -970,13 +970,22 @@ export function UpdateActions(self: SpecteraInstance): void {
 			const outputId = Number(action.options.outputId)
 			const modeId = Number(action.options.modeId)
 			const outputLinkId = self.state.audioOutputs.get(outputId)?.micAudiolinkId
-			if (outputLinkId === device.micAudiolinkId) {
+			const deviceLinkId = device.micAudiolinkId
+
+			const alreadyRouted =
+				typeof outputLinkId === 'number' &&
+				outputLinkId > -1 &&
+				typeof deviceLinkId === 'number' &&
+				deviceLinkId > -1 &&
+				outputLinkId === deviceLinkId
+
+			if (alreadyRouted) {
 				await self.api.setAudioOutput(outputId, { micAudiolinkId: -1 })
 			} else {
 				await self.api.routeMobileDeviceToAudioOutput(device.mtUid, outputId, modeId)
 			}
 		},
-	} */
+	}
 
 	actions['setAudioOutputChannel'] = {
 		name: 'Audio Output - Set Channel',

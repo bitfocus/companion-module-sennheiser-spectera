@@ -982,7 +982,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					{
 						down: [
 							{
-								actionId: 'routeMobileDeviceToAudioOutput',
+								actionId: 'instrumentSwitchMobileDeviceToOutput',
 								options: {
 									serial: device.serial,
 									outputId: output.outputId,
