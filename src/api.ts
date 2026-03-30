@@ -1034,7 +1034,7 @@ export class SpecteraApi extends EventEmitter {
 		}
 
 		let audiolinkId = mobileDevice.micAudiolinkId
-		if (audiolinkId && audiolinkId > 0) {
+		if (isActiveAudioLinkId(audiolinkId)) {
 			this.instance.log('debug', `Routing: Using existing Audio Link ${audiolinkId} from Mobile Device`)
 		} else {
 			if (mobileDevice.rfChannelId === undefined) {

@@ -96,7 +96,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 				action.options.rfChannel as string,
 				{
 					rfChannelId: action.options.rfChannel as number,
-					rfStateStartup: action.options.state as RfStateStartup,
+					rfStateOnStartup: action.options.state as RfStateStartup,
 				} as Partial<RfChannel>,
 			)
 		},

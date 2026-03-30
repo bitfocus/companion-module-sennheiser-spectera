@@ -579,7 +579,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `DAD ${dad}\nto\\nRF 1`,
+				text: `DAD ${dad}\\nto\\nRF 1`,
 				size: 11,
 				show_topbar: false,
 			},
@@ -1150,7 +1150,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				style: {
 					bgcolor: Color.Black,
 					color: Color.White,
-					text: `$(spectera:${deviceVariableId}_name)\\nMIC-LQI-$(spectera:${deviceVariableId}_mic_lqi)\\nBAT: $(spectera:${deviceVariableId}_battery_level) %\\n$(spectera:${deviceVariableId}_headphone_plug_state)\\n$(spectera:${deviceVariableId}_headphone_volume) dB`,
+					text: `$(spectera:${deviceVariableId}_name)\\nMIC-LQI-$(spectera:${deviceVariableId}_mic_lqi)\\nBAT: $(spectera:${deviceVariableId}_battery_level) %\\n$(spectera:${deviceVariableId}_battery_runtime)\\n$(spectera:${deviceVariableId}_rssi) dB`,
 					size: 11,
 					show_topbar: false,
 				},
@@ -1179,7 +1179,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `$(spectera:${deviceVariableId}_name)\\n$(spectera:${deviceVariableId}_state)\\nBAT: $(spectera:${deviceVariableId}_battery_level)%\\n$(spectera:${deviceVariableId}_headphone_plug_state)\\n$(spectera:${deviceVariableId}_headphone_volume)dB`,
+				text: `$(spectera:${deviceVariableId}_name)\\n$(spectera:${deviceVariableId}_state)\\nBAT: $(spectera:${deviceVariableId}_battery_level)%`,
 				size: 11,
 				show_topbar: false,
 			},
@@ -1476,7 +1476,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					feedbackId: 'mobileDeviceInterference',
 					options: {
 						serial: device.serial,
-						severity: 'High',
+						severity: 'Medium',
 					},
 					style: {
 						bgcolor: Color.SpecteraOrange,
@@ -1634,7 +1634,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				style: {
 					bgcolor: Color.Black,
 					color: Color.White,
-					text: `$(spectera:${deviceVariableId}_name)\\nVOL +1`,
+					text: `$(spectera:${deviceVariableId}_name)\\nVOL +1\\n$(spectera:${deviceVariableId}_headphone_volume)dB`,
 					size: 11,
 					show_topbar: false,
 				},
@@ -1689,11 +1689,11 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			presets[`${deviceVariableId}_HeadphoneVolumeDown`] = {
 				type: 'button',
 				category: `${category}s`,
-				name: `${device.name} Phone Vol -1`,
+				name: `${device.name} Phone Vol Set -20`,
 				style: {
 					bgcolor: Color.Black,
 					color: Color.White,
-					text: `$(spectera:${deviceVariableId}_name)\\nVOL -1`,
+					text: `$(spectera:${deviceVariableId}_name)\\nVOL -1\\n$(spectera:${deviceVariableId}_headphone_volume)dB`,
 					size: 11,
 					show_topbar: false,
 				},
@@ -1748,11 +1748,11 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			presets[`${deviceVariableId}_HeadphoneVolumeSet`] = {
 				type: 'button',
 				category: `${category}s`,
-				name: `${device.name} Phone Vol -1`,
+				name: `${device.name} Phone Vol Set -20`,
 				style: {
 					bgcolor: Color.Black,
 					color: Color.White,
-					text: `$(spectera:${deviceVariableId}_name)\\nSET -20`,
+					text: `$(spectera:${deviceVariableId}_name)\\nSET -20\\n$(spectera:${deviceVariableId}_headphone_volume)dB`,
 					size: 11,
 					show_topbar: false,
 				},
@@ -1764,7 +1764,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								options: {
 									serial: device.serial,
 									action: 'set',
-									adjustment: '-20',
+									volume: '-20',
 								},
 							},
 						],
@@ -1910,7 +1910,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					},
 				},
 				{
-					feedbackId: 'mobileDeviceIemLqi',
+					feedbackId: 'mobileDeviceMicLqi',
 					options: {
 						serial: device.serial,
 						micLqiThreshold: 2,
@@ -1920,7 +1920,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					},
 				},
 				{
-					feedbackId: 'mobileDeviceIemLqi',
+					feedbackId: 'mobileDeviceMicLqi',
 					options: {
 						serial: device.serial,
 						micLqiThreshold: 3,
@@ -1930,7 +1930,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					},
 				},
 				{
-					feedbackId: 'mobileDeviceIemLqi',
+					feedbackId: 'mobileDeviceMicLqi',
 					options: {
 						serial: device.serial,
 						micLqiThreshold: 4,
@@ -1979,7 +1979,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `$(spectera:${deviceVariableId}_name)\\nGAIN +3`,
+				text: `$(spectera:${deviceVariableId}_name)\\nGAIN +3\\n$(spectera:${deviceVariableId}_mic_preamp_gain) dB`,
 				size: 11,
 				show_topbar: false,
 			},
@@ -2018,7 +2018,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `$(spectera:${deviceVariableId}_name)\\nGAIN -3`,
+				text: `$(spectera:${deviceVariableId}_name)\\nGAIN -3\\n$(spectera:${deviceVariableId}_mic_preamp_gain) dB`,
 				size: 11,
 				show_topbar: false,
 			},
@@ -2053,11 +2053,11 @@ export function UpdatePresets(self: SpecteraInstance): void {
 		presets[`${deviceVariableId}_GainSet`] = {
 			type: 'button',
 			category: `${category}s`,
-			name: `${device.name} Gain Set -20`,
+			name: `${device.name} Gain Set 12 dB`,
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `$(spectera:${deviceVariableId}_name)\\nSET -20`,
+				text: `$(spectera:${deviceVariableId}_name)\\nSET 12 dB\\n$(spectera:${deviceVariableId}_mic_preamp_gain) dB`,
 				size: 11,
 				show_topbar: false,
 			},
@@ -2069,7 +2069,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							options: {
 								serial: device.serial,
 								action: 'set',
-								adjustment: '-20',
+								gain: '12',
 							},
 						},
 					],
