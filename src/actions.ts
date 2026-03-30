@@ -1045,7 +1045,8 @@ export function UpdateActions(self: SpecteraInstance): void {
 				allowCustom: true,
 			},
 		],
-		description: 'Copy all shared settings from one Mobile Device to another.',
+		description:
+			'Copy all shared settings from one Mobile Device to another, including copying the IEM link and moving the mic links, if present.',
 		callback: async (action, context) => {
 			if (!self.api) return
 			const sourceSerial = await context.parseVariablesInString(action.options.sourceSerial as string)

@@ -61,6 +61,10 @@ import {
 
 const REQUEST_INTERVAL_MS = 20
 
+function isActiveAudioLinkId(id: number | undefined): boolean {
+	return id !== undefined && id > -1
+}
+
 export class SpecteraApi extends EventEmitter {
 	private readonly host: string
 	private readonly password: string
@@ -1118,65 +1122,117 @@ export class SpecteraApi extends EventEmitter {
 			return
 		}
 
-		// Common properties
+		const sameType = sourceDevice.type === targetDevice.type
+		if (!sameType) {
+			this.instance.log(
+				'info',
+				`Copy Settings: Device types differ (${sourceDevice.type} → ${targetDevice.type}). Copying shared settings only; type-specific parameters are skipped.`,
+			)
+		}
+
+		const desiredMicId = isActiveAudioLinkId(sourceDevice.micAudiolinkId) ? sourceDevice.micAudiolinkId! : -1
+
+		// SEK target: copy source SEK’s IEM link id, or -1 when source has no IEM. Applied via a dedicated PUT
+		// after the bulk clone. Source IEM is never cleared so both devices may reference the same link briefly.
+		let desiredIemId: number | undefined
+		if (targetDevice.type === MtType.SEK) {
+			if (sourceDevice.type === MtType.SEK && isActiveAudioLinkId(sourceDevice.iemAudiolinkId)) {
+				desiredIemId = sourceDevice.iemAudiolinkId!
+			} else {
+				desiredIemId = -1
+			}
+		}
+
 		const payload: Partial<MobileDevice> = {
 			name: sourceDevice.name,
 			ledBrightness: sourceDevice.ledBrightness,
 			micPreampGain: sourceDevice.micPreampGain,
-			micAudiolinkId: sourceDevice.micAudiolinkId,
+			micAudiolinkId: desiredMicId,
+			rfChannelId: sourceDevice.rfChannelId,
+			identify: sourceDevice.identify,
+			reverseIdentify: sourceDevice.reverseIdentify,
+			sleep: sourceDevice.sleep,
 		}
 
-		if (sourceDevice.type === MtType.SEK && targetDevice.type === MtType.SEK) {
-			const sourceSEK = sourceDevice
-			;(payload as Partial<SEKDevice>).headphoneVolume = sourceSEK.headphoneVolume
-			;(payload as Partial<SEKDevice>).headphoneBalance = sourceSEK.headphoneBalance
-			;(payload as Partial<SEKDevice>).headphoneVolumeLimit = sourceSEK.headphoneVolumeLimit
-			;(payload as Partial<SEKDevice>).micLineSelection = sourceSEK.micLineSelection
-			;(payload as Partial<SEKDevice>).micLowCutHz = sourceSEK.micLowCutHz
-			;(payload as Partial<SEKDevice>).cableEmulation = sourceSEK.cableEmulation
-			;(payload as Partial<SEKDevice>).iemAudiolinkId = sourceSEK.iemAudiolinkId
-		} else if (sourceDevice.type === MtType.SKM && targetDevice.type === MtType.SKM) {
-			const sourceSKM = sourceDevice
-			;(payload as Partial<SKMDevice>).micLowCutHz = sourceSKM.micLowCutHz
-			;(payload as Partial<SKMDevice>).commandBehavior = sourceSKM.commandBehavior
-		} else {
-			this.instance.log(
-				'info',
-				`Copy Settings: Devices are different types (${sourceDevice.type} -> ${targetDevice.type}). Only common settings copied.`,
-			)
+		if (typeof sourceDevice.micTestToneEnabled === 'boolean') {
+			payload.micTestToneEnabled = sourceDevice.micTestToneEnabled
+		}
+		if (typeof sourceDevice.micTestToneLevel === 'number') {
+			payload.micTestToneLevel = sourceDevice.micTestToneLevel
 		}
 
-		const iemAudiolinkId = sourceDevice.type === MtType.SEK ? (payload as Partial<SEKDevice>).iemAudiolinkId : undefined
+		if (sameType && sourceDevice.type === MtType.SEK) {
+			const sekPayload = payload as Partial<SEKDevice>
+			sekPayload.headphoneVolume = sourceDevice.headphoneVolume
+			sekPayload.headphoneBalance = sourceDevice.headphoneBalance
+			sekPayload.headphoneVolumeLimit = sourceDevice.headphoneVolumeLimit
+			sekPayload.micLineSelection = sourceDevice.micLineSelection
+			sekPayload.micLineSelectionAutoValue = sourceDevice.micLineSelectionAutoValue
+			sekPayload.micLowCutHz = sourceDevice.micLowCutHz
+			sekPayload.cableEmulation = sourceDevice.cableEmulation
+		} else if (sameType && sourceDevice.type === MtType.SKM) {
+			const skmPayload = payload as Partial<SKMDevice>
+			skmPayload.micLowCutHz = sourceDevice.micLowCutHz
+			skmPayload.commandBehavior = sourceDevice.commandBehavior
+		}
 
 		try {
-			// If we are moving a Mic Audio Link, we must unassign it from the source first
-			if (payload.micAudiolinkId && payload.micAudiolinkId > 0) {
+			// Drop the target's mic link first if it would conflict with the link we are moving from the source.
+			if (isActiveAudioLinkId(targetDevice.micAudiolinkId) && targetDevice.micAudiolinkId !== desiredMicId) {
 				try {
-					this.instance.log('debug', `Copy Settings: Unassigning Mic Link ${payload.micAudiolinkId} from source`)
+					this.instance.log(
+						'debug',
+						`Copy Settings: Clearing target mic link ${targetDevice.micAudiolinkId} before reassignment`,
+					)
+					await this.setMobileDevice(targetMtUid, { micAudiolinkId: -1 } as Partial<MobileDevice>)
+				} catch (err) {
+					this.instance.log(
+						'warn',
+						`Copy Settings: Failed to clear mic link on target: ${err instanceof Error ? err.message : String(err)}`,
+					)
+				}
+			}
+
+			if (isActiveAudioLinkId(sourceDevice.micAudiolinkId)) {
+				try {
+					this.instance.log(
+						'debug',
+						`Copy Settings: Unassigning mic link ${sourceDevice.micAudiolinkId} from source (move to target)`,
+					)
 					await this.setMobileDevice(sourceMtUid, { micAudiolinkId: -1 } as Partial<MobileDevice>)
 				} catch (err) {
 					this.instance.log(
 						'warn',
-						`Copy Settings: Failed to unassign mic audio link from source: ${err instanceof Error ? err.message : String(err)}`,
+						`Copy Settings: Failed to unassign mic link from source: ${err instanceof Error ? err.message : String(err)}`,
 					)
 				}
 			}
 
-			// Same for IEM Link, if it's an SEK
-			if (iemAudiolinkId && iemAudiolinkId > 0) {
-				try {
-					this.instance.log('debug', `Copy Settings: Unassigning IEM Link ${iemAudiolinkId} from source`)
-					await this.setMobileDevice(sourceMtUid, { iemAudiolinkId: -1 } as Partial<MobileDevice>)
-				} catch (err) {
+			if (targetDevice.type === MtType.SEK && desiredIemId !== undefined) {
+				const targetIem = targetDevice.iemAudiolinkId
+				if (isActiveAudioLinkId(targetIem) && targetIem !== desiredIemId) {
 					this.instance.log(
-						'warn',
-						`Copy Settings: Failed to unassign IEM audio link from source: ${err instanceof Error ? err.message : String(err)}`,
+						'debug',
+						`Copy Settings: Clearing target IEM link ${targetIem} before applying copied IEM (source unchanged)`,
 					)
+					await this.setMobileDevice(targetMtUid, { iemAudiolinkId: -1 } as Partial<MobileDevice>)
 				}
 			}
 
 			await this.setMobileDevice(targetMtUid, payload)
-			this.instance.log('debug', `Copied settings from ${sourceDevice.name} to ${targetDevice.name}`)
+
+			if (targetDevice.type === MtType.SEK && desiredIemId !== undefined) {
+				this.instance.log(
+					'debug',
+					`Copy Settings: Applying IEM link ${desiredIemId} to target (dedicated PUT; source IEM not cleared)`,
+				)
+				await this.setMobileDevice(targetMtUid, { iemAudiolinkId: desiredIemId } as Partial<MobileDevice>)
+			}
+
+			this.instance.log(
+				'debug',
+				`Copy Settings: Cloned settings from ${sourceDevice.name} to ${targetDevice.name} (mic ${desiredMicId}, IEM target ${desiredIemId ?? 'n/a'})`,
+			)
 		} catch (error) {
 			this.instance.log('warn', `Copy Settings: Failed to apply settings: ${error}`)
 		}
