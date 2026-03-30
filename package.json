@@ -1,6 +1,6 @@
 {
 	"name": "sennheiser-spectera",
-	"version": "0.9.0",
+	"version": "0.10.0",
 	"main": "dist/main.js",
 	"type": "module",
 	"scripts": {
@@ -47,5 +47,5 @@
 			"yarn lint:raw --fix"
 		]
 	},
-	"packageManager": "yarn@4.12.0"
+	"packageManager": "yarn@4.13.0"
 }
