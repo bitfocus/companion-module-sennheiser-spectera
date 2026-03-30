@@ -127,6 +127,7 @@ export class SpecteraApi extends EventEmitter {
 				Accept: 'application/json',
 				'Content-Type': 'application/json',
 			},
+			signal: AbortSignal.timeout(10000),
 		}
 
 		if (body) {
@@ -187,6 +188,7 @@ export class SpecteraApi extends EventEmitter {
 				'/api/audio/interface/wordclock/status',
 			]).catch((err) => {
 				this.instance.log('error', `Failed to set subscription paths: ${err.message}`)
+				this.scheduleReconnect()
 			})
 		})
 
@@ -335,7 +337,7 @@ export class SpecteraApi extends EventEmitter {
 		}
 	}
 
-	private scheduleReconnect(): void {
+	scheduleReconnect(): void {
 		if (this.destroyed) return
 		if (this.reconnectTimer !== null) return
 

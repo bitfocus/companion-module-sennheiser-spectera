@@ -44,6 +44,7 @@ export class SpecteraInstance extends InstanceBase<ModuleConfig, ModuleSecrets> 
 		this.config = config
 		this.secrets = secrets
 
+		await this.api?.disconnect()
 		await this.initApi()
 	}
 
@@ -59,6 +60,7 @@ export class SpecteraInstance extends InstanceBase<ModuleConfig, ModuleSecrets> 
 			} catch (err) {
 				this.updateStatus(InstanceStatus.ConnectionFailure)
 				this.log('error', `Login failed: ${err instanceof Error ? err.message : String(err)} `)
+				this.api.scheduleReconnect()
 			}
 		} else {
 			this.updateStatus(InstanceStatus.BadConfig)
