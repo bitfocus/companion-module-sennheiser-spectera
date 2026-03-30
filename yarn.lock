@@ -2341,7 +2341,7 @@ __metadata:
     rimraf: "npm:^6.1.3"
     typescript: "npm:~5.9.3"
     typescript-eslint: "npm:^8.57.2"
-    undici: "npm:^7.24.5"
+    undici: "npm:^7.24.6"
   languageName: unknown
   linkType: soft
 
@@ -2649,10 +2649,10 @@ __metadata:
   languageName: node
   linkType: hard
 
-"undici@npm:^7.24.5":
-  version: 7.24.5
-  resolution: "undici@npm:7.24.5"
-  checksum: 10c0/2a836f1f6ab078fde3eeb4cc8fd5b34eeaf52cfbdf16a9bab61b7223f43f7847bcd2125d1da7c4e3f5996c528bf9f7940015d39909bab80cfbd71b855470cf21
+"undici@npm:^7.24.6":
+  version: 7.24.6
+  resolution: "undici@npm:7.24.6"
+  checksum: 10c0/0f5413ccb20bafe27637a3a02cada731c53ee75f1df79029099db3af1eaaed410488489d9f430c09bd30bf0b925cb75fc30c39dff0689f656fd6fb7d75ded95f
   languageName: node
   linkType: hard
 
