@@ -2350,7 +2350,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			style: {
 				bgcolor: baseBg,
 				color: Color.White,
-				text: `$(spectera:SEK_${serial}_name)\\n\\nREMOVE`,
+				text: `${removeLabel}\\n\\nREMOVE`,
 				size: 11,
 				show_topbar: false,
 			},
@@ -2369,7 +2369,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			const input1 = sortedInputsForEng[i]
 			const input2 = sortedInputsForEng[i + 1]
 			if (!input2) break
-			const pairLabel = `IN ${input1.inputId + 1} + ${input2.inputId + 1}`
+			const pairLabel = `IN ${input1.inputId + 1}+${input2.inputId + 1}`
 			presets[`${keyPrefix}_EngMode_Pair_${input1.inputId}_${input2.inputId}`] = {
 				type: 'button',
 				category: 'Engineer Mode',
@@ -2377,7 +2377,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				style: {
 					bgcolor: baseBg,
 					color: Color.White,
-					text: `$(spectera:SEK_${serial}_name)\\n\\n${pairLabel}`,
+					text: `${removeLabel}\\n\\n${pairLabel}`,
 					size: 11,
 					show_topbar: false,
 				},
@@ -2396,7 +2396,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								actionId: 'mobileDeviceRename',
 								options: {
 									serial,
-									name: `$(spectera:SEK_${serial}_name)-IN ${input1.inputId + 1}+${input2.inputId + 1}`,
+									name: `${removeLabel}-${input1.inputId + 1}+${input2.inputId + 1}`,
 								},
 							},
 						],
@@ -2434,7 +2434,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			style: {
 				bgcolor: baseBg,
 				color: Color.White,
-				text: `$(spectera:SEK_${serial}_name)\\n\\nREMOVE`,
+				text: `${removeLabel}\\n\\nREMOVE`,
 				size: 11,
 				show_topbar: false,
 			},
@@ -2457,7 +2457,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				style: {
 					bgcolor: baseBg,
 					color: Color.White,
-					text: `$(spectera:SEK_${serial}_name)\\n\\nIN ${input.inputId + 1}`,
+					text: `${removeLabel}\\n\\nIN ${input.inputId + 1}`,
 					size: 11,
 					show_topbar: false,
 				},
@@ -2473,7 +2473,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								actionId: 'mobileDeviceRename',
 								options: {
 									serial,
-									name: `$(spectera:SEK_${serial}_name)-IN ${input.inputId + 1}`,
+									name: `${removeLabel}-${input.inputId + 1}`,
 								},
 							},
 						],
