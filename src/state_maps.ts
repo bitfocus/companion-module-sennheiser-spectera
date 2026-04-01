@@ -100,7 +100,7 @@ export const RfChannelStateMap: StateMap<RfChannel> = {
 }
 
 export const AntennaStateMap: StateMap<Antenna> = {
-	state: { feedback: 'dadState', variable: 'state', valueFn: passthrough },
+	state: { feedback: ['dadState', 'dadAntennaPresent'], variable: 'state', valueFn: passthrough },
 	type: { variable: 'type', valueFn: passthrough },
 	errorStateDetails: { variable: 'error_details', valueFn: passthrough },
 	warningHighTemperature: {

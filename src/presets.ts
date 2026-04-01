@@ -16,6 +16,19 @@ import {
 	MtState,
 } from './types.js'
 
+/** Base layer: connected mobile device disconnected → default (black). */
+function mobileDisconnectedFeedback(serial: string | undefined) {
+	if (!serial) return []
+	return [
+		{
+			feedbackId: 'mobileDeviceConnected' as const,
+			isInverted: true,
+			options: { serial },
+			style: { bgcolor: Color.Black },
+		},
+	]
+}
+
 export function UpdatePresets(self: SpecteraInstance): void {
 	const presets: CompanionPresetDefinitions = {}
 
@@ -60,7 +73,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						state: RfState.Active,
 					},
 					style: {
-						bgcolor: Color.SpecteraGreen,
+						bgcolor: Color.SpecteraBlue,
 					},
 				},
 				{
@@ -70,7 +83,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						state: RfState.Muted,
 					},
 					style: {
-						bgcolor: Color.SpecteraRed,
+						bgcolor: Color.SpecteraYellow,
 					},
 				},
 			],
@@ -121,18 +134,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					up: [],
 				},
 			],
-			feedbacks: [
-				{
-					feedbackId: 'rfFrequency',
-					options: {
-						rfChannel: channelIndex,
-						frequency: '',
-					},
-					style: {
-						bgcolor: Color.SpecteraGreen,
-					},
-				},
-			],
+			feedbacks: [],
 		}
 
 		presets[`rf${channelIndex}TxPowerInfo`] = {
@@ -218,7 +220,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						state: RfState.Active,
 					},
 					style: {
-						bgcolor: Color.SpecteraGreen,
+						bgcolor: Color.SpecteraBlue,
 					},
 				},
 			],
@@ -257,7 +259,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						state: RfState.Muted,
 					},
 					style: {
-						bgcolor: Color.SpecteraRed,
+						bgcolor: Color.SpecteraYellow,
 					},
 				},
 			],
@@ -267,6 +269,13 @@ export function UpdatePresets(self: SpecteraInstance): void {
 	//DADs
 	for (const dad of Object.keys(AntennaPortId)) {
 		const port = dad.toLowerCase()
+		const dadPresent = [
+			{
+				feedbackId: 'dadAntennaPresent' as const,
+				options: { dad: port },
+				style: { bgcolor: Color.LightGray },
+			},
+		]
 		presets[`dad${port}Header`] = {
 			type: 'text',
 			category: 'RF Configuration',
@@ -299,6 +308,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				},
 			],
 			feedbacks: [
+				...dadPresent,
 				{
 					feedbackId: 'dadInterferencePower',
 					options: {
@@ -326,7 +336,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						interferencePower: -80,
 					},
 					style: {
-						bgcolor: Color.SpecteraOrange,
+						bgcolor: Color.SpecteraYellow,
 					},
 				},
 				{
@@ -367,6 +377,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				},
 			],
 			feedbacks: [
+				...dadPresent,
 				{
 					feedbackId: 'dadState',
 					options: {
@@ -393,7 +404,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						dad: port,
 					},
 					style: {
-						bgcolor: Color.SpecteraOrange,
+						bgcolor: Color.SpecteraYellow,
 					},
 				},
 			],
@@ -424,6 +435,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				},
 			],
 			feedbacks: [
+				...dadPresent,
 				{
 					feedbackId: 'dadInterferencePower',
 					options: {
@@ -451,7 +463,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						interferencePower: -80,
 					},
 					style: {
-						bgcolor: Color.SpecteraOrange,
+						bgcolor: Color.SpecteraYellow,
 					},
 				},
 				{
@@ -492,6 +504,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				},
 			],
 			feedbacks: [
+				...dadPresent,
 				{
 					feedbackId: 'dadInterferencePower',
 					options: {
@@ -519,7 +532,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						interferencePower: -80,
 					},
 					style: {
-						bgcolor: Color.SpecteraOrange,
+						bgcolor: Color.SpecteraYellow,
 					},
 				},
 				{
@@ -552,6 +565,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				},
 			],
 			feedbacks: [
+				...dadPresent,
 				{
 					feedbackId: 'dadTemperature',
 					options: {
@@ -591,6 +605,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				},
 			],
 			feedbacks: [
+				...dadPresent,
 				{
 					feedbackId: 'dadBindings',
 					options: {
@@ -598,7 +613,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						bindings: RFChannels['Off'],
 					},
 					style: {
-						bgcolor: Color.SpecteraRed,
+						bgcolor: Color.SpecteraYellow,
 					},
 				},
 			],
@@ -629,6 +644,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				},
 			],
 			feedbacks: [
+				...dadPresent,
 				{
 					feedbackId: 'dadBindings',
 					options: {
@@ -636,7 +652,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						bindings: RFChannels['RF Channel 1'],
 					},
 					style: {
-						bgcolor: Color.SpecteraGreen,
+						bgcolor: Color.SpecteraBlue,
 					},
 				},
 			],
@@ -667,6 +683,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				},
 			],
 			feedbacks: [
+				...dadPresent,
 				{
 					feedbackId: 'dadBindings',
 					options: {
@@ -674,7 +691,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						bindings: RFChannels['RF Channel 2'],
 					},
 					style: {
-						bgcolor: Color.SpecteraGreen,
+						bgcolor: Color.SpecteraBlue,
 					},
 				},
 			],
@@ -705,6 +722,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				},
 			],
 			feedbacks: [
+				...dadPresent,
 				{
 					feedbackId: 'dadBindings',
 					options: {
@@ -712,7 +730,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						bindings: RFChannels['Scan'],
 					},
 					style: {
-						bgcolor: Color.SpecteraOrange,
+						bgcolor: Color.SpecteraYellow,
 					},
 				},
 			],
@@ -1003,7 +1021,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				category: `Instrument Switch Mode`,
 				name: `${device.name} Source`,
 				style: {
-					bgcolor: Color.Black,
+					bgcolor: Color.LightGray,
 					color: Color.White,
 					text: `$(spectera:${deviceVariableId}_name)\\nto\\nOUT ${output.outputId + 1}`,
 					size: 11,
@@ -1026,24 +1044,16 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				],
 				feedbacks: [
 					{
-						feedbackId: 'mobileDeviceConnected',
-						options: {
-							serial: device.serial,
-						},
-						style: {
-							bgcolor: Color.LightGray,
-						},
-					},
-					{
 						feedbackId: 'mobileDeviceOutputLinked',
 						options: {
 							serial: device.serial,
 							outputId: output.outputId,
 						},
 						style: {
-							bgcolor: Color.SpecteraGreen,
+							bgcolor: Color.SpecteraBlue,
 						},
 					},
+					...mobileDisconnectedFeedback(device.serial),
 				],
 			}
 		}
@@ -1064,7 +1074,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				category: `Backup Mode`,
 				name: `${copyDevice.name} Backup Mode`,
 				style: {
-					bgcolor: Color.Black,
+					bgcolor: Color.LightGray,
 					color: Color.White,
 					text: `$(spectera:${copyDevice.type}_${copyDevice.serial}_name)\\nto\\n$(spectera:${device.type}_${device.serial}_name)`,
 					size: 11,
@@ -1086,23 +1096,15 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				],
 				feedbacks: [
 					{
-						feedbackId: 'mobileDeviceConnected',
-						options: {
-							serial: copyDevice.serial,
-						},
-						style: {
-							bgcolor: Color.LightGray,
-						},
-					},
-					{
 						feedbackId: 'mobileDeviceMicAudiolinkActive',
 						options: {
 							serial: copyDevice.serial,
 						},
 						style: {
-							bgcolor: Color.SpecteraOrange,
+							bgcolor: Color.SpecteraYellow,
 						},
 					},
+					...mobileDisconnectedFeedback(copyDevice.serial),
 				],
 			}
 		}
@@ -1121,7 +1123,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				category: `${category}s`,
 				name: `${device.name} Overall Status`,
 				style: {
-					bgcolor: Color.Black,
+					bgcolor: Color.LightGray,
 					color: Color.White,
 					text: `$(spectera:${deviceVariableId}_name)\\nIEM-LQI-$(spectera:${deviceVariableId}_iem_lqi)\\nBAT: $(spectera:${deviceVariableId}_battery_level) %\\n$(spectera:${deviceVariableId}_headphone_plug_state)\\n$(spectera:${deviceVariableId}_headphone_volume) dB`,
 					size: 11,
@@ -1168,9 +1170,10 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							serial: device.serial,
 						},
 						style: {
-							bgcolor: Color.Black,
+							bgcolor: Color.LightGray,
 						},
 					},
+					...mobileDisconnectedFeedback(device.serial),
 				],
 			}
 		} else if (device.type === MtType.SKM) {
@@ -1179,7 +1182,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				category: `${category}s`,
 				name: `${device.name} Overall Status`,
 				style: {
-					bgcolor: Color.Black,
+					bgcolor: Color.LightGray,
 					color: Color.White,
 					text: `$(spectera:${deviceVariableId}_name)\\nMIC-LQI-$(spectera:${deviceVariableId}_mic_lqi)\\nBAT: $(spectera:${deviceVariableId}_battery_level) %\\n$(spectera:${deviceVariableId}_battery_runtime)\\n$(spectera:${deviceVariableId}_rssi) dB`,
 					size: 11,
@@ -1199,7 +1202,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						up: [],
 					},
 				],
-				feedbacks: [],
+				feedbacks: [...mobileDisconnectedFeedback(device.serial)],
 			}
 		}
 
@@ -1208,7 +1211,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			category: `${category}s`,
 			name: `${device.name} Connection + Battery Status`,
 			style: {
-				bgcolor: Color.Black,
+				bgcolor: Color.LightGray,
 				color: Color.White,
 				text: `$(spectera:${deviceVariableId}_name)\\n$(spectera:${deviceVariableId}_state)\\nBAT: $(spectera:${deviceVariableId}_battery_level)%`,
 				size: 11,
@@ -1256,7 +1259,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						threshold: 40,
 					},
 					style: {
-						bgcolor: Color.SpecteraOrange,
+						bgcolor: Color.SpecteraYellow,
 					},
 				},
 				{
@@ -1278,6 +1281,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						bgcolor: Color.Black,
 					},
 				},
+				...mobileDisconnectedFeedback(device.serial),
 			],
 		}
 
@@ -1286,7 +1290,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			category: `${category}s`,
 			name: `${device.name} Connection`,
 			style: {
-				bgcolor: Color.Black,
+				bgcolor: Color.LightGray,
 				color: Color.White,
 				text: `$(spectera:${deviceVariableId}_name)\\nSTATE\\n$(spectera:${deviceVariableId}_state)\\nLAST SEEN\\n$(spectera:${deviceVariableId}_last_connected)`,
 				size: 11,
@@ -1306,17 +1310,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					up: [],
 				},
 			],
-			feedbacks: [
-				{
-					feedbackId: 'mobileDeviceConnected',
-					options: {
-						serial: device.serial,
-					},
-					style: {
-						bgcolor: Color.SpecteraGreen,
-					},
-				},
-			],
+			feedbacks: [...mobileDisconnectedFeedback(device.serial)],
 		}
 
 		presets[`${deviceVariableId}_Battery`] = {
@@ -1324,7 +1318,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			category: `${category}s`,
 			name: `${device.name} Battery`,
 			style: {
-				bgcolor: Color.Black,
+				bgcolor: Color.LightGray,
 				color: Color.White,
 				text: `$(spectera:${deviceVariableId}_name)\\nBATTERY\\n\\n$(spectera:${deviceVariableId}_battery_level) %\\n$(spectera:${deviceVariableId}_battery_runtime)`,
 				size: 10,
@@ -1372,7 +1366,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						threshold: 40,
 					},
 					style: {
-						bgcolor: Color.SpecteraOrange,
+						bgcolor: Color.SpecteraYellow,
 					},
 				},
 				{
@@ -1394,6 +1388,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						bgcolor: Color.Black,
 					},
 				},
+				...mobileDisconnectedFeedback(device.serial),
 			],
 		}
 
@@ -1402,7 +1397,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			category: `${category}s`,
 			name: `${device.name} Identify`,
 			style: {
-				bgcolor: Color.Black,
+				bgcolor: Color.LightGray,
 				color: Color.White,
 				text: `$(spectera:${deviceVariableId}_name)\\nIDENTIFY`,
 				size: 11,
@@ -1442,6 +1437,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						color: Color.Black,
 					},
 				},
+				...mobileDisconnectedFeedback(device.serial),
 			],
 		}
 
@@ -1450,7 +1446,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			category: `${category}s`,
 			name: `${device.name} Rename`,
 			style: {
-				bgcolor: Color.Black,
+				bgcolor: Color.LightGray,
 				color: Color.White,
 				text: `RENAME ${serial}`,
 				size: 11,
@@ -1482,7 +1478,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					up: [],
 				},
 			],
-			feedbacks: [],
+			feedbacks: [...mobileDisconnectedFeedback(device.serial)],
 		}
 
 		presets[`${deviceVariableId}_InterferenceStatus`] = {
@@ -1490,8 +1486,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			category: `${category}s`,
 			name: `${device.name} Interference Status`,
 			style: {
-				// Base is Red — represents RSSI < -80 dBm (danger). Feedbacks layer Orange then Blue on top.
-				bgcolor: Color.Black,
+				bgcolor: Color.LightGray,
 				color: Color.White,
 				text: `$(spectera:${deviceVariableId}_name)\\nDOM: $(spectera:${deviceVariableId}_dominant_antenna)\\nRSSI:$(spectera:${deviceVariableId}_rssi)`,
 				size: 11,
@@ -1530,7 +1525,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						rssiThreshold: -80,
 					},
 					style: {
-						bgcolor: Color.SpecteraOrange,
+						bgcolor: Color.SpecteraYellow,
 					},
 				},
 				// RSSI ≥ -70 dBm → Blue (normal/good signal; upgrades from Orange)
@@ -1544,6 +1539,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						bgcolor: Color.SpecteraBlue,
 					},
 				},
+				...mobileDisconnectedFeedback(device.serial),
 			],
 		}
 
@@ -1552,7 +1548,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			category: `${category}s`,
 			name: `${device.name} Interference`,
 			style: {
-				bgcolor: Color.Black,
+				bgcolor: Color.LightGray,
 				color: Color.White,
 				text: `$(spectera:${deviceVariableId}_name)\\nInterference\\n\\n$(spectera:${deviceVariableId}_interference)`,
 				size: 11,
@@ -1590,7 +1586,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						severity: 'Medium',
 					},
 					style: {
-						bgcolor: Color.SpecteraOrange,
+						bgcolor: Color.SpecteraYellow,
 					},
 				},
 				{
@@ -1623,6 +1619,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						bgcolor: Color.Black,
 					},
 				},
+				...mobileDisconnectedFeedback(device.serial),
 			],
 		}
 
@@ -1632,7 +1629,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				category: `${category}s`,
 				name: `${device.name} IEM LQI`,
 				style: {
-					bgcolor: Color.Black,
+					bgcolor: Color.LightGray,
 					color: Color.White,
 					text: `$(spectera:${deviceVariableId}_name)\\nIEM LQI\\n$(spectera:${deviceVariableId}_iem_lqi)`,
 					size: 11,
@@ -1670,7 +1667,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							iemLqiThreshold: 2,
 						},
 						style: {
-							bgcolor: Color.SpecteraOrange,
+							bgcolor: Color.SpecteraYellow,
 						},
 					},
 					{
@@ -1693,6 +1690,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							bgcolor: Color.SpecteraGreen,
 						},
 					},
+					...mobileDisconnectedFeedback(device.serial),
 				],
 			}
 
@@ -1701,7 +1699,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				category: `${category}s`,
 				name: `${device.name} Headphone Vol`,
 				style: {
-					bgcolor: Color.Black,
+					bgcolor: Color.LightGray,
 					color: Color.White,
 					text: `$(spectera:${deviceVariableId}_name)\\nPHONES\\n$(spectera:${deviceVariableId}_headphone_plug_state)\\n$(spectera:${deviceVariableId}_headphone_volume)dB`,
 					size: 11,
@@ -1748,9 +1746,10 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							serial: device.serial,
 						},
 						style: {
-							bgcolor: Color.Black,
+							bgcolor: Color.LightGray,
 						},
 					},
+					...mobileDisconnectedFeedback(device.serial),
 				],
 			}
 
@@ -1759,7 +1758,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				category: `${category}s`,
 				name: `${device.name} Phone Vol +1`,
 				style: {
-					bgcolor: Color.Black,
+					bgcolor: Color.LightGray,
 					color: Color.White,
 					text: `$(spectera:${deviceVariableId}_name)\\nVOL +1\\n$(spectera:${deviceVariableId}_headphone_volume)dB`,
 					size: 11,
@@ -1807,9 +1806,10 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							serial: device.serial,
 						},
 						style: {
-							bgcolor: Color.Black,
+							bgcolor: Color.LightGray,
 						},
 					},
+					...mobileDisconnectedFeedback(device.serial),
 				],
 			}
 
@@ -1818,7 +1818,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				category: `${category}s`,
 				name: `${device.name} Phone Vol Set -20`,
 				style: {
-					bgcolor: Color.Black,
+					bgcolor: Color.LightGray,
 					color: Color.White,
 					text: `$(spectera:${deviceVariableId}_name)\\nVOL -1\\n$(spectera:${deviceVariableId}_headphone_volume)dB`,
 					size: 11,
@@ -1866,9 +1866,10 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							serial: device.serial,
 						},
 						style: {
-							bgcolor: Color.Black,
+							bgcolor: Color.LightGray,
 						},
 					},
+					...mobileDisconnectedFeedback(device.serial),
 				],
 			}
 
@@ -1877,7 +1878,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				category: `${category}s`,
 				name: `${device.name} Phone Vol Set -20`,
 				style: {
-					bgcolor: Color.Black,
+					bgcolor: Color.LightGray,
 					color: Color.White,
 					text: `$(spectera:${deviceVariableId}_name)\\nSET -20\\n$(spectera:${deviceVariableId}_headphone_volume)dB`,
 					size: 11,
@@ -1925,9 +1926,10 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							serial: device.serial,
 						},
 						style: {
-							bgcolor: Color.Black,
+							bgcolor: Color.LightGray,
 						},
 					},
+					...mobileDisconnectedFeedback(device.serial),
 				],
 			}
 
@@ -1939,7 +1941,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					rotaryActions: true,
 				},
 				style: {
-					bgcolor: Color.Black,
+					bgcolor: Color.LightGray,
 					color: Color.White,
 					text: `$(spectera:${deviceVariableId}_name)\\nVOL\\n$(spectera:${deviceVariableId}_headphone_volume)dB`,
 					size: 11,
@@ -2009,9 +2011,10 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							serial: device.serial,
 						},
 						style: {
-							bgcolor: Color.Black,
+							bgcolor: Color.LightGray,
 						},
 					},
+					...mobileDisconnectedFeedback(device.serial),
 				],
 			}
 		}
@@ -2021,7 +2024,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			category: `${category}s`,
 			name: `${device.name} Mic LQI`,
 			style: {
-				bgcolor: Color.Black,
+				bgcolor: Color.LightGray,
 				color: Color.White,
 				text: `$(spectera:${deviceVariableId}_name)\\nMIC LQI\\n$(spectera:${deviceVariableId}_mic_lqi)`,
 				size: 11,
@@ -2059,7 +2062,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						micLqiThreshold: 2,
 					},
 					style: {
-						bgcolor: Color.SpecteraOrange,
+						bgcolor: Color.SpecteraYellow,
 					},
 				},
 				{
@@ -2082,6 +2085,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						bgcolor: Color.SpecteraGreen,
 					},
 				},
+				...mobileDisconnectedFeedback(device.serial),
 			],
 		}
 
@@ -2090,7 +2094,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			category: `${category}s`,
 			name: `${device.name} Gain`,
 			style: {
-				bgcolor: Color.Black,
+				bgcolor: Color.LightGray,
 				color: Color.White,
 				text: `$(spectera:${deviceVariableId}_name)\\nPREAMP GAIN\\n$(spectera:${deviceVariableId}_mic_preamp_gain) dB`,
 				size: 11,
@@ -2112,6 +2116,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						bgcolor: Color.LightGray,
 					},
 				},
+				...mobileDisconnectedFeedback(device.serial),
 			],
 		}
 
@@ -2120,7 +2125,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			category: `${category}s`,
 			name: `${device.name} Gain +3`,
 			style: {
-				bgcolor: Color.Black,
+				bgcolor: Color.LightGray,
 				color: Color.White,
 				text: `$(spectera:${deviceVariableId}_name)\\nGAIN +3\\n$(spectera:${deviceVariableId}_mic_preamp_gain) dB`,
 				size: 11,
@@ -2151,6 +2156,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						bgcolor: Color.LightGray,
 					},
 				},
+				...mobileDisconnectedFeedback(device.serial),
 			],
 		}
 
@@ -2159,7 +2165,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			category: `${category}s`,
 			name: `${device.name} Gain -3`,
 			style: {
-				bgcolor: Color.Black,
+				bgcolor: Color.LightGray,
 				color: Color.White,
 				text: `$(spectera:${deviceVariableId}_name)\\nGAIN -3\\n$(spectera:${deviceVariableId}_mic_preamp_gain) dB`,
 				size: 11,
@@ -2190,6 +2196,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						bgcolor: Color.LightGray,
 					},
 				},
+				...mobileDisconnectedFeedback(device.serial),
 			],
 		}
 
@@ -2198,7 +2205,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			category: `${category}s`,
 			name: `${device.name} Gain Set 12 dB`,
 			style: {
-				bgcolor: Color.Black,
+				bgcolor: Color.LightGray,
 				color: Color.White,
 				text: `$(spectera:${deviceVariableId}_name)\\nSET 12 dB\\n$(spectera:${deviceVariableId}_mic_preamp_gain) dB`,
 				size: 11,
@@ -2229,6 +2236,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						bgcolor: Color.LightGray,
 					},
 				},
+				...mobileDisconnectedFeedback(device.serial),
 			],
 		}
 
@@ -2240,7 +2248,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				rotaryActions: true,
 			},
 			style: {
-				bgcolor: Color.Black,
+				bgcolor: Color.LightGray,
 				color: Color.White,
 				text: `$(spectera:${deviceVariableId}_name)\\nPREAMP GAIN\\n$(spectera:${deviceVariableId}_mic_preamp_gain)dB`,
 				size: 11,
@@ -2285,6 +2293,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						bgcolor: Color.LightGray,
 					},
 				},
+				...mobileDisconnectedFeedback(device.serial),
 			],
 		}
 	}
@@ -2506,7 +2515,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					up: [],
 				},
 			],
-			feedbacks: [],
+			feedbacks: [...mobileDisconnectedFeedback(serial)],
 		}
 		for (let i = 0; i < sortedInputsForEng.length; i += 2) {
 			const input1 = sortedInputsForEng[i]
@@ -2557,6 +2566,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						options: { serial },
 						style: { bgcolor: Color.Black },
 					},
+					...mobileDisconnectedFeedback(serial),
 				],
 			}
 		}
@@ -2590,7 +2600,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					up: [],
 				},
 			],
-			feedbacks: [],
+			feedbacks: [...mobileDisconnectedFeedback(serial)],
 		}
 		for (const input of sortedInputsForEng) {
 			presets[`${keyPrefix}_EngMode_${input.inputId}`] = {
@@ -2634,6 +2644,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						options: { serial },
 						style: { bgcolor: Color.Black },
 					},
+					...mobileDisconnectedFeedback(serial),
 				],
 			}
 		}

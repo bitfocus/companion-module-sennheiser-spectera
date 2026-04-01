@@ -12,7 +12,7 @@ export const Color = {
 	SpecteraRed: combineRgb(244, 67, 54),
 	SpecteraGreen: combineRgb(102, 187, 106),
 	SpecteraBlue: combineRgb(0, 150, 214),
-	SpecteraOrange: combineRgb(255, 167, 38),
+	SpecteraYellow: combineRgb(255, 167, 38),
 }
 
 export const audioOutputChannelChoices = [

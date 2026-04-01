@@ -40,7 +40,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		name: 'RF - Tx Power',
 		description: 'RF - Tx Power',
 		defaultStyle: {
-			bgcolor: Color.SpecteraGreen,
+			bgcolor: Color.SpecteraBlue,
 		},
 		options: [
 			{
@@ -71,7 +71,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		name: 'RF - Frequency',
 		description: 'RF - Frequency',
 		defaultStyle: {
-			bgcolor: Color.SpecteraGreen,
+			bgcolor: Color.SpecteraBlue,
 		},
 		options: [
 			{
@@ -101,7 +101,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		name: 'RF - Bandwidth Mode',
 		description: 'RF - Bandwidth Mode',
 		defaultStyle: {
-			bgcolor: Color.SpecteraGreen,
+			bgcolor: Color.SpecteraBlue,
 		},
 		options: [
 			{
@@ -158,7 +158,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		name: 'RF - State',
 		description: 'RF - State',
 		defaultStyle: {
-			bgcolor: Color.SpecteraGreen,
+			bgcolor: Color.SpecteraBlue,
 		},
 		options: [
 			{
@@ -189,7 +189,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		name: 'RF - State on Start Up',
 		description: 'RF - State on Start Up',
 		defaultStyle: {
-			bgcolor: Color.SpecteraGreen,
+			bgcolor: Color.SpecteraBlue,
 		},
 		options: [
 			{
@@ -222,7 +222,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		name: 'DAD - State',
 		description: 'DAD - State',
 		defaultStyle: {
-			bgcolor: Color.SpecteraGreen,
+			bgcolor: Color.SpecteraBlue,
 		},
 		options: [
 			{
@@ -243,6 +243,27 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		callback: async (feedback) => {
 			const antennaState = self.state.antennas.get(feedback.options.dad as AntennaPortId)?.state
 			return antennaState === feedback.options.state
+		},
+	}
+	feedbacks['dadAntennaPresent'] = {
+		type: 'boolean',
+		name: 'DAD - Antenna present',
+		description: 'True when the DAD is not Unconnected (hardware present on the port)',
+		defaultStyle: {
+			bgcolor: Color.LightGray,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'DAD',
+				choices: getChoicesFromEnum(AntennaPortId),
+				default: AntennaPortId.A,
+				id: 'dad',
+			},
+		],
+		callback: async (feedback) => {
+			const antennaState = self.state.antennas.get(feedback.options.dad as AntennaPortId)?.state
+			return antennaState !== undefined && antennaState !== DeviceStatus.Unconnected
 		},
 	}
 	feedbacks['dadWarningHighTemperature'] = {
@@ -442,7 +463,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		name: 'DAD - RF Channel',
 		description: 'DAD - RF Channel',
 		defaultStyle: {
-			bgcolor: Color.SpecteraGreen,
+			bgcolor: Color.SpecteraBlue,
 		},
 		options: [
 			{
@@ -523,7 +544,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		name: 'Mobile Device - Connected',
 		description: 'Indicates if the mobile device is connected',
 		defaultStyle: {
-			bgcolor: Color.SpecteraGreen,
+			bgcolor: Color.LightGray,
 		},
 		options: [
 			{
@@ -547,7 +568,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		name: 'Mobile Device - State',
 		description: 'Check the state of the mobile device',
 		defaultStyle: {
-			bgcolor: Color.SpecteraGreen,
+			bgcolor: Color.SpecteraBlue,
 		},
 		options: [
 			{
@@ -901,7 +922,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		name: 'Mobile Device - Output Linked',
 		description: 'Indicates if the mobile device is linked to an audio output',
 		defaultStyle: {
-			bgcolor: Color.SpecteraGreen,
+			bgcolor: Color.SpecteraBlue,
 		},
 		options: [
 			{
@@ -1183,7 +1204,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		name: 'Mobile Device - Mic Audio Link Active',
 		description: 'Check if Mic Audio Link is Active',
 		defaultStyle: {
-			bgcolor: Color.SpecteraGreen,
+			bgcolor: Color.SpecteraBlue,
 		},
 		options: [
 			{
