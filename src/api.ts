@@ -985,6 +985,45 @@ export class SpecteraApi extends EventEmitter {
 		await this.sendRequest('PUT', `/audio/links/${config.audiolinkId}`, config)
 	}
 
+	async setMobileDeviceAudioLinkMode(mtUid: number, link: 'iem' | 'mic', modeId: number): Promise<void> {
+		const mobileDevice = this.state.mobileDevices.get(mtUid)
+		if (!mobileDevice) {
+			this.instance.log('warn', 'Set Audio Link Mode: Mobile device not found')
+			return
+		}
+
+		if (link === 'iem') {
+			if (mobileDevice.type !== MtType.SEK) {
+				this.instance.log('warn', 'Set Audio Link Mode: IEM link is only available on SEK devices')
+				return
+			}
+			const audiolinkId = mobileDevice.iemAudiolinkId
+			if (!isActiveAudioLinkId(audiolinkId)) {
+				this.instance.log('warn', 'Set Audio Link Mode: No active IEM audio link on this device')
+				return
+			}
+			try {
+				await this.updateAudioLink({ audiolinkId: audiolinkId!, modeId })
+				this.instance.log('debug', `Set IEM audio link ${audiolinkId} mode to ${modeId}`)
+			} catch (error) {
+				this.instance.log('warn', `Set Audio Link Mode: Failed to update IEM link: ${error}`)
+			}
+			return
+		}
+
+		const audiolinkId = mobileDevice.micAudiolinkId
+		if (!isActiveAudioLinkId(audiolinkId)) {
+			this.instance.log('warn', 'Set Audio Link Mode: No active Mic audio link on this device')
+			return
+		}
+		try {
+			await this.updateAudioLink({ audiolinkId: audiolinkId!, modeId })
+			this.instance.log('debug', `Set Mic audio link ${audiolinkId} mode to ${modeId}`)
+		} catch (error) {
+			this.instance.log('warn', `Set Audio Link Mode: Failed to update Mic link: ${error}`)
+		}
+	}
+
 	async routeAudioInputToMobileDevice(inputId: number, mtUid: number, modeId: number): Promise<void> {
 		const audioInput = this.state.audioInputs.get(inputId)
 		const mobileDevice = this.state.mobileDevices.get(mtUid)

@@ -869,6 +869,64 @@ export function UpdateActions(self: SpecteraInstance): void {
 		},
 	}
 
+	actions['setMobileDeviceIemAudioLinkMode'] = {
+		name: 'Mobile Device - Set IEM Audio Link Mode',
+		description: 'Set the mode of an active IEM audio link on an SEK.',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'serial',
+				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
+				choices: sekMobileDeviceChoices,
+				allowCustom: true,
+			},
+			{
+				type: 'dropdown',
+				label: 'Link Mode',
+				id: 'modeId',
+				choices: getChoicesFromEnum(IemAudiolinkMode),
+				default: IemAudiolinkMode['LIVE (Stereo)'],
+			},
+		],
+		callback: async (action, context) => {
+			if (!self.api) return
+			const serial = await context.parseVariablesInString(action.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
+			if (!device) return
+			await self.api.setMobileDeviceAudioLinkMode(device.mtUid, 'iem', Number(action.options.modeId))
+		},
+	}
+
+	actions['setMobileDeviceMicAudioLinkMode'] = {
+		name: 'Mobile Device - Set Mic Audio Link Mode',
+		description: 'Set the mode of an active Mic audio link on a mobile device.',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'serial',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
+				choices: mobileDeviceChoices,
+				allowCustom: true,
+			},
+			{
+				type: 'dropdown',
+				label: 'Link Mode',
+				id: 'modeId',
+				choices: getChoicesFromEnum(MicAudiolinkMode),
+				default: MicAudiolinkMode['LIVE (Mono)'],
+			},
+		],
+		callback: async (action, context) => {
+			if (!self.api) return
+			const serial = await context.parseVariablesInString(action.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
+			if (!device) return
+			await self.api.setMobileDeviceAudioLinkMode(device.mtUid, 'mic', Number(action.options.modeId))
+		},
+	}
+
 	actions['routeMobileDeviceToAudioOutput'] = {
 		name: 'Audio I/O - Route Mobile Device to Output',
 		options: [
