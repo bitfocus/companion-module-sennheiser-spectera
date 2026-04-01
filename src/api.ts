@@ -79,7 +79,9 @@ export class SpecteraApi extends EventEmitter {
 	private readonly requestQueue: { add: <T>(fn: () => Promise<T>) => Promise<T> }
 	private destroyed = false
 	private reconnectTimer: ReturnType<typeof setTimeout> | null = null
+	private reconnectAttempt = 0
 	private heartbeatInterval: ReturnType<typeof setInterval> | null = null
+	private lastSSEEventTime = 0
 
 	constructor(instance: SpecteraInstance, state: SpecteraState, host: string, password: string) {
 		super()
@@ -90,6 +92,8 @@ export class SpecteraApi extends EventEmitter {
 		this.dispatcher = new Agent({
 			connect: {
 				rejectUnauthorized: false,
+				keepAlive: true,
+				keepAliveInitialDelay: 10000,
 			},
 		})
 		this.requestQueue = new (PQueue as any)({
@@ -319,6 +323,17 @@ export class SpecteraApi extends EventEmitter {
 		if (this.destroyed) return
 		try {
 			await this.getBaseStationState()
+			// Detect silent SSE stream death
+			if (this.lastSSEEventTime > 0 && Date.now() - this.lastSSEEventTime > 60000) {
+				this.instance.log('warn', 'No SSE events received in 60s, reconnecting')
+				this.stopHeartbeat()
+				if (this.abortController) {
+					this.abortController.abort()
+					this.abortController = null
+				}
+				this.scheduleReconnect()
+				return
+			}
 		} catch (_err) {
 			this.instance.log('warn', 'Connection lost to Spectera.')
 			this.stopHeartbeat()
@@ -344,27 +359,28 @@ export class SpecteraApi extends EventEmitter {
 		this.stopHeartbeat()
 		this.instance.updateStatus(InstanceStatus.ConnectionFailure)
 
-		this.reconnectTimer = setTimeout(() => void this.runReconnect(), 5000)
+		const delay = Math.min(500 * Math.pow(2, this.reconnectAttempt), 30000)
+		this.reconnectAttempt++
+		this.instance.log('debug', `Scheduling reconnect in ${delay}ms (attempt ${this.reconnectAttempt})`)
+		this.reconnectTimer = setTimeout(() => void this.runReconnect(), delay)
 	}
 
 	private async runReconnect(): Promise<void> {
 		this.reconnectTimer = null
 		if (this.destroyed) return
 		try {
-			// Clean up old subscription before reconnecting
+			// Clean up old subscription (fire-and-forget, don't block reconnect)
 			if (this.sessionUUID) {
-				try {
-					await this.sendRequest('DELETE', `/ssc/state/subscriptions/${this.sessionUUID}`)
-				} catch (_err) {
-					this.instance.log('debug', 'Failed to delete old subscription during reconnect (may already be expired)')
-				}
+				const oldUUID = this.sessionUUID
 				this.sessionUUID = null
+				this.sendRequest('DELETE', `/ssc/state/subscriptions/${oldUUID}`).catch(() => {})
 			}
 
 			await this.performLogin()
 			await this.subscribe()
 			await this.fetchInitialState()
 			this.startHeartbeat()
+			this.reconnectAttempt = 0
 			this.instance.updateStatus(InstanceStatus.Ok)
 			this.instance.log('info', 'Reconnected to Spectera successfully')
 		} catch (err) {
@@ -407,6 +423,7 @@ export class SpecteraApi extends EventEmitter {
 			this.processStream(reader)
 				.then(() => {
 					if (!this.destroyed) {
+						this.stopHeartbeat()
 						this.scheduleReconnect()
 					}
 				})
@@ -414,6 +431,7 @@ export class SpecteraApi extends EventEmitter {
 					if (err.name !== 'AbortError') {
 						this.instance.log('error', `SSE Stream error: ${err.message}`)
 						if (!this.destroyed) {
+							this.stopHeartbeat()
 							this.scheduleReconnect()
 						}
 					}
@@ -443,6 +461,7 @@ export class SpecteraApi extends EventEmitter {
 	}
 
 	private handleSSEEvent(eventString: string): void {
+		this.lastSSEEventTime = Date.now()
 		const lines = eventString.split('\n')
 		let eventType = 'message'
 		let data = ''
