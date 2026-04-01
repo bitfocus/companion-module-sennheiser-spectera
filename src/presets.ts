@@ -1084,6 +1084,15 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				steps: [
 					{
 						down: [
+							/* {
+								actionId: 'copyAllMobileDeviceSettings',
+								options: {
+									sourceSerial: copyDevice.serial,
+									targetSerial: device.serial,
+								},
+							}, */
+						],
+						3000: [
 							{
 								actionId: 'copyAllMobileDeviceSettings',
 								options: {
