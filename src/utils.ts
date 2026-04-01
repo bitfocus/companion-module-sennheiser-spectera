@@ -54,9 +54,14 @@ export function getMobileDeviceChoices(state: SpecteraState, filterType?: MtType
 	return choices
 }
 
-// Mobile device display name: alphanumeric plus * + -, max length 16 characters
+// Mobile device display name: allowed charset, max 16 characters (spaces count).
+const MOBILE_DEVICE_NAME_ALLOWED = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-+=*/;<>#|,. \u0020'
+
 export function sanitizeMobileDeviceName(raw: string): string {
-	return raw.replace(/[^A-Za-z0-9*+-]/g, '').slice(0, 16)
+	return [...raw]
+		.filter((c) => MOBILE_DEVICE_NAME_ALLOWED.includes(c))
+		.join('')
+		.slice(0, 16)
 }
 
 // Format battery runtime from minutes to "H:MM". Returns 'Off' for undefined or -1. */

@@ -1206,7 +1206,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 		presets[`${deviceVariableId}_OverallStatus`] = {
 			type: 'button',
 			category: `${category}s`,
-			name: `${device.name} Overall Status`,
+			name: `${device.name} Connection + Battery Status`,
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
@@ -1230,12 +1230,52 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			],
 			feedbacks: [
 				{
-					feedbackId: 'mobileDeviceConnected',
+					feedbackId: 'mobileDeviceBatteryLevel',
+					options: {
+						serial: device.serial,
+						threshold: 100,
+					},
+					style: {
+						bgcolor: Color.SpecteraGreen,
+					},
+				},
+				{
+					feedbackId: 'mobileDeviceBatteryLevel',
+					options: {
+						serial: device.serial,
+						threshold: 70,
+					},
+					style: {
+						bgcolor: Color.DarkGreen,
+					},
+				},
+				{
+					feedbackId: 'mobileDeviceBatteryLevel',
+					options: {
+						serial: device.serial,
+						threshold: 40,
+					},
+					style: {
+						bgcolor: Color.SpecteraOrange,
+					},
+				},
+				{
+					feedbackId: 'mobileDeviceBatteryLow',
 					options: {
 						serial: device.serial,
 					},
 					style: {
-						bgcolor: Color.SpecteraGreen,
+						bgcolor: Color.SpecteraRed,
+					},
+				},
+				{
+					feedbackId: 'mobileDeviceState',
+					options: {
+						serial: device.serial,
+						state: MtState.Disconnected,
+					},
+					style: {
+						bgcolor: Color.Black,
 					},
 				},
 			],
