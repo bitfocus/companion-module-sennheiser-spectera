@@ -534,6 +534,37 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				},
 			],
 		}
+		presets[`dad${port}Temperature`] = {
+			type: 'button',
+			category: 'RF Configuration',
+			name: `DAD ${dad} Temperature`,
+			style: {
+				bgcolor: Color.Black,
+				color: Color.White,
+				text: `DAD ${dad}\\n\n$(spectera:dad_${port}_temp_celsius) °C`,
+				size: 11,
+				show_topbar: false,
+			},
+			steps: [
+				{
+					down: [],
+					up: [],
+				},
+			],
+			feedbacks: [
+				{
+					feedbackId: 'dadTemperature',
+					options: {
+						dad: port,
+						temperatureUnit: 'celsius',
+						temperature: 25,
+					},
+					style: {
+						bgcolor: Color.SpecteraGreen,
+					},
+				},
+			],
+		}
 		presets[`dad${port}BindingSetOff`] = {
 			type: 'button',
 			category: 'RF Configuration',
@@ -1185,7 +1216,15 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			},
 			steps: [
 				{
-					down: [],
+					down: [
+						{
+							actionId: 'mobileDeviceIdentify',
+							options: {
+								serial: device.serial,
+								identify: 'true',
+							},
+						},
+					],
 					up: [],
 				},
 			],
@@ -1215,7 +1254,15 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			},
 			steps: [
 				{
-					down: [],
+					down: [
+						{
+							actionId: 'mobileDeviceIdentify',
+							options: {
+								serial: device.serial,
+								identify: 'true',
+							},
+						},
+					],
 					up: [],
 				},
 			],
@@ -1245,7 +1292,15 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			},
 			steps: [
 				{
-					down: [],
+					down: [
+						{
+							actionId: 'mobileDeviceIdentify',
+							options: {
+								serial: device.serial,
+								identify: 'true',
+							},
+						},
+					],
 					up: [],
 				},
 			],
@@ -1404,7 +1459,15 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			},
 			steps: [
 				{
-					down: [],
+					down: [
+						{
+							actionId: 'mobileDeviceIdentify',
+							options: {
+								serial: device.serial,
+								identify: 'true',
+							},
+						},
+					],
 					up: [],
 				},
 			],
@@ -1457,7 +1520,15 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			},
 			steps: [
 				{
-					down: [],
+					down: [
+						{
+							actionId: 'mobileDeviceIdentify',
+							options: {
+								serial: device.serial,
+								identify: 'true',
+							},
+						},
+					],
 					up: [],
 				},
 			],
@@ -1529,7 +1600,15 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				},
 				steps: [
 					{
-						down: [],
+						down: [
+							{
+								actionId: 'mobileDeviceIdentify',
+								options: {
+									serial: device.serial,
+									identify: 'true',
+								},
+							},
+						],
 						up: [],
 					},
 				],
@@ -1590,7 +1669,15 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				},
 				steps: [
 					{
-						down: [],
+						down: [
+							{
+								actionId: 'mobileDeviceIdentify',
+								options: {
+									serial: device.serial,
+									identify: 'true',
+								},
+							},
+						],
 						up: [],
 					},
 				],
@@ -1823,7 +1910,15 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				},
 				steps: [
 					{
-						down: [],
+						down: [
+							{
+								actionId: 'mobileDeviceIdentify',
+								options: {
+									serial: device.serial,
+									identify: 'true',
+								},
+							},
+						],
 						up: [],
 						rotate_left: [
 							{
@@ -1894,7 +1989,15 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			},
 			steps: [
 				{
-					down: [],
+					down: [
+						{
+							actionId: 'mobileDeviceIdentify',
+							options: {
+								serial: device.serial,
+								identify: 'true',
+							},
+						},
+					],
 					up: [],
 				},
 			],

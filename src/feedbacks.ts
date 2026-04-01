@@ -383,6 +383,16 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				id: 'dad',
 			},
 			{
+				type: 'dropdown',
+				label: 'Temperature Unit',
+				choices: [
+					{ id: 'celsius', label: '°C' },
+					{ id: 'fahrenheit', label: '°F' },
+				],
+				default: 'celsius',
+				id: 'temperatureUnit',
+			},
+			{
 				type: 'textinput',
 				label: 'Temperature (°C)',
 				default: '25',
@@ -391,7 +401,12 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		],
 		callback: async (feedback) => {
 			const antennaTemperature = self.state.antennas.get(feedback.options.dad as AntennaPortId)?.temperature
-			return antennaTemperature === feedback.options.temperature
+			if (!antennaTemperature) return false
+			if (feedback.options.temperatureUnit === 'celsius') {
+				return antennaTemperature > (feedback.options.temperature as number)
+			} else {
+				return antennaTemperature > ((feedback.options.temperature as number) * 9) / 5 + 32
+			}
 		},
 	}
 	feedbacks['dadLedBrightness'] = {

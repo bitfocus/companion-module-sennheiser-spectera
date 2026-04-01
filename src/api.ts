@@ -325,7 +325,7 @@ export class SpecteraApi extends EventEmitter {
 			await this.getBaseStationState()
 			// Detect silent SSE stream death
 			if (this.lastSSEEventTime > 0 && Date.now() - this.lastSSEEventTime > 60000) {
-				this.instance.log('warn', 'No SSE events received in 60s, reconnecting')
+				this.instance.log('debug', 'No SSE events received in 60s, reconnecting')
 				this.stopHeartbeat()
 				if (this.abortController) {
 					this.abortController.abort()
