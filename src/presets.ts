@@ -1,6 +1,6 @@
 import { CompanionPresetDefinitions } from '@companion-module/base'
 import { SpecteraInstance } from './main.js'
-import { audioOutputChannelChoices, Color, STEREO_INPUT_OFFSET } from './utils.js'
+import { audioOutputChannelChoices, Color, getExistingMicAudiolinkModeFromState, STEREO_INPUT_OFFSET } from './utils.js'
 import {
 	RFChannels,
 	AntennaPortId,
@@ -1035,7 +1035,8 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								options: {
 									serial: device.serial,
 									outputId: output.outputId,
-									modeId: MicAudiolinkMode['LIVE (Mono)'],
+									modeId: getExistingMicAudiolinkModeFromState(self.state, device) ?? MicAudiolinkMode['LIVE (Mono)'],
+									useExisting: true,
 								},
 							},
 						],

@@ -1095,7 +1095,17 @@ export class SpecteraApi extends EventEmitter {
 
 		let audiolinkId = mobileDevice.micAudiolinkId
 		if (isActiveAudioLinkId(audiolinkId)) {
-			this.instance.log('debug', `Routing: Using existing Audio Link ${audiolinkId} from Mobile Device`)
+			const existingId = audiolinkId!
+			this.instance.log('debug', `Routing: Using existing Audio Link ${existingId} from Mobile Device`)
+			const linkState = this.state.audioLinks.get(existingId)
+			if (linkState === undefined || Number(linkState.modeId) !== Number(modeId)) {
+				try {
+					await this.updateAudioLink({ audiolinkId: existingId, modeId })
+					this.instance.log('debug', `Routing: Updated Audio Link ${existingId} mode to ${modeId}`)
+				} catch (error) {
+					this.instance.log('warn', `Audio Routing: Failed to update Audio Link mode: ${error}`)
+				}
+			}
 		} else {
 			if (mobileDevice.rfChannelId === undefined) {
 				this.instance.log('warn', 'Audio Routing: Mobile Device has no RF Channel assigned')

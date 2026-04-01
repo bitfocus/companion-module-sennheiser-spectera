@@ -26,6 +26,7 @@ import {
 	getAudioLinkChoices,
 	getChoicesFromEnum,
 	getDeviceBySerial,
+	getExistingMicAudiolinkModeFromState,
 	getMobileDeviceChoices,
 	sanitizeMobileDeviceName,
 	STEREO_INPUT_OFFSET,
@@ -1018,6 +1019,13 @@ export function UpdateActions(self: SpecteraInstance): void {
 				choices: getChoicesFromEnum(MicAudiolinkMode),
 				default: MicAudiolinkMode['LIVE (Mono)'],
 				id: 'modeId',
+				tooltip: 'This will be the default mode if "Use Link Mode If Present" is not enabled.',
+			},
+			{
+				type: 'checkbox',
+				label: 'Use Link Mode If Present',
+				default: true,
+				id: 'useExisting',
 			},
 		],
 		callback: async (action, context) => {
@@ -1026,7 +1034,10 @@ export function UpdateActions(self: SpecteraInstance): void {
 			const device = getDeviceBySerial(self.state, serial)
 			if (!device) return
 			const outputId = Number(action.options.outputId)
-			const modeId = Number(action.options.modeId)
+			const defaultModeId = Number(action.options.modeId)
+			const useExisting = Boolean(action.options.useExisting)
+			const existingModeId = getExistingMicAudiolinkModeFromState(self.state, device)
+			const modeId = useExisting && existingModeId !== undefined ? existingModeId : defaultModeId
 			const outputLinkId = self.state.audioOutputs.get(outputId)?.micAudiolinkId
 			const deviceLinkId = device.micAudiolinkId
 
@@ -1038,8 +1049,35 @@ export function UpdateActions(self: SpecteraInstance): void {
 				outputLinkId === deviceLinkId
 
 			if (alreadyRouted) {
+				const micLinkId = deviceLinkId
 				await self.api.setAudioOutput(outputId, { micAudiolinkId: -1 })
+
+				const activeLink = (id: number | undefined): boolean => id !== undefined && id > -1
+				const linkStillUsedByOutput = [...self.state.audioOutputs.values()].some(
+					(o) => o.outputId !== outputId && activeLink(o.micAudiolinkId) && o.micAudiolinkId === micLinkId,
+				)
+				const linkStillUsedByDevice = [...self.state.mobileDevices.values()].some(
+					(d) => d.mtUid !== device.mtUid && activeLink(d.micAudiolinkId) && d.micAudiolinkId === micLinkId,
+				)
+
+				const clearLinkMode = activeLink(micLinkId) && !linkStillUsedByOutput && !linkStillUsedByDevice
+				if (clearLinkMode) {
+					await self.api.updateAudioLink({
+						audiolinkId: micLinkId,
+						modeId: MicAudiolinkMode['Empty (Mono)'],
+					})
+				}
+				self.log(
+					'debug',
+					clearLinkMode
+						? `Instrument Switch: ${device.name} removed from output ${outputId + 1}; mic link ${micLinkId} was unused, set to Empty`
+						: `Instrument Switch: ${device.name} removed from output ${outputId + 1}; mic link ${micLinkId} left as-is (still in use elsewhere)`,
+				)
 			} else {
+				self.log(
+					'debug',
+					`Instrument Switch: ${device.name} routed to output ${outputId + 1} (mic link mode ${modeId})`,
+				)
 				await self.api.routeMobileDeviceToAudioOutput(device.mtUid, outputId, modeId)
 			}
 		},

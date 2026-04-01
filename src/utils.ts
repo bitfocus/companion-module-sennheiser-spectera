@@ -1,6 +1,6 @@
 import { combineRgb } from '@companion-module/base'
 import { SpecteraState } from './state.js'
-import { Antenna, MobileDevice, MtType, RfChannel, RFChannels } from './types.js'
+import { Antenna, AudiolinkModeId, MobileDevice, MtType, RfChannel, RFChannels } from './types.js'
 
 export const Color = {
 	Black: combineRgb(0, 0, 0),
@@ -74,6 +74,19 @@ export function getDeviceBySerial(state: SpecteraState, serial: string): MobileD
 	if (!serial) return undefined
 	for (const device of state.mobileDevices.values()) {
 		if (device.serial === serial) return device
+	}
+	return undefined
+}
+
+//Mic link `modeId` from module state for this device only (not the selected output).
+export function getExistingMicAudiolinkModeFromState(state: SpecteraState, device: MobileDevice): number | undefined {
+	const devLinkId = device.micAudiolinkId
+	if (devLinkId !== undefined && devLinkId > -1) {
+		const mode = state.audioLinks.get(devLinkId)?.modeId
+		if (mode !== undefined) {
+			if (mode === AudiolinkModeId['Empty (Mono)']) return undefined
+			return Number(mode)
+		}
 	}
 	return undefined
 }
