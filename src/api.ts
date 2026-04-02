@@ -23,7 +23,7 @@ import type {
 	InterfaceStatusMadi,
 	InterfaceStatusWordclock,
 } from './types.js'
-import { MtType } from './types.js'
+import { MtType, MicAudiolinkMode } from './types.js'
 import { getAntennaFrequency } from './utils.js'
 import type { SpecteraState } from './state.js'
 import { Agent, Dispatcher } from 'undici'
@@ -1154,6 +1154,15 @@ export class SpecteraApi extends EventEmitter {
 							this.instance.log('warn', `Audio Routing: Failed to unlink device ${otherDevice.mtUid}: ${error}`)
 						}
 					}
+				}
+				try {
+					await this.updateAudioLink({
+						audiolinkId: oldLinkID,
+						modeId: MicAudiolinkMode['None'],
+					})
+					this.instance.log('debug', `Audio Routing: Set unused link ${oldLinkID} to Empty`)
+				} catch (error) {
+					this.instance.log('warn', `Audio Routing: Failed to clear old link ${oldLinkID}: ${error}`)
 				}
 			}
 		}

@@ -101,8 +101,8 @@ export enum AudiolinkModeId {
 	'LIVE Link Density (Mono)' = 3,
 	'MAX Link Density (Mono)' = 2,
 	'MAX Range (Mono)' = 1,
-	'Empty (Stereo)' = 1002,
-	'Empty (Mono)' = 1001,
+	'None' = 1002,
+	'None' = 1001,
 }
 
 export enum IemAudiolinkMode {
@@ -114,8 +114,8 @@ export enum IemAudiolinkMode {
 	'LIVE Link Density (Mono)' = 3,
 	'MAX Link Density (Mono)' = 2,
 	'MAX Range (Mono)' = 1,
-	'Empty (Stereo)' = 1002,
-	'Empty (Mono)' = 1001,
+	'None' = 1002,
+	'None' = 1001,
 }
 
 export enum MicAudiolinkMode {
@@ -126,7 +126,7 @@ export enum MicAudiolinkMode {
 	'LIVE Link Density (Mono)' = 3,
 	'MAX Link Density (Mono)' = 2,
 	'MAX Range (Mono)' = 1,
-	'Empty (Mono)' = 1001,
+	'None' = 1001,
 }
 
 export enum MicLineSelection {

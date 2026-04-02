@@ -1019,13 +1019,15 @@ export function UpdateActions(self: SpecteraInstance): void {
 				choices: getChoicesFromEnum(MicAudiolinkMode),
 				default: MicAudiolinkMode['LIVE (Mono)'],
 				id: 'modeId',
-				tooltip: 'This will be the default mode if "Use Link Mode If Present" is not enabled.',
+				tooltip:
+					'Fallback mode used when "Preserve Output Link Mode" is disabled, or when the output has no existing link to preserve.',
 			},
 			{
 				type: 'checkbox',
-				label: 'Use Link Mode If Present',
+				label: 'Preserve Output Link Mode',
 				default: true,
 				id: 'useExisting',
+				tooltip: 'When enabled and the output already has a link from another device, the link mode is preserved.',
 			},
 		],
 		callback: async (action, context) => {
@@ -1036,9 +1038,8 @@ export function UpdateActions(self: SpecteraInstance): void {
 			const outputId = Number(action.options.outputId)
 			const defaultModeId = Number(action.options.modeId)
 			const useExisting = Boolean(action.options.useExisting)
-			const existingModeId = getExistingMicAudiolinkModeFromState(self.state, device)
-			const modeId = useExisting && existingModeId !== undefined ? existingModeId : defaultModeId
 			const outputLinkId = self.state.audioOutputs.get(outputId)?.micAudiolinkId
+			const outputHasActiveLink = outputLinkId !== undefined && outputLinkId > -1
 			const deviceLinkId = device.micAudiolinkId
 
 			const alreadyRouted =
@@ -1064,7 +1065,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 				if (clearLinkMode) {
 					await self.api.updateAudioLink({
 						audiolinkId: micLinkId,
-						modeId: MicAudiolinkMode['Empty (Mono)'],
+						modeId: MicAudiolinkMode['None'],
 					})
 				}
 				self.log(
@@ -1074,9 +1075,25 @@ export function UpdateActions(self: SpecteraInstance): void {
 						: `Instrument Switch: ${device.name} removed from output ${outputId + 1}; mic link ${micLinkId} left as-is (still in use elsewhere)`,
 				)
 			} else {
+				// Resolve mode: device's existing mode > output's existing link mode > default
+				let modeId = defaultModeId
+				let modeSource = 'default'
+				if (useExisting) {
+					const deviceModeId = getExistingMicAudiolinkModeFromState(self.state, device)
+					if (deviceModeId !== undefined) {
+						modeId = deviceModeId
+						modeSource = `device ${device.name}`
+					} else if (outputHasActiveLink) {
+						const outputLink = self.state.audioLinks.get(outputLinkId)
+						if (outputLink) {
+							modeId = Number(outputLink.modeId)
+							modeSource = `output link ${outputLinkId}`
+						}
+					}
+				}
 				self.log(
 					'debug',
-					`Instrument Switch: ${device.name} routed to output ${outputId + 1} (mic link mode ${modeId})`,
+					`Instrument Switch: ${device.name} routed to output ${outputId + 1} (mode ${modeId} from ${modeSource})`,
 				)
 				await self.api.routeMobileDeviceToAudioOutput(device.mtUid, outputId, modeId)
 			}

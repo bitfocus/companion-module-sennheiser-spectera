@@ -84,7 +84,7 @@ export function getExistingMicAudiolinkModeFromState(state: SpecteraState, devic
 	if (devLinkId !== undefined && devLinkId > -1) {
 		const mode = state.audioLinks.get(devLinkId)?.modeId
 		if (mode !== undefined) {
-			if (mode === AudiolinkModeId['Empty (Mono)']) return undefined
+			if (mode === AudiolinkModeId['None']) return undefined
 			return Number(mode)
 		}
 	}
