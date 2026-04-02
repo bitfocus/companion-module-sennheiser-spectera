@@ -357,7 +357,6 @@ export class SpecteraApi extends EventEmitter {
 		if (this.reconnectTimer !== null) return
 
 		this.stopHeartbeat()
-		this.instance.updateStatus(InstanceStatus.ConnectionFailure)
 
 		const delay = Math.min(500 * Math.pow(2, this.reconnectAttempt), 30000)
 		this.reconnectAttempt++
@@ -373,7 +372,12 @@ export class SpecteraApi extends EventEmitter {
 			if (this.sessionUUID) {
 				const oldUUID = this.sessionUUID
 				this.sessionUUID = null
-				this.sendRequest('DELETE', `/ssc/state/subscriptions/${oldUUID}`).catch(() => {})
+				fetch(`https://${this.host}:443/api/ssc/state/subscriptions/${oldUUID}`, {
+					method: 'DELETE',
+					headers: { Authorization: this.getAuthHeader() },
+					signal: AbortSignal.timeout(5000),
+					dispatcher: this.dispatcher,
+				} as any).catch(() => {})
 			}
 
 			await this.performLogin()
@@ -385,6 +389,7 @@ export class SpecteraApi extends EventEmitter {
 			this.instance.log('info', 'Reconnected to Spectera successfully')
 		} catch (err) {
 			this.instance.log('debug', `Reconnect failed: ${err instanceof Error ? err.message : String(err)}`)
+			this.instance.updateStatus(InstanceStatus.ConnectionFailure)
 			this.scheduleReconnect()
 		}
 	}
@@ -429,7 +434,7 @@ export class SpecteraApi extends EventEmitter {
 				})
 				.catch((err) => {
 					if (err.name !== 'AbortError') {
-						this.instance.log('error', `SSE Stream error: ${err.message}`)
+						this.instance.log('debug', `SSE Stream error: ${err.message}`)
 						if (!this.destroyed) {
 							this.stopHeartbeat()
 							this.scheduleReconnect()
