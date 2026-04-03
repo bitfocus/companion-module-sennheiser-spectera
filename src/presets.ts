@@ -585,10 +585,32 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					options: {
 						dad: port,
 						temperatureUnit: 'celsius',
-						temperature: 25,
+						temperature: 0,
 					},
 					style: {
 						bgcolor: Color.SpecteraGreen,
+					},
+				},
+				{
+					feedbackId: 'dadTemperature',
+					options: {
+						dad: port,
+						temperatureUnit: 'celsius',
+						temperature: 50,
+					},
+					style: {
+						bgcolor: Color.SpecteraYellow,
+					},
+				},
+				{
+					feedbackId: 'dadTemperature',
+					options: {
+						dad: port,
+						temperatureUnit: 'celsius',
+						temperature: 100,
+					},
+					style: {
+						bgcolor: Color.SpecteraRed,
 					},
 				},
 			],
