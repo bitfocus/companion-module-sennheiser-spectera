@@ -101,7 +101,7 @@ export enum AudiolinkModeId {
 	'LIVE Link Density (Mono)' = 3,
 	'MAX Link Density (Mono)' = 2,
 	'MAX Range (Mono)' = 1,
-	'None' = 1002,
+	'None (Stereo)' = 1002,
 	'None' = 1001,
 }
 
@@ -114,7 +114,7 @@ export enum IemAudiolinkMode {
 	'LIVE Link Density (Mono)' = 3,
 	'MAX Link Density (Mono)' = 2,
 	'MAX Range (Mono)' = 1,
-	'None' = 1002,
+	'None (Stereo)' = 1002,
 	'None' = 1001,
 }
 
