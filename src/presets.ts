@@ -128,13 +128,27 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							options: {
 								rfChannel: channelIndex,
 								frequency: '',
+								requireConfirmation: true,
 							},
 						},
 					],
 					up: [],
 				},
 			],
-			feedbacks: [],
+			feedbacks: [
+				{
+					feedbackId: 'confirmPending' as const,
+					options: {
+						confirmKey: `rfFrequency:frequency=,rfChannel=${channelIndex}`,
+					},
+					style: {
+						bgcolor: Color.SpecteraRed,
+						color: Color.White,
+						text: `${channelLabel}\\nBACKUP FREQ\\nCONFIRM?`,
+						size: 11,
+					},
+				},
+			],
 		}
 
 		presets[`rf${channelIndex}TxPowerInfo`] = {
@@ -868,6 +882,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							options: {
 								inputId: allInputIds,
 								source,
+								requireConfirmation: true,
 							},
 						},
 					],
@@ -883,6 +898,18 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					},
 					style: {
 						bgcolor: Color.SpecteraBlue,
+					},
+				},
+				{
+					feedbackId: 'confirmPending' as const,
+					options: {
+						confirmKey: `setAudioInputSource:inputId=${allInputIds},source=${source}`,
+					},
+					style: {
+						bgcolor: Color.SpecteraRed,
+						color: Color.White,
+						text: `ALL INPUTS\\nto ${sourceLabel}\\nCONFIRM?`,
+						size: 11,
 					},
 				},
 			],
@@ -1132,20 +1159,12 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				steps: [
 					{
 						down: [
-							/* {
-								actionId: 'copyAllMobileDeviceSettings',
-								options: {
-									sourceSerial: copyDevice.serial,
-									targetSerial: device.serial,
-								},
-							}, */
-						],
-						3000: [
 							{
 								actionId: 'copyAllMobileDeviceSettings',
 								options: {
 									sourceSerial: copyDevice.serial,
 									targetSerial: device.serial,
+									requireConfirmation: true,
 								},
 							},
 						],
@@ -1163,6 +1182,18 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						},
 					},
 					...mobileDisconnectedFeedback(copyDevice.serial),
+					{
+						feedbackId: 'confirmPending' as const,
+						options: {
+							confirmKey: `copyAllMobileDeviceSettings:sourceSerial=${copyDevice.serial},targetSerial=${device.serial}`,
+						},
+						style: {
+							bgcolor: Color.SpecteraRed,
+							color: Color.White,
+							text: `$(spectera:${copyDevice.type}_${copyDevice.serial}_name)\\nto\\n$(spectera:${device.type}_${device.serial}_name)\\nCONFIRM?`,
+							size: 11,
+						},
+					},
 				],
 			}
 		}

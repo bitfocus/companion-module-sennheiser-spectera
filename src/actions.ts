@@ -182,10 +182,25 @@ export function UpdateActions(self: SpecteraInstance): void {
 				id: 'frequency',
 				useVariables: true,
 			},
+			{
+				type: 'checkbox',
+				label: 'Require Confirmation',
+				id: 'requireConfirmation',
+				default: true,
+				tooltip:
+					'This will require a double press of the button to confirm the action. It will timeout after 5 seconds if not confirmed.',
+			},
 		],
 		description: 'Set the RF Channel Frequency',
 		callback: async (action) => {
 			if (!self.api) return
+			if (action.options.requireConfirmation) {
+				const key = self.confirmationKey('rfFrequency', {
+					rfChannel: action.options.rfChannel,
+					frequency: action.options.frequency,
+				})
+				if (!self.confirmAction(key)) return
+			}
 			await self.api.setRfChannel(
 				action.options.rfChannel as string,
 				{
@@ -216,6 +231,14 @@ export function UpdateActions(self: SpecteraInstance): void {
 				default: InputSource.Dante,
 				id: 'source',
 			},
+			{
+				type: 'checkbox',
+				label: 'Require Confirmation',
+				id: 'requireConfirmation',
+				default: true,
+				tooltip:
+					'This will require a double press of the button to confirm the action. It will timeout after 5 seconds if not confirmed.',
+			},
 		],
 		description: 'Set the Audio Input Source',
 		callback: async (action) => {
@@ -223,6 +246,13 @@ export function UpdateActions(self: SpecteraInstance): void {
 				return
 			}
 			if (!self.api) return
+			if (action.options.requireConfirmation) {
+				const key = self.confirmationKey('setAudioInputSource', {
+					inputId: action.options.inputId,
+					source: action.options.source,
+				})
+				if (!self.confirmAction(key)) return
+			}
 			for (const inputId of action.options.inputId as number[]) {
 				await self.api.setAudioInput(inputId, {
 					source: action.options.source as InputSource,
@@ -314,15 +344,25 @@ export function UpdateActions(self: SpecteraInstance): void {
 				default: RFChannels.Off,
 				id: 'rfChannel',
 			},
+			{
+				type: 'checkbox',
+				label: 'Require Confirmation',
+				id: 'requireConfirmation',
+				default: true,
+				tooltip:
+					'This will require a double press of the button to confirm the action. It will timeout after 5 seconds if not confirmed.',
+			},
 		],
 		description: 'Set the DAD RF Channel',
 		callback: async (action) => {
 			if (!self.api) return
-			const key = self.confirmationKey('dadRfBinding', {
-				dad: action.options.dad,
-				rfChannel: action.options.rfChannel,
-			})
-			if (!self.confirmAction(key)) return
+			if (action.options.requireConfirmation) {
+				const key = self.confirmationKey('dadRfBinding', {
+					dad: action.options.dad,
+					rfChannel: action.options.rfChannel,
+				})
+				if (!self.confirmAction(key)) return
+			}
 			await self.api.setAntenna(
 				action.options.dad as AntennaPortId,
 				{
@@ -1171,11 +1211,26 @@ export function UpdateActions(self: SpecteraInstance): void {
 				choices: mobileDeviceChoices,
 				allowCustom: true,
 			},
+			{
+				type: 'checkbox',
+				label: 'Require Confirmation',
+				id: 'requireConfirmation',
+				default: true,
+				tooltip:
+					'This will require a double press of the button to confirm the action. It will timeout after 5 seconds if not confirmed.',
+			},
 		],
 		description:
 			'Copy all shared settings from one Mobile Device to another, including copying the IEM link and moving the mic links, if present.',
 		callback: async (action, context) => {
 			if (!self.api) return
+			if (action.options.requireConfirmation) {
+				const key = self.confirmationKey('copyAllMobileDeviceSettings', {
+					sourceSerial: action.options.sourceSerial,
+					targetSerial: action.options.targetSerial,
+				})
+				if (!self.confirmAction(key)) return
+			}
 			const sourceSerial = await context.parseVariablesInString(action.options.sourceSerial as string)
 			const targetSerial = await context.parseVariablesInString(action.options.targetSerial as string)
 			const sourceDevice = getDeviceBySerial(self.state, sourceSerial)
