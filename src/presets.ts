@@ -616,6 +616,18 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						bgcolor: Color.SpecteraYellow,
 					},
 				},
+				{
+					feedbackId: 'confirmPending' as const,
+					options: {
+						confirmKey: `dadRfBinding:dad=${port},rfChannel=${RFChannels['Off']}`,
+					},
+					style: {
+						bgcolor: Color.SpecteraRed,
+						color: Color.White,
+						text: `DAD ${dad}\\nto OFF\\nCONFIRM?`,
+						size: 11,
+					},
+				},
 			],
 		}
 		presets[`dad${port}BindingSetRF1`] = {
@@ -653,6 +665,18 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					},
 					style: {
 						bgcolor: Color.SpecteraBlue,
+					},
+				},
+				{
+					feedbackId: 'confirmPending' as const,
+					options: {
+						confirmKey: `dadRfBinding:dad=${port},rfChannel=${RFChannels['RF Channel 1']}`,
+					},
+					style: {
+						bgcolor: Color.SpecteraRed,
+						color: Color.White,
+						text: `DAD ${dad}\\nto RF 1\\nCONFIRM?`,
+						size: 11,
 					},
 				},
 			],
@@ -694,6 +718,18 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						bgcolor: Color.SpecteraBlue,
 					},
 				},
+				{
+					feedbackId: 'confirmPending' as const,
+					options: {
+						confirmKey: `dadRfBinding:dad=${port},rfChannel=${RFChannels['RF Channel 2']}`,
+					},
+					style: {
+						bgcolor: Color.SpecteraRed,
+						color: Color.White,
+						text: `DAD ${dad}\\nto RF 2\\nCONFIRM?`,
+						size: 11,
+					},
+				},
 			],
 		}
 		presets[`dad${port}BindingSetScan`] = {
@@ -731,6 +767,18 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					},
 					style: {
 						bgcolor: Color.SpecteraYellow,
+					},
+				},
+				{
+					feedbackId: 'confirmPending' as const,
+					options: {
+						confirmKey: `dadRfBinding:dad=${port},rfChannel=${RFChannels['Scan']}`,
+					},
+					style: {
+						bgcolor: Color.SpecteraRed,
+						color: Color.White,
+						text: `DAD ${dad}\\nto SCAN\\nCONFIRM?`,
+						size: 11,
 					},
 				},
 			],

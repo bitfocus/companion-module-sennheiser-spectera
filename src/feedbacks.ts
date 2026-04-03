@@ -1840,5 +1840,27 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		},
 	}
 
+	feedbacks['confirmPending'] = {
+		type: 'boolean',
+		name: 'Confirm Pending',
+		description: 'Enabled when an action that matches the confirmation key is awaiting a second press',
+		defaultStyle: {
+			bgcolor: Color.SpecteraRed,
+			color: Color.White,
+			text: 'CONFIRM?',
+		},
+		options: [
+			{
+				type: 'textinput',
+				label: 'Confirmation Key',
+				id: 'confirmKey',
+				default: '',
+			},
+		],
+		callback: async (feedback) => {
+			return self.pendingConfirmations.has(feedback.options.confirmKey as string)
+		},
+	}
+
 	self.setFeedbackDefinitions(feedbacks)
 }

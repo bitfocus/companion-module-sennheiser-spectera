@@ -318,6 +318,11 @@ export function UpdateActions(self: SpecteraInstance): void {
 		description: 'Set the DAD RF Channel',
 		callback: async (action) => {
 			if (!self.api) return
+			const key = self.confirmationKey('dadRfBinding', {
+				dad: action.options.dad,
+				rfChannel: action.options.rfChannel,
+			})
+			if (!self.confirmAction(key)) return
 			await self.api.setAntenna(
 				action.options.dad as AntennaPortId,
 				{

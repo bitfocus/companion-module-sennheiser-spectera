@@ -13,6 +13,7 @@ export class SpecteraInstance extends InstanceBase<ModuleConfig, ModuleSecrets> 
 	secrets!: ModuleSecrets
 	api?: SpecteraApi
 	public readonly state = new SpecteraState()
+	public readonly pendingConfirmations = new Map<string, NodeJS.Timeout>()
 
 	constructor(internal: unknown) {
 		super(internal)
@@ -37,6 +38,10 @@ export class SpecteraInstance extends InstanceBase<ModuleConfig, ModuleSecrets> 
 	// When module gets deleted
 	async destroy(): Promise<void> {
 		this.log('debug', 'destroy')
+		for (const timeout of this.pendingConfirmations.values()) {
+			clearTimeout(timeout)
+		}
+		this.pendingConfirmations.clear()
 		await this.api?.disconnect()
 	}
 
@@ -87,6 +92,32 @@ export class SpecteraInstance extends InstanceBase<ModuleConfig, ModuleSecrets> 
 
 	updatePresets(): void {
 		UpdatePresets(this)
+	}
+
+	//Module Confirmation Functions
+	public confirmationKey(actionId: string, options: Record<string, unknown>): string {
+		const parts = Object.entries(options)
+			.sort(([a], [b]) => a.localeCompare(b))
+			.map(([k, v]) => `${k}=${v}`)
+		return `${actionId}:${parts.join(',')}`
+	}
+
+	//Generic confirm-or-execute helper. Returns true if action should execute (second press)
+	public confirmAction(key: string, timeoutMs = 5000): boolean {
+		const existing = this.pendingConfirmations.get(key)
+		if (existing !== undefined) {
+			clearTimeout(existing)
+			this.pendingConfirmations.delete(key)
+			this.checkFeedbacks('confirmPending')
+			return true
+		}
+		const timeout = setTimeout(() => {
+			this.pendingConfirmations.delete(key)
+			this.checkFeedbacks('confirmPending')
+		}, timeoutMs)
+		this.pendingConfirmations.set(key, timeout)
+		this.checkFeedbacks('confirmPending')
+		return false
 	}
 }
 
