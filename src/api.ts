@@ -82,6 +82,29 @@ export class SpecteraApi extends EventEmitter {
 	private reconnectAttempt = 0
 	private heartbeatInterval: ReturnType<typeof setInterval> | null = null
 	private lastSSEEventTime = 0
+	private subscribeStartTime = 0
+
+	private readonly subscriptionPaths = [
+		'/api/audio/inputs',
+		'/api/audio/outputs',
+		'/api/audio/links',
+		'/api/rf/channels',
+		'/api/rf/antennas',
+		'/api/mts/paired/all',
+		'/api/health/psu',
+		'/api/health/tempstateoverall',
+		'/api/health/fan/FAN_1/errorstate',
+		'/api/health/fan/FAN_2/errorstate',
+		'/api/health/fan/FAN_3/errorstate',
+		'/api/device/identity',
+		'/api/device/state',
+		'/api/device/site',
+		'/api/audio/levels',
+		'/api/audio/interface/audionetwork/status',
+		'/api/audio/interface/madi1/status',
+		'/api/audio/interface/madi2/status',
+		'/api/audio/interface/wordclock/status',
+	]
 
 	constructor(instance: SpecteraInstance, state: SpecteraState, host: string, password: string) {
 		super()
@@ -169,35 +192,29 @@ export class SpecteraApi extends EventEmitter {
 	}
 
 	async startMonitoring(): Promise<void> {
-		this.on('subscribed', () => {
-			this.setSubscriptionPaths([
-				'/api/audio/inputs',
-				'/api/audio/outputs',
-				'/api/audio/links',
-				'/api/rf/channels',
-				'/api/rf/antennas',
-				'/api/mts/paired/all',
-				'/api/health/psu',
-				'/api/health/tempstateoverall',
-				'/api/health/fan/FAN_1/errorstate',
-				'/api/health/fan/FAN_2/errorstate',
-				'/api/health/fan/FAN_3/errorstate',
-				'/api/device/identity',
-				'/api/device/state',
-				'/api/device/site',
-				'/api/audio/levels',
-				'/api/audio/interface/audionetwork/status',
-				'/api/audio/interface/madi1/status',
-				'/api/audio/interface/madi2/status',
-				'/api/audio/interface/wordclock/status',
-			]).catch((err) => {
-				this.instance.log('error', `Failed to set subscription paths: ${err.message}`)
-				this.scheduleReconnect()
-			})
+		// Register listener BEFORE subscribe() to avoid any race condition where
+		// the 'open' SSE event arrives before we start listening
+		const subscribedPromise = new Promise<void>((resolve, reject) => {
+			const timeout = setTimeout(() => {
+				this.off('subscribed', onSubscribed)
+				reject(new Error('Timed out waiting for SSE subscription open event'))
+			}, 15000)
+			const onSubscribed = () => {
+				clearTimeout(timeout)
+				resolve()
+			}
+			this.once('subscribed', onSubscribed)
 		})
 
-		// Start subscription
 		await this.subscribe()
+
+		// If the open event never arrives, this throws → initApi catches it → scheduleReconnect
+		await subscribedPromise
+
+		await this.setSubscriptionPaths(this.subscriptionPaths).catch((err) => {
+			this.instance.log('error', `Failed to set subscription paths: ${err.message}`)
+			this.scheduleReconnect()
+		})
 
 		await this.fetchInitialState()
 
@@ -323,8 +340,11 @@ export class SpecteraApi extends EventEmitter {
 		if (this.destroyed) return
 		try {
 			await this.getBaseStationState()
-			// Detect silent SSE stream death
-			if (this.lastSSEEventTime > 0 && Date.now() - this.lastSSEEventTime > 60000) {
+			// Detect silent SSE stream death — use subscribe start time as fallback
+			// when no SSE events have ever been received (lastSSEEventTime === 0)
+			const timeSinceActivity =
+				this.lastSSEEventTime > 0 ? Date.now() - this.lastSSEEventTime : Date.now() - this.subscribeStartTime
+			if (this.subscribeStartTime > 0 && timeSinceActivity > 60000) {
 				this.instance.log('debug', 'No SSE events received in 60s, reconnecting')
 				this.stopHeartbeat()
 				if (this.abortController) {
@@ -381,7 +401,27 @@ export class SpecteraApi extends EventEmitter {
 			}
 
 			await this.performLogin()
+
+			const subscribedPromise = new Promise<void>((resolve, reject) => {
+				const timeout = setTimeout(() => {
+					this.off('subscribed', onSubscribed)
+					reject(new Error('Timed out waiting for SSE open event on reconnect'))
+				}, 15000)
+				const onSubscribed = () => {
+					clearTimeout(timeout)
+					resolve()
+				}
+				this.once('subscribed', onSubscribed)
+			})
+
 			await this.subscribe()
+			await subscribedPromise
+
+			await this.setSubscriptionPaths(this.subscriptionPaths).catch((err) => {
+				this.instance.log('error', `Failed to set subscription paths on reconnect: ${err.message}`)
+				this.scheduleReconnect()
+			})
+
 			await this.fetchInitialState()
 			this.startHeartbeat()
 			this.reconnectAttempt = 0
@@ -399,6 +439,8 @@ export class SpecteraApi extends EventEmitter {
 			this.abortController.abort()
 		}
 		this.abortController = new AbortController()
+		this.lastSSEEventTime = 0
+		this.subscribeStartTime = Date.now()
 
 		const url = `https://${this.host}:443/api/ssc/state/subscriptions`
 		const options: RequestInit = {
