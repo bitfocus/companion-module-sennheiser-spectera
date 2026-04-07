@@ -615,7 +615,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				},
 			],
 		}
-		presets[`dad${port}BindingSetOff`] = {
+		/* 	presets[`dad${port}BindingSetOff`] = {
 			type: 'button',
 			category: 'RF Configuration',
 			name: `DAD ${dad} Binding Set OFF`,
@@ -665,7 +665,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					},
 				},
 			],
-		}
+		} */
 		presets[`dad${port}BindingSetRF1`] = {
 			type: 'button',
 			category: 'RF Configuration',
@@ -685,6 +685,8 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							options: {
 								dad: port,
 								rfChannel: RFChannels['RF Channel 1'],
+								mode: 'Toggle',
+								requireConfirmation: true,
 							},
 						},
 					],
@@ -736,6 +738,8 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							options: {
 								dad: port,
 								rfChannel: RFChannels['RF Channel 2'],
+								mode: 'Toggle',
+								requireConfirmation: true,
 							},
 						},
 					],
@@ -787,6 +791,8 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							options: {
 								dad: port,
 								rfChannel: RFChannels['Scan'],
+								mode: 'Toggle',
+								requireConfirmation: true,
 							},
 						},
 					],

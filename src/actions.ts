@@ -354,9 +354,24 @@ export function UpdateActions(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'RF Channel',
-				choices: getChoicesFromEnum(RFChannels),
-				default: RFChannels.Off,
+				choices: [
+					{ label: 'RF Channel 1', id: RFChannels['RF Channel 1'] },
+					{ label: 'RF Channel 2', id: RFChannels['RF Channel 2'] },
+					{ label: 'Scan', id: RFChannels.Scan },
+				],
+				default: RFChannels['RF Channel 1'],
 				id: 'rfChannel',
+			},
+			{
+				type: 'dropdown',
+				label: 'Mode',
+				choices: [
+					{ id: 'On', label: 'On' },
+					{ id: 'Off', label: 'Off' },
+					{ id: 'Toggle', label: 'Toggle' },
+				],
+				default: 'On',
+				id: 'mode',
 			},
 			{
 				type: 'checkbox',
@@ -370,6 +385,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 		description: 'Set the DAD RF Channel',
 		callback: async (action) => {
 			if (!self.api) return
+			const mode = action.options.mode as 'On' | 'Off' | 'Toggle'
 			if (action.options.requireConfirmation) {
 				const key = self.confirmationKey('dadRfBinding', {
 					dad: action.options.dad,
@@ -377,6 +393,16 @@ export function UpdateActions(self: SpecteraInstance): void {
 				})
 				if (!self.confirmAction(key)) return
 			}
+			let newBinding: RFChannels | undefined
+			if (mode === 'Toggle') {
+				const current = self.state.antennas.get(action.options.dad as AntennaPortId)?.bindings[0].binding
+				newBinding = current === action.options.rfChannel ? RFChannels.Off : (action.options.rfChannel as RFChannels)
+			} else if (mode === 'On') {
+				newBinding = action.options.rfChannel as RFChannels
+			} else if (mode === 'Off') {
+				newBinding = RFChannels.Off
+			}
+			if (!newBinding) return
 			await self.api.setAntenna(
 				action.options.dad as AntennaPortId,
 				{
@@ -384,7 +410,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 					bindings: [
 						{
 							subAntennaId: 0,
-							binding: action.options.rfChannel as RFChannels,
+							binding: newBinding,
 						},
 					],
 				} as Partial<Antenna>,
