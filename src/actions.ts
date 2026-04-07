@@ -1,7 +1,6 @@
 import type { SpecteraInstance } from './main.js'
 import type { CompanionActionDefinitions } from '@companion-module/base'
 import {
-	AudioInput,
 	Antenna,
 	AntennaPortId,
 	BandwidthMode,
@@ -28,6 +27,7 @@ import {
 	getDeviceBySerial,
 	getExistingMicAudiolinkModeFromState,
 	getMobileDeviceChoices,
+	resolveInputSourceForMode,
 	sanitizeMobileDeviceName,
 	STEREO_INPUT_OFFSET,
 } from './utils.js'
@@ -211,8 +211,8 @@ export function UpdateActions(self: SpecteraInstance): void {
 		},
 	}
 
-	actions['setAudioInputSource'] = {
-		name: 'Audio Input - Source',
+	actions['setAudioInputInterface'] = {
+		name: 'Audio Input - Interface',
 		options: [
 			{
 				type: 'multidropdown',
@@ -226,10 +226,21 @@ export function UpdateActions(self: SpecteraInstance): void {
 			},
 			{
 				type: 'dropdown',
-				label: 'Source',
-				choices: getChoicesFromEnum(InputSource).concat([{ id: 'passthrough', label: 'Use Current Source' }]),
+				label: 'Interface',
+				choices: getChoicesFromEnum(InputSource),
 				default: InputSource.Dante,
-				id: 'source',
+				id: 'interface',
+			},
+			{
+				type: 'dropdown',
+				label: 'Mode',
+				choices: [
+					{ id: 'On', label: 'On' },
+					{ id: 'Off', label: 'Off' },
+					{ id: 'Toggle', label: 'Toggle' },
+				],
+				default: 'On',
+				id: 'mode',
 			},
 			{
 				type: 'checkbox',
@@ -240,24 +251,27 @@ export function UpdateActions(self: SpecteraInstance): void {
 					'This will require a double press of the button to confirm the action. It will timeout after 5 seconds if not confirmed.',
 			},
 		],
-		description: 'Set the Audio Input Source',
+		description:
+			'Set the audio input source (Dante, MADI 1, MADI 2). On selects the interface; Off switches away when it is active; Toggle flips between that interface and another source.',
 		callback: async (action) => {
-			if (action.options.source === 'passthrough') {
-				return
-			}
 			if (!self.api) return
+			const iface = action.options.interface as InputSource
+			const mode = action.options.mode as 'On' | 'Off' | 'Toggle'
 			if (action.options.requireConfirmation) {
-				const key = self.confirmationKey('setAudioInputSource', {
+				const key = self.confirmationKey('setAudioInputInterface', {
 					inputId: action.options.inputId,
-					source: action.options.source,
+					interface: action.options.interface,
+					mode: action.options.mode,
 				})
 				if (!self.confirmAction(key)) return
 			}
 			for (const inputId of action.options.inputId as number[]) {
-				await self.api.setAudioInput(inputId, {
-					source: action.options.source as InputSource,
-				} as Partial<AudioInput>)
+				const current = self.state.audioInputs.get(inputId)?.source
+				const nextSource = resolveInputSourceForMode(current, iface, mode)
+				if (nextSource === undefined) continue
+				await self.api.setAudioInput(inputId, { source: nextSource })
 			}
+			self.checkFeedbacks('audioInputInterface')
 		},
 	}
 
@@ -1145,25 +1159,25 @@ export function UpdateActions(self: SpecteraInstance): void {
 		},
 	}
 
-	actions['setAudioOutputChannel'] = {
-		name: 'Audio Output - Set Channel',
+	actions['setAudioOutputInterface'] = {
+		name: 'Audio Output - Interface',
 		options: [
 			{
-				type: 'dropdown',
+				type: 'multidropdown',
 				label: 'Audio Output',
 				choices: Array.from(self.state.audioOutputs.values()).map((o) => ({
 					id: o.outputId,
 					label: `Output ${o.outputId + 1}`,
 				})),
-				default: 0,
+				default: [0],
 				id: 'outputId',
 			},
 			{
 				type: 'dropdown',
-				label: 'Channel',
+				label: 'Interface',
 				choices: [...audioOutputChannelChoices],
 				default: 'commandModeAudioNetwork',
-				id: 'channel',
+				id: 'interface',
 			},
 			{
 				type: 'dropdown',
@@ -1176,19 +1190,43 @@ export function UpdateActions(self: SpecteraInstance): void {
 				default: 'On',
 				id: 'mode',
 			},
+			{
+				type: 'checkbox',
+				label: 'Require Confirmation',
+				id: 'requireConfirmation',
+				default: false,
+				tooltip:
+					'This will require a double press of the button to confirm the action. It will timeout after 5 seconds if not confirmed.',
+			},
 		],
-		description: 'Set the output channel  for an audio output channel.',
+		description: 'Set the interface mode (Dante, MADI 1, MADI 2) for one or more audio outputs.',
 		callback: async (action) => {
 			if (!self.api) return
-			const outputId = Number(action.options.outputId)
-			const channel = action.options.channel as (typeof audioOutputChannelChoices)[number]['id']
-			let mode = action.options.mode as 'On' | 'Off' | 'Toggle'
-			if (mode === 'Toggle') {
-				const current = self.state.audioOutputs.get(outputId)?.[channel]
-				mode = current === 'On' ? 'Off' : 'On'
+			const rawOutputIds = action.options.outputId
+			const outputIds = Array.isArray(rawOutputIds)
+				? (rawOutputIds as number[]).map(Number)
+				: rawOutputIds !== undefined && rawOutputIds !== null && rawOutputIds !== ''
+					? [Number(rawOutputIds)]
+					: []
+			const iface = action.options.interface as (typeof audioOutputChannelChoices)[number]['id']
+			const modeOption = action.options.mode as 'On' | 'Off' | 'Toggle'
+			if (action.options.requireConfirmation) {
+				const key = self.confirmationKey('setAudioOutputInterface', {
+					outputId: action.options.outputId,
+					interface: action.options.interface,
+					mode: action.options.mode,
+				})
+				if (!self.confirmAction(key)) return
 			}
-			await self.api.setAudioOutput(outputId, { [channel]: mode })
-			self.checkFeedbacks('audioOutputChannel')
+			for (const outputId of outputIds) {
+				let mode = modeOption
+				if (mode === 'Toggle') {
+					const current = self.state.audioOutputs.get(outputId)?.[iface]
+					mode = current === 'On' ? 'Off' : 'On'
+				}
+				await self.api.setAudioOutput(outputId, { [iface]: mode })
+			}
+			self.checkFeedbacks('audioOutputInterface')
 		},
 	}
 

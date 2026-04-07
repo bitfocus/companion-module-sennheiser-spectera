@@ -836,10 +836,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		},
 	}
 
-	feedbacks['audioInputSource'] = {
+	feedbacks['audioInputInterface'] = {
 		type: 'boolean',
-		name: 'Audio Input - Source',
-		description: 'Indicates when the selected audio input is set to the chosen source',
+		name: 'Audio Input - Interface',
+		description: 'Indicates when the selected audio input interface (Dante, MADI 1, MADI 2) is On or Off',
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
 		},
@@ -856,23 +856,23 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			},
 			{
 				type: 'dropdown',
-				label: 'Source',
+				label: 'Interface',
 				choices: getChoicesFromEnum(InputSource),
 				default: InputSource.Dante,
-				id: 'source',
+				id: 'interface',
 			},
 		],
 		callback: async (feedback) => {
 			const inputId = feedback.options.inputId as number
 			const currentSource = self.state.audioInputs.get(inputId)?.source
-			return currentSource === feedback.options.source
+			return currentSource === feedback.options.interface
 		},
 	}
 
-	feedbacks['audioOutputChannel'] = {
+	feedbacks['audioOutputInterface'] = {
 		type: 'boolean',
-		name: 'Audio Output - Channel',
-		description: 'Indicates when the selected audio output channel (Dante, MADI 1, MADI 2) is On or Off',
+		name: 'Audio Output - Interface',
+		description: 'Indicates when the selected audio output interface (Dante, MADI 1, MADI 2) is On or Off',
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
 		},
@@ -889,14 +889,14 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			},
 			{
 				type: 'dropdown',
-				label: 'Channel',
+				label: 'Interface',
 				choices: [
 					{ id: 'commandModeAudioNetwork', label: 'Dante' },
 					{ id: 'commandModeMadi1', label: 'MADI 1' },
 					{ id: 'commandModeMadi2', label: 'MADI 2' },
 				],
 				default: 'commandModeAudioNetwork',
-				id: 'channel',
+				id: 'interface',
 			},
 			{
 				type: 'dropdown',
@@ -911,8 +911,8 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		],
 		callback: async (feedback) => {
 			const outputId = feedback.options.outputId as number
-			const channel = feedback.options.channel as 'commandModeAudioNetwork' | 'commandModeMadi1' | 'commandModeMadi2'
-			const current = self.state.audioOutputs.get(outputId)?.[channel]
+			const iface = feedback.options.interface as 'commandModeAudioNetwork' | 'commandModeMadi1' | 'commandModeMadi2'
+			const current = self.state.audioOutputs.get(outputId)?.[iface]
 			return current === feedback.options.state
 		},
 	}
