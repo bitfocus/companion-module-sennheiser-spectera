@@ -131,7 +131,7 @@ export const AntennaStateMap: StateMap<Antenna> = {
 		],
 	},
 	version: { variable: 'version', valueFn: passthrough },
-	identify: { feedback: 'dadIdenitify', variable: 'identify', valueFn: passthrough },
+	identify: { feedback: 'dadIdentify', variable: 'identify', valueFn: passthrough },
 	ledBrightness: { feedback: 'dadLedBrightness', variable: 'led_brightness', valueFn: passthrough },
 	bindings: { feedback: 'dadBindings', variable: 'bindings', valueFn: toBindingLabel },
 }

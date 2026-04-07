@@ -2053,7 +2053,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				],
 			}
 
-			presets[`${deviceVariableId}_HeadphoneVolumeRotarty`] = {
+			presets[`${deviceVariableId}_HeadphoneVolumeRotary`] = {
 				type: 'button',
 				category: `${category}s`,
 				name: `${device.name} Phones Volume Rotary Knob`,
@@ -2360,7 +2360,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			],
 		}
 
-		presets[`${deviceVariableId}_PreampGainRotarty`] = {
+		presets[`${deviceVariableId}_PreampGainRotary`] = {
 			type: 'button',
 			category: `${category}s`,
 			name: `${device.name} Preamp Gain Rotary Knob`,

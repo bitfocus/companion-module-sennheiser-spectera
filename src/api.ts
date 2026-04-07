@@ -906,11 +906,11 @@ export class SpecteraApi extends EventEmitter {
 		if (!this.isInitializing) {
 			if (Object.keys(changedVariables).length > 0) {
 				this.instance.setVariableValues(changedVariables)
-				/* const loggableVariables = Object.fromEntries(
+				/* const logVariables = Object.fromEntries(
 					Object.entries(changedVariables).filter(([key]) => !key.includes('audio_level')),
 				)
-				if (Object.keys(loggableVariables).length > 0) {
-					console.log('Changed variables:', loggableVariables)
+				if (Object.keys(logVariables).length > 0) {
+					console.log('Changed variables:', logVariables)
 				} */
 			}
 
@@ -1346,7 +1346,7 @@ export class SpecteraApi extends EventEmitter {
 				try {
 					this.instance.log(
 						'debug',
-						`Copy Settings: Unassigning mic link ${sourceDevice.micAudiolinkId} from source (move to target)`,
+						`Copy Settings: Unassign mic link ${sourceDevice.micAudiolinkId} from source (move to target)`,
 					)
 					await this.setMobileDevice(sourceMtUid, { micAudiolinkId: -1 } as Partial<MobileDevice>)
 				} catch (err) {

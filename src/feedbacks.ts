@@ -367,7 +367,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			return (antenna?.interference?.totalPower ?? 0) >= (feedback.options.interferencePower as number)
 		},
 	}
-	feedbacks['dadIdenitify'] = {
+	feedbacks['dadIdentify'] = {
 		type: 'boolean',
 		name: 'DAD - Identify',
 		description: 'DAD - Identify',
@@ -384,8 +384,8 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			},
 		],
 		callback: async (feedback) => {
-			const antennaIdenitify = self.state.antennas.get(feedback.options.dad as AntennaPortId)?.identify
-			return antennaIdenitify === true
+			const antennaIdentify = self.state.antennas.get(feedback.options.dad as AntennaPortId)?.identify
+			return antennaIdentify === true
 		},
 	}
 	feedbacks['dadTemperature'] = {
