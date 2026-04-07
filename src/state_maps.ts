@@ -137,7 +137,7 @@ export const AntennaStateMap: StateMap<Antenna> = {
 }
 
 export const AudioInputStateMap: StateMap<AudioInput> = {
-	source: { feedback: 'audioInputSource', variable: 'source', valueFn: toInputSourceLabel },
+	source: { feedback: 'audioInputInterface', variable: 'source', valueFn: toInputSourceLabel },
 	name: { variable: 'name', valueFn: passthrough },
 	iemAudiolinkId: {
 		feedback: ['iemAudioInputLinked', 'iemAudioInputNoLinkId'],
@@ -148,9 +148,9 @@ export const AudioInputStateMap: StateMap<AudioInput> = {
 
 export const AudioOutputStateMap: StateMap<AudioOutput> = {
 	micAudiolinkId: { feedback: 'mobileDeviceOutputLinked', variable: 'mic_link_id', valueFn: passthrough },
-	commandModeAudioNetwork: { feedback: 'audioOutputChannel', valueFn: passthrough },
-	commandModeMadi1: { feedback: 'audioOutputChannel', valueFn: passthrough },
-	commandModeMadi2: { feedback: 'audioOutputChannel', valueFn: passthrough },
+	commandModeAudioNetwork: { feedback: 'audioOutputInterface', valueFn: passthrough },
+	commandModeMadi1: { feedback: 'audioOutputInterface', valueFn: passthrough },
+	commandModeMadi2: { feedback: 'audioOutputInterface', valueFn: passthrough },
 }
 
 export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {

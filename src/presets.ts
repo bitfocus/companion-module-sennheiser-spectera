@@ -879,7 +879,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 	presets[`audioInputAllInputsSourceHeader`] = {
 		type: 'text',
 		category: 'Audio Inputs',
-		name: `All Inputs - Select Source`,
+		name: `All Inputs - Select Interface`,
 		text: '',
 	}
 	for (const source of [InputSource.Dante, InputSource['MADI 1'], InputSource['MADI 2']] as const) {
@@ -900,7 +900,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				{
 					down: [
 						{
-							actionId: 'setAudioInputSource',
+							actionId: 'setAudioInputInterface',
 							options: {
 								inputId: allInputIds,
 								source,
@@ -913,7 +913,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			],
 			feedbacks: [
 				{
-					feedbackId: 'audioInputSource',
+					feedbackId: 'audioInputInterface',
 					options: {
 						inputId: 0,
 						source,
@@ -925,7 +925,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				{
 					feedbackId: 'confirmPending' as const,
 					options: {
-						confirmKey: `setAudioInputSource:inputId=${allInputIds},source=${source}`,
+						confirmKey: `setAudioInputInterface:inputId=${allInputIds},source=${source}`,
 					},
 					style: {
 						bgcolor: Color.SpecteraRed,
@@ -962,10 +962,12 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					{
 						down: [
 							{
-								actionId: 'setAudioInputSource',
+								actionId: 'setAudioInputInterface',
 								options: {
 									inputId: [input.inputId],
-									source,
+									interface: source,
+									mode: 'On',
+									requireConfirmation: false,
 								},
 							},
 						],
@@ -974,10 +976,10 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				],
 				feedbacks: [
 					{
-						feedbackId: 'audioInputSource',
+						feedbackId: 'audioInputInterface',
 						options: {
 							inputId: input.inputId,
-							source,
+							interface: source,
 						},
 						style: {
 							bgcolor: Color.SpecteraBlue,
@@ -989,17 +991,17 @@ export function UpdatePresets(self: SpecteraInstance): void {
 	}
 
 	//Audio Outputs
-	presets[`audioOutputCurrentSourceHeader`] = {
+	presets[`audioOutputCurrentInterfaceHeader`] = {
 		type: 'text',
 		category: 'Audio Outputs',
-		name: `Audio Outputs - Current Source`,
+		name: `Audio Outputs - Current Interface`,
 		text: '',
 	}
 	for (const output of self.state.audioOutputs.values()) {
-		presets[`audioOutput${output.outputId}CurrentSource`] = {
+		presets[`audioOutput${output.outputId}CurrentInterface`] = {
 			type: 'button',
 			category: 'Audio Outputs',
-			name: `Output ${output.outputId + 1} - Current Source`,
+			name: `Output ${output.outputId + 1} - Current Interface`,
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
@@ -1019,14 +1021,14 @@ export function UpdatePresets(self: SpecteraInstance): void {
 	presets[`audioOutputCurrentChannelHeader`] = {
 		type: 'text',
 		category: 'Audio Outputs',
-		name: `Audio Outputs - Current Destinations`,
+		name: `Audio Outputs - Current Interfaces`,
 		text: '',
 	}
 	for (const output of self.state.audioOutputs.values()) {
-		presets[`audioOutput${output.outputId}CurrentChannel`] = {
+		presets[`audioOutput${output.outputId}CurrentInterface`] = {
 			type: 'button',
 			category: 'Audio Outputs',
-			name: `Output ${output.outputId + 1} - Current Destinations`,
+			name: `Output ${output.outputId + 1} - Current Interfaces`,
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
@@ -1044,10 +1046,10 @@ export function UpdatePresets(self: SpecteraInstance): void {
 		}
 	}
 	for (const output of self.state.audioOutputs.values()) {
-		presets[`audioOutput${output.outputId}SourceHeader`] = {
+		presets[`audioOutput${output.outputId}InterfaceHeader`] = {
 			type: 'text',
 			category: 'Audio Outputs',
-			name: `Output ${output.outputId + 1} - Select Destination`,
+			name: `Output ${output.outputId + 1} - Select Interface`,
 			text: '',
 		}
 		for (const channel of audioOutputChannelChoices) {
@@ -1066,11 +1068,12 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					{
 						down: [
 							{
-								actionId: 'setAudioOutputChannel',
+								actionId: 'setAudioOutputInterface',
 								options: {
-									outputId: output.outputId,
-									channel: channel.id,
+									outputId: [output.outputId],
+									interface: channel.id,
 									mode: 'Toggle',
+									requireConfirmation: false,
 								},
 							},
 						],
@@ -1079,10 +1082,10 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				],
 				feedbacks: [
 					{
-						feedbackId: 'audioOutputChannel',
+						feedbackId: 'audioOutputInterface',
 						options: {
 							outputId: output.outputId,
-							channel: channel.id,
+							interface: channel.id,
 							state: 'On',
 						},
 						style: {
@@ -2652,7 +2655,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								options: { inputId: STEREO_INPUT_OFFSET + input1.inputId, serial, modeIdStereo: 7 },
 							},
 							{
-								actionId: 'setAudioInputSource',
+								actionId: 'setAudioInputInterface',
 								options: { inputId: [input1.inputId, input2.inputId], source: 'passthrough' },
 							},
 							{
@@ -2732,7 +2735,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								actionId: 'routeAudioInputToMobileDevice',
 								options: { inputId: input.inputId, serial, modeIdMono: 4 },
 							},
-							{ actionId: 'setAudioInputSource', options: { inputId: [input.inputId], source: 'passthrough' } },
+							{ actionId: 'setAudioInputInterface', options: { inputId: [input.inputId], source: 'passthrough' } },
 							{
 								actionId: 'mobileDeviceRename',
 								options: {
