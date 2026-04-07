@@ -569,6 +569,11 @@ export function getAntennaVariables(
 	const binding = antenna.bindings[0]?.binding
 	const bindingLabel = Object.keys(RFChannels).find((key) => RFChannels[key as keyof typeof RFChannels] === binding)
 	const frequency = getAntennaFrequency(antenna, rfChannels)
+	const mainInterferers = antenna.interference?.mainInterferers
+	const mainInterferersVal =
+		mainInterferers && mainInterferers.length > 0
+			? mainInterferers.map((i) => `${(i.frequency / 1000).toFixed(0)}MHz\\n(${i.power}dBm)`).join('\\n')
+			: 'None'
 
 	return {
 		[`dad_${port}_state`]: antenna.state,
@@ -578,10 +583,8 @@ export function getAntennaVariables(
 		[`dad_${port}_packet_error_warning`]: antenna.warningPacketError,
 		[`dad_${port}_interference_severity`]: antenna.interference?.severity ?? 'None',
 		[`dad_${port}_noise_level`]: antenna.interferenceTotalPower ?? antenna.interference?.totalPower,
-		[`dad_${port}_frequency`]: frequency,
-		[`dad_${port}_main_interferers`]:
-			antenna.interference?.mainInterferers?.map((i) => `${i.frequency / 1000}MHz (${i.severity})`).join(', ') ??
-			'None',
+		[`dad_${port}_frequency`]: frequency === 'Scan' || frequency === 'Off' ? '-' : `${frequency}`,
+		[`dad_${port}_main_interferers`]: mainInterferersVal,
 		[`dad_${port}_temp_celsius`]: antenna.temperature && antenna.temperature > -55 ? antenna.temperature : 'Off',
 		[`dad_${port}_temp_fahrenheit`]:
 			antenna.temperature && antenna.temperature > -55 ? (antenna.temperature * 9) / 5 + 32 : 'Off',

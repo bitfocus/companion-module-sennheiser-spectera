@@ -703,7 +703,7 @@ export class SpecteraApi extends EventEmitter {
 				const frequencyVar = `dad_${port}_frequency`
 				const frequencyVal = getAntennaFrequency(antenna, this.state.rfChannels)
 				if (this.variableCache[frequencyVar] !== frequencyVal) {
-					changedVariables[frequencyVar] = frequencyVal
+					changedVariables[frequencyVar] = frequencyVal === 'Scan' || frequencyVal === 'Off' ? '-' : `${frequencyVal}`
 					this.variableCache[frequencyVar] = frequencyVal
 				}
 				//Main Interferers Lookup

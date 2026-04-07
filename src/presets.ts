@@ -409,7 +409,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						state: DeviceStatus.Unconnected,
 					},
 					style: {
-						bgcolor: Color.SpecteraRed,
+						bgcolor: Color.SpecteraYellow,
 					},
 				},
 				{
