@@ -72,6 +72,7 @@ export class SpecteraApi extends EventEmitter {
 	private readonly state: SpecteraState
 	private abortController: AbortController | null = null
 	private sessionUUID: string | null = null
+	private staleSessionUUID: string | null = null
 	private readonly dispatcher: Dispatcher
 	private variableCache: Record<string, string | number | boolean | undefined> = {}
 	private lastLevelUpdateTime = 0
@@ -311,17 +312,19 @@ export class SpecteraApi extends EventEmitter {
 			this.reconnectTimer = null
 		}
 
-		if (this.sessionUUID) {
+		// Clean up both the active session and any stale session from a previous reconnect attempt
+		for (const uuid of [this.sessionUUID, this.staleSessionUUID].filter(Boolean)) {
 			try {
-				await this.sendRequest('DELETE', `/ssc/state/subscriptions/${this.sessionUUID}`)
+				await this.sendRequest('DELETE', `/ssc/state/subscriptions/${uuid}`)
 			} catch (error) {
 				this.instance.log(
 					'debug',
-					`Failed to delete subscription on disconnect: ${error instanceof Error ? error.message : String(error)}`,
+					`Failed to delete subscription ${uuid} on disconnect: ${error instanceof Error ? error.message : String(error)}`,
 				)
 			}
-			this.sessionUUID = null
 		}
+		this.sessionUUID = null
+		this.staleSessionUUID = null
 
 		if (this.abortController) {
 			this.abortController.abort()
@@ -388,35 +391,39 @@ export class SpecteraApi extends EventEmitter {
 		this.reconnectTimer = null
 		if (this.destroyed) return
 		try {
-			// Abort the SSE stream before deleting the session so the server sees
-			// the connection close before we request the session to be removed
+			// Abort the SSE stream locally so we stop receiving events
 			if (this.abortController) {
 				this.abortController.abort()
 				this.abortController = null
 			}
 
-			// Await the session DELETE so we don't leave stale subscriptions on the
-			// device — still non-fatal if it fails (device may already have cleaned it up)
+			// Promote current session to stale so it survives failed reconnect attempts.
+			// We can't DELETE it until the device is reachable again
 			if (this.sessionUUID) {
-				const oldUUID = this.sessionUUID
+				this.staleSessionUUID = this.sessionUUID
 				this.sessionUUID = null
+			}
+
+			await this.performLogin()
+
+			// Device is reachable — clean up the stale session before opening a new one
+			if (this.staleSessionUUID) {
 				try {
-					await fetch(`https://${this.host}:443/api/ssc/state/subscriptions/${oldUUID}`, {
+					await fetch(`https://${this.host}:443/api/ssc/state/subscriptions/${this.staleSessionUUID}`, {
 						method: 'DELETE',
 						headers: { Authorization: this.getAuthHeader() },
 						signal: AbortSignal.timeout(5000),
 						dispatcher: this.dispatcher,
 					} as any)
-					this.instance.log('debug', `Cleaned up subscription session ${oldUUID}`)
+					this.instance.log('debug', `Cleaned up stale subscription session ${this.staleSessionUUID}`)
 				} catch (err) {
 					this.instance.log(
 						'debug',
-						`Failed to delete subscription session ${oldUUID}: ${err instanceof Error ? err.message : String(err)}`,
+						`Failed to delete stale subscription session ${this.staleSessionUUID}: ${err instanceof Error ? err.message : String(err)}`,
 					)
 				}
+				this.staleSessionUUID = null
 			}
-
-			await this.performLogin()
 
 			const subscribedPromise = new Promise<void>((resolve, reject) => {
 				const timeout = setTimeout(() => {
