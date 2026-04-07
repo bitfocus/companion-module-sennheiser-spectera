@@ -388,16 +388,32 @@ export class SpecteraApi extends EventEmitter {
 		this.reconnectTimer = null
 		if (this.destroyed) return
 		try {
-			// Clean up old subscription (fire-and-forget, don't block reconnect)
+			// Abort the SSE stream before deleting the session so the server sees
+			// the connection close before we request the session to be removed
+			if (this.abortController) {
+				this.abortController.abort()
+				this.abortController = null
+			}
+
+			// Await the session DELETE so we don't leave stale subscriptions on the
+			// device — still non-fatal if it fails (device may already have cleaned it up)
 			if (this.sessionUUID) {
 				const oldUUID = this.sessionUUID
 				this.sessionUUID = null
-				fetch(`https://${this.host}:443/api/ssc/state/subscriptions/${oldUUID}`, {
-					method: 'DELETE',
-					headers: { Authorization: this.getAuthHeader() },
-					signal: AbortSignal.timeout(5000),
-					dispatcher: this.dispatcher,
-				} as any).catch(() => {})
+				try {
+					await fetch(`https://${this.host}:443/api/ssc/state/subscriptions/${oldUUID}`, {
+						method: 'DELETE',
+						headers: { Authorization: this.getAuthHeader() },
+						signal: AbortSignal.timeout(5000),
+						dispatcher: this.dispatcher,
+					} as any)
+					this.instance.log('debug', `Cleaned up subscription session ${oldUUID}`)
+				} catch (err) {
+					this.instance.log(
+						'debug',
+						`Failed to delete subscription session ${oldUUID}: ${err instanceof Error ? err.message : String(err)}`,
+					)
+				}
 			}
 
 			await this.performLogin()
