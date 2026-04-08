@@ -1252,14 +1252,6 @@ export function UpdateActions(self: SpecteraInstance): void {
 				id: 'mode',
 			},
 			{
-				type: 'dropdown',
-				label: 'Toggle Source',
-				choices: getChoicesFromEnum(InputSource),
-				default: InputSource.Dante,
-				id: 'toggleSource',
-				isVisibleExpression: '$(options:mode) === "Toggle"',
-			},
-			{
 				type: 'checkbox',
 				label: 'Require Confirmation',
 				id: 'requireConfirmation',

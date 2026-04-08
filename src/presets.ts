@@ -617,59 +617,6 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				},
 			],
 		}
-		/* 	presets[`dad${port}BindingSetOff`] = {
-			type: 'button',
-			category: 'RF Configuration',
-			name: `DAD ${dad} Binding Set OFF`,
-			style: {
-				bgcolor: Color.Black,
-				color: Color.White,
-				text: `DAD ${dad}\\nto\\nOFF`,
-				size: 11,
-				show_topbar: false,
-			},
-			steps: [
-				{
-					down: [
-						{
-							actionId: 'dadRfBinding',
-							options: {
-								dad: port,
-								rfChannel: RFChannels['Off'],
-							},
-						},
-					],
-					up: [],
-				},
-			],
-			feedbacks: [
-				...dadPresent,
-				{
-					feedbackId: 'dadBindings',
-					options: {
-						dad: port,
-						bindings: RFChannels['Off'],
-					},
-					style: {
-						bgcolor: Color.SpecteraYellow,
-					},
-				},
-				{
-					feedbackId: 'confirmPending' as const,
-					options: {
-						actionType: 'dadRfBinding',
-						dadRfBinding_dad: port,
-						dadRfBinding_rfChannel: RFChannels['Off'],
-					},
-					style: {
-						bgcolor: Color.SpecteraRed,
-						color: Color.White,
-						text: `DAD ${dad}\\nto OFF\\nCONFIRM?`,
-						size: 11,
-					},
-				},
-			],
-		} */
 		presets[`dad${port}BindingSetRF1`] = {
 			type: 'button',
 			category: 'RF Configuration',

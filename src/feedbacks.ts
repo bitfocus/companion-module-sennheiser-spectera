@@ -1911,7 +1911,6 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				id: 'setAudioInputInterface_mode',
 				choices: [
 					{ id: 'On', label: 'On' },
-					{ id: 'Off', label: 'Off' },
 					{ id: 'Toggle', label: 'Toggle' },
 				],
 				default: 'On',
