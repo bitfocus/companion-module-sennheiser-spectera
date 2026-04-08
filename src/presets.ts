@@ -1155,6 +1155,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								options: {
 									serial: device.serial,
 									outputId: output.outputId,
+									behavior: 'toggle',
 									modeId: getExistingMicAudiolinkModeFromState(self.state, device) ?? MicAudiolinkMode['LIVE (Mono)'],
 									useExisting: true,
 								},
