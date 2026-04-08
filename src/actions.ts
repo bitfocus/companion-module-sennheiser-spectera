@@ -238,11 +238,12 @@ export function UpdateActions(self: SpecteraInstance): void {
 			},
 			{
 				type: 'dropdown',
-				label: 'Toggle Source',
+				label: 'Toggle Interface',
 				choices: getChoicesFromEnum(InputSource),
 				default: InputSource.Dante,
-				id: 'toggleSource',
+				id: 'toggleInterface',
 				isVisibleExpression: '$(options:mode) === "Toggle"',
+				tooltip: 'The interface that will be changed between when the changed to when the Toggle mode is selected.',
 			},
 			{
 				type: 'checkbox',
@@ -270,7 +271,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 				const current = self.state.audioInputs.get(inputId)?.source
 				let nextSource: InputSource | undefined
 				if (mode === 'Toggle') {
-					nextSource = current === action.options.interface ? (action.options.toggleSource as InputSource) : iface
+					nextSource = current === action.options.interface ? (action.options.toggleInterface as InputSource) : iface
 				} else {
 					nextSource = iface
 				}

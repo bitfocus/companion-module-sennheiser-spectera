@@ -881,7 +881,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					feedbackId: 'audioInputInterface',
 					options: {
 						inputId: 0,
-						source,
+						interface: source,
 					},
 					style: {
 						bgcolor: Color.SpecteraBlue,
