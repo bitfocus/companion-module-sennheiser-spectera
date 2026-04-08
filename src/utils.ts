@@ -1,6 +1,6 @@
 import { combineRgb } from '@companion-module/base'
 import { SpecteraState } from './state.js'
-import { Antenna, AudiolinkModeId, InputSource, MobileDevice, MtType, RfChannel, RFChannels } from './types.js'
+import { Antenna, AudiolinkModeId, MobileDevice, MtType, RfChannel, RFChannels } from './types.js'
 
 export const Color = {
 	Black: combineRgb(0, 0, 0),
@@ -33,27 +33,6 @@ export const CONFIRMABLE_ACTIONS = [
 	{ id: 'dadRfBinding', label: 'DAD RF Binding' },
 	{ id: 'rfFrequency', label: 'RF Frequency' },
 ] as const
-
-const INPUT_SOURCE_CYCLE = [InputSource.Dante, InputSource['MADI 1'], InputSource['MADI 2']] as const
-
-/**
- * Map On/Off/Toggle to a new input `source`. Off turns the selected interface "off" by switching
- * to another source when it is currently active. Returns undefined when no API update is needed.
- */
-export function resolveInputSourceForMode(
-	current: InputSource | undefined,
-	iface: InputSource,
-	mode: 'On' | 'Off' | 'Toggle',
-): InputSource | undefined {
-	if (mode === 'On') return iface
-	const pickOther = (): InputSource | undefined => INPUT_SOURCE_CYCLE.find((s) => s !== iface)
-	if (mode === 'Off') {
-		if (current === iface) return pickOther()
-		return undefined
-	}
-	if (current === iface) return pickOther()
-	return iface
-}
 
 export function getChoicesFromEnum(enumObj: Record<string, string | number>): { id: string | number; label: string }[] {
 	const choices: { id: string | number; label: string }[] = []

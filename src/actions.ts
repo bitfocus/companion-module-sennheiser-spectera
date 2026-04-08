@@ -27,7 +27,6 @@ import {
 	getDeviceBySerial,
 	getExistingMicAudiolinkModeFromState,
 	getMobileDeviceChoices,
-	resolveInputSourceForMode,
 	rfChannelChoices,
 	sanitizeMobileDeviceName,
 	STEREO_INPUT_OFFSET,
@@ -182,7 +181,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 				type: 'checkbox',
 				label: 'Require Confirmation',
 				id: 'requireConfirmation',
-				default: true,
+				default: false,
 				tooltip:
 					'This will require a double press of the button to confirm the action. It will timeout after 5 seconds if not confirmed.',
 			},
@@ -232,27 +231,33 @@ export function UpdateActions(self: SpecteraInstance): void {
 				label: 'Mode',
 				choices: [
 					{ id: 'On', label: 'On' },
-					{ id: 'Off', label: 'Off' },
 					{ id: 'Toggle', label: 'Toggle' },
 				],
 				default: 'On',
 				id: 'mode',
 			},
 			{
+				type: 'dropdown',
+				label: 'Toggle Source',
+				choices: getChoicesFromEnum(InputSource),
+				default: InputSource.Dante,
+				id: 'toggleSource',
+				isVisibleExpression: '$(options:mode) === "Toggle"',
+			},
+			{
 				type: 'checkbox',
 				label: 'Require Confirmation',
 				id: 'requireConfirmation',
-				default: true,
+				default: false,
 				tooltip:
 					'This will require a double press of the button to confirm the action. It will timeout after 5 seconds if not confirmed.',
 			},
 		],
-		description:
-			'Set the audio input source (Dante, MADI 1, MADI 2). On selects the interface; Off switches away when it is active; Toggle flips between that interface and another source.',
+		description: 'Set the audio input interface (Dante, MADI 1, MADI 2).',
 		callback: async (action) => {
 			if (!self.api) return
 			const iface = action.options.interface as InputSource
-			const mode = action.options.mode as 'On' | 'Off' | 'Toggle'
+			const mode = action.options.mode as 'On' | 'Toggle'
 			if (action.options.requireConfirmation) {
 				const key = self.confirmationKey('setAudioInputInterface', {
 					inputId: action.options.inputId,
@@ -263,8 +268,12 @@ export function UpdateActions(self: SpecteraInstance): void {
 			}
 			for (const inputId of action.options.inputId as number[]) {
 				const current = self.state.audioInputs.get(inputId)?.source
-				const nextSource = resolveInputSourceForMode(current, iface, mode)
-				if (nextSource === undefined) continue
+				let nextSource: InputSource | undefined
+				if (mode === 'Toggle') {
+					nextSource = current === action.options.interface ? (action.options.toggleSource as InputSource) : iface
+				} else {
+					nextSource = iface
+				}
 				await self.api.setAudioInput(inputId, { source: nextSource })
 			}
 			self.checkFeedbacks('audioInputInterface')
@@ -373,7 +382,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 				type: 'checkbox',
 				label: 'Require Confirmation',
 				id: 'requireConfirmation',
-				default: true,
+				default: false,
 				tooltip:
 					'This will require a double press of the button to confirm the action. It will timeout after 5 seconds if not confirmed.',
 			},
@@ -1243,6 +1252,14 @@ export function UpdateActions(self: SpecteraInstance): void {
 				id: 'mode',
 			},
 			{
+				type: 'dropdown',
+				label: 'Toggle Source',
+				choices: getChoicesFromEnum(InputSource),
+				default: InputSource.Dante,
+				id: 'toggleSource',
+				isVisibleExpression: '$(options:mode) === "Toggle"',
+			},
+			{
 				type: 'checkbox',
 				label: 'Require Confirmation',
 				id: 'requireConfirmation',
@@ -1270,11 +1287,17 @@ export function UpdateActions(self: SpecteraInstance): void {
 				})
 				if (!self.confirmAction(key)) return
 			}
+			const outputIfaceKeys = audioOutputChannelChoices.map((c) => c.id)
 			for (const outputId of outputIds) {
 				let mode = modeOption
+				const current = self.state.audioOutputs.get(outputId)
+				if (current?.micAudiolinkId === -1) continue
 				if (mode === 'Toggle') {
-					const current = self.state.audioOutputs.get(outputId)?.[iface]
-					mode = current === 'On' ? 'Off' : 'On'
+					mode = current?.[iface] === 'On' ? 'Off' : 'On'
+				}
+				if (mode === 'Off') {
+					const onCount = outputIfaceKeys.filter((id) => current?.[id] === 'On').length
+					if (current?.[iface] === 'On' && onCount === 1) continue
 				}
 				await self.api.setAudioOutput(outputId, { [iface]: mode })
 			}
@@ -1305,7 +1328,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 				type: 'checkbox',
 				label: 'Require Confirmation',
 				id: 'requireConfirmation',
-				default: true,
+				default: false,
 				tooltip:
 					'This will require a double press of the button to confirm the action. It will timeout after 5 seconds if not confirmed.',
 			},
