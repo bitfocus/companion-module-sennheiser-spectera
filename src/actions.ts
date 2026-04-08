@@ -1074,8 +1074,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 
 	actions['instrumentSwitchMobileDeviceToOutput'] = {
 		name: 'Audio I/O - Instrument Switch Mode',
-		description:
-			'Route a Mobile Device to an Audio Output. Behavior controls whether routing toggles, is forced on, or forced off for this device and output.',
+		description: 'Route a Mobile Device to an Audio Output, with controls over the routing behavior and link mode.',
 		options: [
 			{
 				type: 'dropdown',
