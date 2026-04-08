@@ -28,17 +28,13 @@ import {
 	getExistingMicAudiolinkModeFromState,
 	getMobileDeviceChoices,
 	resolveInputSourceForMode,
+	rfChannelChoices,
 	sanitizeMobileDeviceName,
 	STEREO_INPUT_OFFSET,
 } from './utils.js'
 
 export function UpdateActions(self: SpecteraInstance): void {
 	const actions: CompanionActionDefinitions = {}
-
-	const rfChannelChoices = [
-		{ label: 'RF Channel 1', id: 0 },
-		{ label: 'RF Channel 2', id: 1 },
-	]
 
 	//RF Actions
 	actions['setRfChannelState'] = {

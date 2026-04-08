@@ -21,6 +21,19 @@ export const audioOutputChannelChoices = [
 	{ id: 'commandModeMadi2', label: 'MADI 2' },
 ] as const
 
+export const rfChannelChoices = [
+	{ label: 'RF Channel 1', id: 0 },
+	{ label: 'RF Channel 2', id: 1 },
+]
+
+export const CONFIRMABLE_ACTIONS = [
+	{ id: 'setAudioInputInterface', label: 'Audio Input Interface' },
+	{ id: 'setAudioOutputInterface', label: 'Audio Output Interface' },
+	{ id: 'copyAllMobileDeviceSettings', label: 'Copy All Mobile Device Settings' },
+	{ id: 'dadRfBinding', label: 'DAD RF Binding' },
+	{ id: 'rfFrequency', label: 'RF Frequency' },
+] as const
+
 const INPUT_SOURCE_CYCLE = [InputSource.Dante, InputSource['MADI 1'], InputSource['MADI 2']] as const
 
 /**

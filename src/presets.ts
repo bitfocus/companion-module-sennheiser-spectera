@@ -139,7 +139,9 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				{
 					feedbackId: 'confirmPending' as const,
 					options: {
-						confirmKey: `rfFrequency:frequency=,rfChannel=${channelIndex}`,
+						actionType: 'rfFrequency',
+						rfFrequency_rfChannel: channelIndex,
+						rfFrequency_frequency: '',
 					},
 					style: {
 						bgcolor: Color.SpecteraRed,
@@ -655,7 +657,9 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				{
 					feedbackId: 'confirmPending' as const,
 					options: {
-						confirmKey: `dadRfBinding:dad=${port},rfChannel=${RFChannels['Off']}`,
+						actionType: 'dadRfBinding',
+						dadRfBinding_dad: port,
+						dadRfBinding_rfChannel: RFChannels['Off'],
 					},
 					style: {
 						bgcolor: Color.SpecteraRed,
@@ -708,7 +712,9 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				{
 					feedbackId: 'confirmPending' as const,
 					options: {
-						confirmKey: `dadRfBinding:dad=${port},rfChannel=${RFChannels['RF Channel 1']}`,
+						actionType: 'dadRfBinding',
+						dadRfBinding_dad: port,
+						dadRfBinding_rfChannel: RFChannels['RF Channel 1'],
 					},
 					style: {
 						bgcolor: Color.SpecteraRed,
@@ -761,7 +767,9 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				{
 					feedbackId: 'confirmPending' as const,
 					options: {
-						confirmKey: `dadRfBinding:dad=${port},rfChannel=${RFChannels['RF Channel 2']}`,
+						actionType: 'dadRfBinding',
+						dadRfBinding_dad: port,
+						dadRfBinding_rfChannel: RFChannels['RF Channel 2'],
 					},
 					style: {
 						bgcolor: Color.SpecteraRed,
@@ -814,7 +822,9 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				{
 					feedbackId: 'confirmPending' as const,
 					options: {
-						confirmKey: `dadRfBinding:dad=${port},rfChannel=${RFChannels['Scan']}`,
+						actionType: 'dadRfBinding',
+						dadRfBinding_dad: port,
+						dadRfBinding_rfChannel: RFChannels['Scan'],
 					},
 					style: {
 						bgcolor: Color.SpecteraRed,
@@ -909,7 +919,8 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							actionId: 'setAudioInputInterface',
 							options: {
 								inputId: allInputIds,
-								source,
+								interface: source,
+								mode: 'On',
 								requireConfirmation: true,
 							},
 						},
@@ -931,7 +942,10 @@ export function UpdatePresets(self: SpecteraInstance): void {
 				{
 					feedbackId: 'confirmPending' as const,
 					options: {
-						confirmKey: `setAudioInputInterface:inputId=${allInputIds},source=${source}`,
+						actionType: 'setAudioInputInterface',
+						setAudioInputInterface_inputId: allInputIds,
+						setAudioInputInterface_interface: source,
+						setAudioInputInterface_mode: 'On',
 					},
 					style: {
 						bgcolor: Color.SpecteraRed,
@@ -1216,7 +1230,9 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					{
 						feedbackId: 'confirmPending' as const,
 						options: {
-							confirmKey: `copyAllMobileDeviceSettings:sourceSerial=${copyDevice.serial},targetSerial=${device.serial}`,
+							actionType: 'copyAllMobileDeviceSettings',
+							copyAllMobileDeviceSettings_sourceSerial: copyDevice.serial,
+							copyAllMobileDeviceSettings_targetSerial: device.serial,
 						},
 						style: {
 							bgcolor: Color.SpecteraRed,

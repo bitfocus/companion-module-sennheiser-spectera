@@ -24,10 +24,13 @@ import {
 	InputSource,
 } from './types.js'
 import {
+	audioOutputChannelChoices,
+	CONFIRMABLE_ACTIONS,
 	getChoicesFromEnum,
 	getDeviceBySerial,
 	getMobileDeviceChoices,
 	getAudioLinkChoices,
+	rfChannelChoices,
 	STEREO_INPUT_OFFSET,
 } from './utils.js'
 import { Color } from './utils.js'
@@ -1840,25 +1843,178 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		},
 	}
 
+	const mobileDeviceChoicesForConfirm = getMobileDeviceChoices(self.state)
+	const audioInputChoicesForConfirm = Array.from(self.state.audioInputs.values()).map((i) => ({
+		id: i.inputId,
+		label: i.name || `Input ${i.inputId + 1}`,
+	}))
+	const audioOutputChoicesForConfirm = Array.from(self.state.audioOutputs.values()).map((o) => ({
+		id: o.outputId,
+		label: `Output ${o.outputId + 1}`,
+	}))
+
 	feedbacks['confirmPending'] = {
 		type: 'boolean',
 		name: 'Confirm Pending',
-		description: 'Enabled when an action that matches the confirmation key is awaiting a second press',
+		description: 'Enabled when an action that matches the selected confirmation parameters is awaiting a second press',
 		defaultStyle: {
 			bgcolor: Color.SpecteraRed,
 			color: Color.White,
 			text: 'CONFIRM?',
+			size: 12,
 		},
 		options: [
 			{
+				type: 'dropdown',
+				label: 'Action Type',
+				id: 'actionType',
+				choices: [...CONFIRMABLE_ACTIONS],
+				default: CONFIRMABLE_ACTIONS[0].id,
+			},
+			// rfFrequency fields
+			{
+				type: 'dropdown',
+				label: 'RF Channel',
+				id: 'rfFrequency_rfChannel',
+				choices: rfChannelChoices,
+				default: 0,
+				isVisibleExpression: '$(options:actionType) === "rfFrequency"',
+			},
+			{
 				type: 'textinput',
-				label: 'Confirmation Key',
-				id: 'confirmKey',
+				label: 'Frequency (MHz)',
+				id: 'rfFrequency_frequency',
 				default: '',
+				useVariables: true,
+				isVisibleExpression: '$(options:actionType) === "rfFrequency"',
+			},
+			// setAudioInputInterface fields
+			{
+				type: 'multidropdown',
+				label: 'Audio Input',
+				id: 'setAudioInputInterface_inputId',
+				choices: audioInputChoicesForConfirm,
+				default: [0],
+				isVisibleExpression: '$(options:actionType) === "setAudioInputInterface"',
+			},
+			{
+				type: 'dropdown',
+				label: 'Interface',
+				id: 'setAudioInputInterface_interface',
+				choices: getChoicesFromEnum(InputSource),
+				default: InputSource.Dante,
+				isVisibleExpression: '$(options:actionType) === "setAudioInputInterface"',
+			},
+			{
+				type: 'dropdown',
+				label: 'Mode',
+				id: 'setAudioInputInterface_mode',
+				choices: [
+					{ id: 'On', label: 'On' },
+					{ id: 'Off', label: 'Off' },
+					{ id: 'Toggle', label: 'Toggle' },
+				],
+				default: 'On',
+				isVisibleExpression: '$(options:actionType) === "setAudioInputInterface"',
+			},
+			// dadRfBinding fields
+			{
+				type: 'dropdown',
+				label: 'DAD',
+				id: 'dadRfBinding_dad',
+				choices: getChoicesFromEnum(AntennaPortId),
+				default: AntennaPortId.A,
+				isVisibleExpression: '$(options:actionType) === "dadRfBinding"',
+			},
+			{
+				type: 'dropdown',
+				label: 'RF Channel',
+				id: 'dadRfBinding_rfChannel',
+				choices: [
+					{ label: 'RF Channel 1', id: RFChannels['RF Channel 1'] },
+					{ label: 'RF Channel 2', id: RFChannels['RF Channel 2'] },
+					{ label: 'Scan', id: RFChannels.Scan },
+				],
+				default: RFChannels['RF Channel 1'],
+				isVisibleExpression: '$(options:actionType) === "dadRfBinding"',
+			},
+			// setAudioOutputInterface fields
+			{
+				type: 'multidropdown',
+				label: 'Audio Output',
+				id: 'setAudioOutputInterface_outputId',
+				choices: audioOutputChoicesForConfirm,
+				default: [0],
+				isVisibleExpression: '$(options:actionType) === "setAudioOutputInterface"',
+			},
+			{
+				type: 'dropdown',
+				label: 'Interface',
+				id: 'setAudioOutputInterface_interface',
+				choices: [...audioOutputChannelChoices],
+				default: 'commandModeAudioNetwork',
+				isVisibleExpression: '$(options:actionType) === "setAudioOutputInterface"',
+			},
+			{
+				type: 'dropdown',
+				label: 'Mode',
+				id: 'setAudioOutputInterface_mode',
+				choices: [
+					{ id: 'On', label: 'On' },
+					{ id: 'Off', label: 'Off' },
+					{ id: 'Toggle', label: 'Toggle' },
+				],
+				default: 'On',
+				isVisibleExpression: '$(options:actionType) === "setAudioOutputInterface"',
+			},
+			// copyAllMobileDeviceSettings fields
+			{
+				type: 'dropdown',
+				label: 'Source Mobile Device',
+				id: 'copyAllMobileDeviceSettings_sourceSerial',
+				choices: mobileDeviceChoicesForConfirm,
+				default: mobileDeviceChoicesForConfirm.length > 0 ? mobileDeviceChoicesForConfirm[0].id : '',
+				allowCustom: true,
+				isVisibleExpression: '$(options:actionType) === "copyAllMobileDeviceSettings"',
+			},
+			{
+				type: 'dropdown',
+				label: 'Target Mobile Device',
+				id: 'copyAllMobileDeviceSettings_targetSerial',
+				choices: mobileDeviceChoicesForConfirm,
+				default: mobileDeviceChoicesForConfirm.length > 0 ? mobileDeviceChoicesForConfirm[0].id : '',
+				allowCustom: true,
+				isVisibleExpression: '$(options:actionType) === "copyAllMobileDeviceSettings"',
 			},
 		],
 		callback: async (feedback) => {
-			return self.pendingConfirmations.has(feedback.options.confirmKey as string)
+			const actionType = feedback.options.actionType as string
+			const paramMap: Record<string, Record<string, string>> = {
+				rfFrequency: { rfChannel: 'rfFrequency_rfChannel', frequency: 'rfFrequency_frequency' },
+				setAudioInputInterface: {
+					inputId: 'setAudioInputInterface_inputId',
+					interface: 'setAudioInputInterface_interface',
+					mode: 'setAudioInputInterface_mode',
+				},
+				dadRfBinding: { dad: 'dadRfBinding_dad', rfChannel: 'dadRfBinding_rfChannel' },
+				setAudioOutputInterface: {
+					outputId: 'setAudioOutputInterface_outputId',
+					interface: 'setAudioOutputInterface_interface',
+					mode: 'setAudioOutputInterface_mode',
+				},
+				copyAllMobileDeviceSettings: {
+					sourceSerial: 'copyAllMobileDeviceSettings_sourceSerial',
+					targetSerial: 'copyAllMobileDeviceSettings_targetSerial',
+				},
+			}
+			const params = paramMap[actionType]
+			if (!params) return false
+			const options: Record<string, unknown> = {}
+			for (const [paramName, optionId] of Object.entries(params)) {
+				options[paramName] = feedback.options[optionId]
+			}
+			const key = self.confirmationKey(actionType, options)
+			return self.pendingConfirmations.has(key)
 		},
 	}
 
