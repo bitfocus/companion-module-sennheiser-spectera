@@ -1078,7 +1078,8 @@ export function UpdateActions(self: SpecteraInstance): void {
 
 	actions['instrumentSwitchMobileDeviceToOutput'] = {
 		name: 'Audio I/O - Instrument Switch Mode',
-		description: 'Route a Mobile Device to an Audio Output. If already linked, disconnect it from the output.',
+		description:
+			'Route a Mobile Device to an Audio Output. Behavior controls whether routing toggles, is forced on, or forced off for this device and output.',
 		options: [
 			{
 				type: 'dropdown',
@@ -1097,6 +1098,17 @@ export function UpdateActions(self: SpecteraInstance): void {
 				})),
 				default: 0,
 				id: 'outputId',
+			},
+			{
+				type: 'dropdown',
+				label: 'Behavior',
+				id: 'behavior',
+				default: 'toggle',
+				choices: [
+					{ id: 'toggle', label: 'Toggle' },
+					{ id: 'on', label: 'Always On' },
+					{ id: 'off', label: 'Always Off' },
+				],
 			},
 			{
 				type: 'dropdown',
@@ -1121,6 +1133,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			const device = getDeviceBySerial(self.state, serial)
 			if (!device) return
 			const outputId = Number(action.options.outputId)
+			const behavior = (action.options.behavior as string | undefined) ?? 'toggle'
 			const defaultModeId = Number(action.options.modeId)
 			const useExisting = Boolean(action.options.useExisting)
 			const outputLinkId = self.state.audioOutputs.get(outputId)?.micAudiolinkId
@@ -1134,9 +1147,8 @@ export function UpdateActions(self: SpecteraInstance): void {
 				deviceLinkId > -1 &&
 				outputLinkId === deviceLinkId
 
-			if (alreadyRouted) {
-				const micLinkId = deviceLinkId
-				await self.api.setAudioOutput(outputId, { micAudiolinkId: -1 })
+			const disconnectFromOutput = async (micLinkId: number): Promise<void> => {
+				await self.api!.setAudioOutput(outputId, { micAudiolinkId: -1 })
 
 				const activeLink = (id: number | undefined): boolean => id !== undefined && id > -1
 				const linkStillUsedByOutput = [...self.state.audioOutputs.values()].some(
@@ -1148,7 +1160,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 
 				const clearLinkMode = activeLink(micLinkId) && !linkStillUsedByOutput && !linkStillUsedByDevice
 				if (clearLinkMode) {
-					await self.api.updateAudioLink({
+					await self.api!.updateAudioLink({
 						audiolinkId: micLinkId,
 						modeId: MicAudiolinkMode['None'],
 					})
@@ -1159,7 +1171,9 @@ export function UpdateActions(self: SpecteraInstance): void {
 						? `Instrument Switch: ${device.name} removed from output ${outputId + 1}; mic link ${micLinkId} was unused, set to Empty`
 						: `Instrument Switch: ${device.name} removed from output ${outputId + 1}; mic link ${micLinkId} left as-is (still in use elsewhere)`,
 				)
-			} else {
+			}
+
+			const connectToOutput = async (): Promise<void> => {
 				// Resolve mode: device's existing mode > output's existing link mode > default
 				let modeId = defaultModeId
 				let modeSource = 'default'
@@ -1180,7 +1194,24 @@ export function UpdateActions(self: SpecteraInstance): void {
 					'debug',
 					`Instrument Switch: ${device.name} routed to output ${outputId + 1} (mode ${modeId} from ${modeSource})`,
 				)
-				await self.api.routeMobileDeviceToAudioOutput(device.mtUid, outputId, modeId)
+				await self.api!.routeMobileDeviceToAudioOutput(device.mtUid, outputId, modeId)
+			}
+
+			if (behavior === 'off') {
+				if (alreadyRouted) {
+					await disconnectFromOutput(deviceLinkId)
+				}
+				return
+			}
+			if (behavior === 'on') {
+				await connectToOutput()
+				return
+			}
+			//Default
+			if (alreadyRouted) {
+				await disconnectFromOutput(deviceLinkId)
+			} else {
+				await connectToOutput()
 			}
 		},
 	}
