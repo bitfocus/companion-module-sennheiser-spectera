@@ -785,21 +785,21 @@ export function UpdatePresets(self: SpecteraInstance): void {
 	}
 
 	//Audio Inputs
-	presets[`audioInputCurrentSourceHeader`] = {
+	presets[`audioInputCurrentInterfaceHeader`] = {
 		type: 'text',
 		category: 'Audio Inputs',
-		name: `Audio Inputs - Current Source`,
+		name: `Audio Inputs - Current Interface`,
 		text: '',
 	}
 	for (const input of self.state.audioInputs.values()) {
-		presets[`audioInput${input.inputId}CurrentSource`] = {
+		presets[`audioInput${input.inputId}CurrentInterface`] = {
 			type: 'button',
 			category: 'Audio Inputs',
-			name: `${input.name || `Input ${input.inputId + 1}`} - Current Source`,
+			name: `${input.name || `Input ${input.inputId + 1}`} - Current Interface`,
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `${input.name || `IN ${input.inputId + 1}`}\\n$(spectera:audio_input_${input.inputId + 1}_source)`,
+				text: `${input.name || `IN ${input.inputId + 1}`}\\n$(spectera:audio_input_${input.inputId + 1}_interface)`,
 				size: 11,
 				show_topbar: false,
 			},
@@ -1001,7 +1001,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			style: {
 				bgcolor: Color.Black,
 				color: Color.White,
-				text: `OUT ${output.outputId + 1}\\n$(spectera:audio_output_${output.outputId + 1}_destinations)`,
+				text: `OUT ${output.outputId + 1}\\n$(spectera:audio_output_${output.outputId + 1}_interfaces)`,
 				size: 11,
 				show_topbar: false,
 			},

@@ -137,7 +137,7 @@ export const AntennaStateMap: StateMap<Antenna> = {
 }
 
 export const AudioInputStateMap: StateMap<AudioInput> = {
-	source: { feedback: 'audioInputInterface', variable: 'source', valueFn: toInputSourceLabel },
+	source: { feedback: 'audioInputInterface', variable: 'interface', valueFn: toInputSourceLabel },
 	name: { variable: 'name', valueFn: passthrough },
 	iemAudiolinkId: {
 		feedback: ['iemAudioInputLinked', 'iemAudioInputNoLinkId'],

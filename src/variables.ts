@@ -129,8 +129,8 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 				name: `Audio Input - ${displayId} - IEM Link ID`,
 			},
 			{
-				variableId: `audio_input_${displayId}_source`,
-				name: `Audio Input - ${displayId} - Source`,
+				variableId: `audio_input_${displayId}_interface`,
+				name: `Audio Input - ${displayId} - Interface`,
 			},
 			{
 				variableId: `audio_input_${displayId}_iem_link_devices`,
@@ -174,7 +174,7 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 				name: `Audio Output ${displayId} Source`,
 			},
 			{
-				variableId: `audio_output_${displayId}_destinations`,
+				variableId: `audio_output_${displayId}_interfaces`,
 				name: `Audio Output ${displayId} Active Channels`,
 			},
 		)
@@ -508,7 +508,7 @@ export function getAudioInputVariables(
 ): Record<string, VariableValue> {
 	const displayId = input.inputId + 1
 	return {
-		[`audio_input_${displayId}_source`]: inputSourceLabels[input.source] ?? input.source,
+		[`audio_input_${displayId}_interface`]: inputSourceLabels[input.source] ?? input.source,
 		//[`audio_input_${displayId}_name`]: input.name || 'None',
 		[`audio_input_${displayId}_iem_link_id`]: input.iemAudiolinkId,
 		[`audio_input_${displayId}_iem_link_devices`]: getAudioInputIemLinkDevices(input, mobileDevices),
@@ -532,7 +532,7 @@ export function getAudioOutputVariables(
 	return {
 		[`audio_output_${displayId}_mic_link_id`]: output.micAudiolinkId,
 		[`audio_output_${displayId}_source`]: getAudioOutputSourceName(output, mobileDevices),
-		[`audio_output_${displayId}_destinations`]: getAudioOutputActiveChannels(output),
+		[`audio_output_${displayId}_interfaces`]: getAudioOutputActiveChannels(output),
 	}
 }
 

@@ -686,7 +686,7 @@ export class SpecteraApi extends EventEmitter {
 					feedbacksToCheck,
 				)
 				changedVariables[`audio_output_${displayId}_source`] = getAudioOutputSourceName(value, this.state.mobileDevices)
-				changedVariables[`audio_output_${displayId}_destinations`] = getAudioOutputActiveChannels(value)
+				changedVariables[`audio_output_${displayId}_interfaces`] = getAudioOutputActiveChannels(value)
 				structureChanged = !oldState
 			} else if (key.startsWith('/api/audio/links/')) {
 				if (value === null) {
