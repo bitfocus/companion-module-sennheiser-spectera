@@ -400,9 +400,7 @@ export class SpecteraApi extends EventEmitter {
 			// Promote current session to stale so it survives failed reconnect attempts.
 			// We can't DELETE it until the device is reachable again
 			if (this.sessionUUID) {
-				if (!this.staleSessionUUID) {
-					this.staleSessionUUID = this.sessionUUID
-				}
+				this.staleSessionUUID = this.sessionUUID
 				this.sessionUUID = null
 			}
 

@@ -412,7 +412,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			} else if (mode === 'Off') {
 				newBinding = RFChannels.Off
 			}
-			if (!newBinding) return
+			if (newBinding === undefined) return
 			await self.api.setAntenna(
 				action.options.dad as AntennaPortId,
 				{

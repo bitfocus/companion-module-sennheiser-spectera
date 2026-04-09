@@ -868,7 +868,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								inputId: allInputIds,
 								interface: source,
 								mode: 'On',
-								toggleSource: InputSource.Dante,
+								toggleInterface: InputSource.Dante,
 								requireConfirmation: true,
 							},
 						},
@@ -935,7 +935,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 									inputId: [input.inputId],
 									interface: source,
 									mode: 'On',
-									toggleSource: InputSource.Dante,
+									toggleInterface: InputSource.Dante,
 									requireConfirmation: false,
 								},
 							},
@@ -994,7 +994,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 		text: '',
 	}
 	for (const output of self.state.audioOutputs.values()) {
-		presets[`audioOutput${output.outputId}CurrentInterface`] = {
+		presets[`audioOutput${output.outputId}CurrentInterfaces`] = {
 			type: 'button',
 			category: 'Audio Outputs',
 			name: `Output ${output.outputId + 1} - Current Interfaces`,
