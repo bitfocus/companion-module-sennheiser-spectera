@@ -274,7 +274,8 @@ export function UpdateActions(self: SpecteraInstance): void {
 					continue
 				}
 				if (mode === 'Toggle') {
-					nextSource = current === action.options.interface ? (action.options.toggleInterface as InputSource) : iface
+					nextSource =
+						current?.source === action.options.interface ? (action.options.toggleInterface as InputSource) : iface
 				} else {
 					nextSource = iface
 				}
