@@ -268,8 +268,11 @@ export function UpdateActions(self: SpecteraInstance): void {
 				if (!self.confirmAction(key)) return
 			}
 			for (const inputId of action.options.inputId as number[]) {
-				const current = self.state.audioInputs.get(inputId)?.source
+				const current = self.state.audioInputs.get(inputId)
 				let nextSource: InputSource | undefined
+				if (current?.iemAudiolinkId === -1) {
+					continue
+				}
 				if (mode === 'Toggle') {
 					nextSource = current === action.options.interface ? (action.options.toggleInterface as InputSource) : iface
 				} else {
