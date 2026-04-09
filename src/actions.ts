@@ -243,7 +243,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 				default: InputSource.Dante,
 				id: 'toggleInterface',
 				isVisibleExpression: '$(options:mode) === "Toggle"',
-				tooltip: 'The interface that will be changed between when the changed to when the Toggle mode is selected.',
+				tooltip: 'The secondary interface that will be moved to when the Toggle mode is selected.',
 			},
 			{
 				type: 'checkbox',
