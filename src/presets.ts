@@ -598,7 +598,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					options: {
 						dad: port,
 						temperatureUnit: 'celsius',
-						temperature: 50,
+						temperature: 110,
 					},
 					style: {
 						bgcolor: Color.SpecteraYellow,
@@ -609,7 +609,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					options: {
 						dad: port,
 						temperatureUnit: 'celsius',
-						temperature: 100,
+						temperature: 120,
 					},
 					style: {
 						bgcolor: Color.SpecteraRed,
