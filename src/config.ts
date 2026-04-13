@@ -22,7 +22,7 @@ export function GetConfigFields(): SomeCompanionConfigField[] {
 			id: 'password',
 			label: 'Password',
 			width: 4,
-			default: 'Sennheiser1!',
+			default: '',
 		},
 	]
 }
