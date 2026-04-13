@@ -684,7 +684,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			{
 				type: 'textinput',
 				label: 'Adjustment Amount (dB)',
-				default: '12',
+				default: '1',
 				id: 'adjustment',
 				useVariables: true,
 				isVisibleExpression: '$(options:action) === "adjust"',

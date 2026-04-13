@@ -1842,11 +1842,11 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			presets[`${deviceVariableId}_HeadphoneVolumeUp`] = {
 				type: 'button',
 				category: `${category}s`,
-				name: `${device.name} Phone Vol +1`,
+				name: `${device.name} Phone Vol +0.5`,
 				style: {
 					bgcolor: Color.LightGray,
 					color: Color.White,
-					text: `$(spectera:${deviceVariableId}_name)\\nVOL +1\\n$(spectera:${deviceVariableId}_headphone_volume)dB`,
+					text: `$(spectera:${deviceVariableId}_name)\\nVOL +0.5\\n$(spectera:${deviceVariableId}_headphone_volume)dB`,
 					size: 11,
 					show_topbar: false,
 				},
@@ -1858,7 +1858,8 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								options: {
 									serial: device.serial,
 									action: 'adjust',
-									adjustment: '1',
+									volume: '-20',
+									adjustment: '0.5',
 								},
 							},
 						],
@@ -1902,11 +1903,11 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			presets[`${deviceVariableId}_HeadphoneVolumeDown`] = {
 				type: 'button',
 				category: `${category}s`,
-				name: `${device.name} Phone Vol Set -20`,
+				name: `${device.name} Phone Vol -0.5`,
 				style: {
 					bgcolor: Color.LightGray,
 					color: Color.White,
-					text: `$(spectera:${deviceVariableId}_name)\\nVOL -1\\n$(spectera:${deviceVariableId}_headphone_volume)dB`,
+					text: `$(spectera:${deviceVariableId}_name)\\nVOL -0.5\\n$(spectera:${deviceVariableId}_headphone_volume)dB`,
 					size: 11,
 					show_topbar: false,
 				},
@@ -1918,7 +1919,8 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								options: {
 									serial: device.serial,
 									action: 'adjust',
-									adjustment: '-1',
+									volume: '-20',
+									adjustment: '-0.5',
 								},
 							},
 						],
@@ -2054,7 +2056,8 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								options: {
 									serial: device.serial,
 									action: 'adjust',
-									adjustment: '-1',
+									volume: '-20',
+									adjustment: '-0.5',
 								},
 							},
 						],
@@ -2064,7 +2067,8 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								options: {
 									serial: device.serial,
 									action: 'adjust',
-									adjustment: '1',
+									volume: '-20',
+									adjustment: '0.5',
 								},
 							},
 						],
@@ -2213,7 +2217,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			style: {
 				bgcolor: Color.LightGray,
 				color: Color.White,
-				text: `$(spectera:${deviceVariableId}_name)\\nGAIN +3\\n$(spectera:${deviceVariableId}_mic_preamp_gain) dB`,
+				text: `$(spectera:${deviceVariableId}_name)\\nGAIN +1\\n$(spectera:${deviceVariableId}_mic_preamp_gain) dB`,
 				size: 11,
 				show_topbar: false,
 			},
@@ -2225,7 +2229,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							options: {
 								serial: device.serial,
 								action: 'adjust',
-								adjustment: '3',
+								adjustment: '1',
 							},
 						},
 					],
@@ -2253,7 +2257,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			style: {
 				bgcolor: Color.LightGray,
 				color: Color.White,
-				text: `$(spectera:${deviceVariableId}_name)\\nGAIN -3\\n$(spectera:${deviceVariableId}_mic_preamp_gain) dB`,
+				text: `$(spectera:${deviceVariableId}_name)\\nGAIN -1\\n$(spectera:${deviceVariableId}_mic_preamp_gain) dB`,
 				size: 11,
 				show_topbar: false,
 			},
@@ -2265,7 +2269,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							options: {
 								serial: device.serial,
 								action: 'adjust',
-								adjustment: '-3',
+								adjustment: '-1',
 							},
 						},
 					],
