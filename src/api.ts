@@ -272,7 +272,7 @@ export class SpecteraApi extends EventEmitter {
 			outputs.forEach((o) => this.state.updateAudioOutput(o))
 			channels.forEach((c) => this.state.updateRfChannel(c))
 			antennas.forEach((a) => this.state.updateAntenna(a))
-			devices.forEach((d) => this.state.updateMobileDevice(d))
+			devices.filter((d) => d.serial && d.serial !== '0000000000').forEach((d) => this.state.updateMobileDevice(d))
 			this.state.updatePsuState(psu)
 			this.state.updateTempState(temp)
 			this.state.updateFanState('FAN_1', fan1)
@@ -747,34 +747,55 @@ export class SpecteraApi extends EventEmitter {
 				}
 				structureChanged = !oldState
 			} else if (key.startsWith('/api/mts/paired/all/')) {
-				const oldState = this.state.mobileDevices.get(value.mtUid)
-				this.state.updateMobileDevice(value)
-				const type = value.type
-				const serial = value.serial
-				const prefix = `${type}_${serial}_`
-				this.handleStateUpdate(
-					prefix,
-					oldState as (SEKDevice & SKMDevice) | undefined,
-					value,
-					MobileDeviceStateMap,
-					changedVariables,
-					feedbacksToCheck,
-				)
-				structureChanged = !oldState || oldState.name !== value.name
-				// Recompute iem_link_devices for any audio input affected by this device's link change
-				const oldIemLinkId = oldState?.type === MtType.SEK ? oldState.iemAudiolinkId : undefined
-				const newIemLinkId = value.iemAudiolinkId
-				if (oldIemLinkId !== newIemLinkId) {
-					for (const input of this.state.audioInputs.values()) {
-						if (
-							(newIemLinkId !== undefined && input.iemAudiolinkId === newIemLinkId) ||
-							(oldIemLinkId !== undefined && input.iemAudiolinkId === oldIemLinkId)
-						) {
-							const displayId = input.inputId + 1
-							changedVariables[`audio_input_${displayId}_iem_link_devices`] = getAudioInputIemLinkDevices(
-								input,
-								this.state.mobileDevices,
-							)
+				if (value === null) {
+					// Device unpaired — remove from state
+					const match = key.match(/\/api\/mts\/paired\/all\/(\d+)/)
+					if (match && match[1]) {
+						const mtUid = parseInt(match[1], 10)
+						const oldDevice = this.state.mobileDevices.get(mtUid)
+						if (oldDevice) {
+							const oldPrefix = `${oldDevice.type}_${oldDevice.serial}_`
+							for (const cachedKey of Object.keys(this.variableCache)) {
+								if (cachedKey.startsWith(oldPrefix)) {
+									delete this.variableCache[cachedKey]
+								}
+							}
+						}
+						this.state.removeMobileDevice(mtUid)
+						structureChanged = true
+					}
+				} else if (!value.serial || value.serial === '0000000000') {
+					// Skip devices without a real serial number (newly paired, still syncing)
+				} else {
+					const oldState = this.state.mobileDevices.get(value.mtUid)
+					this.state.updateMobileDevice(value)
+					const type = value.type
+					const serial = value.serial
+					const prefix = `${type}_${serial}_`
+					this.handleStateUpdate(
+						prefix,
+						oldState as (SEKDevice & SKMDevice) | undefined,
+						value,
+						MobileDeviceStateMap,
+						changedVariables,
+						feedbacksToCheck,
+					)
+					structureChanged = !oldState || oldState.name !== value.name
+					// Recompute iem_link_devices for any audio input affected by this device's link change
+					const oldIemLinkId = oldState?.type === MtType.SEK ? oldState.iemAudiolinkId : undefined
+					const newIemLinkId = value.iemAudiolinkId
+					if (oldIemLinkId !== newIemLinkId) {
+						for (const input of this.state.audioInputs.values()) {
+							if (
+								(newIemLinkId !== undefined && input.iemAudiolinkId === newIemLinkId) ||
+								(oldIemLinkId !== undefined && input.iemAudiolinkId === oldIemLinkId)
+							) {
+								const displayId = input.inputId + 1
+								changedVariables[`audio_input_${displayId}_iem_link_devices`] = getAudioInputIemLinkDevices(
+									input,
+									this.state.mobileDevices,
+								)
+							}
 						}
 					}
 				}
