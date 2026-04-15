@@ -2,7 +2,7 @@
 	"id": "sennheiser-spectera",
 	"name": "sennheiser-spectera",
 	"shortname": "spectera",
-	"description": "Control and monitor the Sennheiser Spectera base station and connected devices.",
+	"description": "Control and monitor the Sennheiser Spectera Base Station and connected devices.",
 	"version": "0.0.0",
 	"license": "MIT",
 	"repository": "git+https://github.com/bitfocus/companion-module-sennheiser-spectera.git",
