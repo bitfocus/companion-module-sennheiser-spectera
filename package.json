@@ -1,6 +1,6 @@
 {
-	"name": "your-module-name",
-	"version": "0.1.0",
+	"name": "sennheiser-spectera",
+	"version": "1.0.0",
 	"main": "dist/main.js",
 	"type": "module",
 	"scripts": {
@@ -16,25 +16,27 @@
 	"license": "MIT",
 	"repository": {
 		"type": "git",
-		"url": "git+https://github.com/bitfocus/companion-module-your-module-name.git"
+		"url": "git+https://github.com/bitfocus/companion-module-sennheiser-spectera.git"
 	},
 	"engines": {
 		"node": "^22.20",
 		"yarn": "^4"
 	},
 	"dependencies": {
-		"@companion-module/base": "~1.12.1"
+		"@companion-module/base": "~1.14.1",
+		"p-queue": "^9.1.2",
+		"undici": "^7.24.7"
 	},
 	"devDependencies": {
-		"@companion-module/tools": "^2.6.1",
-		"@types/node": "^22.18.13",
-		"eslint": "^9.39.0",
+		"@companion-module/tools": "^2.7.1",
+		"@types/node": "^22.19.17",
+		"eslint": "^9.39.4",
 		"husky": "^9.1.7",
-		"lint-staged": "^16.2.6",
-		"prettier": "^3.6.2",
-		"rimraf": "^6.1.0",
-		"typescript": "~5.8.3",
-		"typescript-eslint": "^8.46.2"
+		"lint-staged": "^16.4.0",
+		"prettier": "^3.8.2",
+		"rimraf": "^6.1.3",
+		"typescript": "~5.9.3",
+		"typescript-eslint": "^8.58.1"
 	},
 	"prettier": "@companion-module/tools/.prettierrc.json",
 	"lint-staged": {
@@ -45,5 +47,5 @@
 			"yarn lint:raw --fix"
 		]
 	},
-	"packageManager": "yarn@4.10.3"
+	"packageManager": "yarn@4.13.0"
 }
