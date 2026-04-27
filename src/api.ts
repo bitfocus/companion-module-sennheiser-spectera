@@ -23,7 +23,7 @@ import type {
 	InterfaceStatusMadi,
 	InterfaceStatusWordclock,
 } from './types.js'
-import { MtType, MicAudiolinkMode } from './types.js'
+import { MtType } from './types.js'
 import { getAntennaFrequency } from './utils.js'
 import type { SpecteraState } from './state.js'
 import { Agent, Dispatcher } from 'undici'
@@ -63,6 +63,11 @@ const REQUEST_INTERVAL_MS = 20
 
 function isActiveAudioLinkId(id: number | undefined): boolean {
 	return id !== undefined && id > -1
+}
+
+interface AudioLinkCheck {
+	audioOutputIds?: ReadonlySet<number>
+	mobileDeviceUids?: ReadonlySet<number>
 }
 
 export class SpecteraApi extends EventEmitter {
@@ -568,9 +573,7 @@ export class SpecteraApi extends EventEmitter {
 		changedVariables: Record<string, VariableValue>,
 		feedbacksToCheck: Set<string>,
 	) {
-		const keysToCheck = oldState
-			? (Object.keys(newState as object) as (keyof T)[])
-			: (Object.keys(map as object) as (keyof T)[])
+		const keysToCheck = oldState ? (Object.keys(newState as object) as (keyof T)[]) : (Object.keys(map) as (keyof T)[])
 
 		for (const key of keysToCheck) {
 			const entry = map[key]
@@ -1076,6 +1079,46 @@ export class SpecteraApi extends EventEmitter {
 		await this.sendRequest('PUT', `/audio/links/${config.audiolinkId}`, config)
 	}
 
+	async deleteAudioLink(audiolinkId: number): Promise<void> {
+		await this.sendRequest('DELETE', `/audio/links/${audiolinkId}`)
+	}
+
+	isAudioLinkAbandoned(audiolinkId: number, exclude: AudioLinkCheck = {}): boolean {
+		if (!isActiveAudioLinkId(audiolinkId)) return false
+		const { audioOutputIds, mobileDeviceUids } = exclude
+
+		for (const output of this.state.audioOutputs.values()) {
+			if (audioOutputIds?.has(output.outputId)) continue
+			if (output.micAudiolinkId === audiolinkId) return false
+		}
+		for (const device of this.state.mobileDevices.values()) {
+			if (mobileDeviceUids?.has(device.mtUid)) continue
+			if (device.type === MtType.SEK && device.iemAudiolinkId === audiolinkId) return false
+		}
+		return true
+	}
+
+	async cleanupAudioLink(
+		audiolinkId: number | undefined,
+		exclude: AudioLinkCheck = {},
+		contextLabel = 'cleanup',
+	): Promise<void> {
+		if (audiolinkId === undefined || !isActiveAudioLinkId(audiolinkId)) return
+		if (!this.isAudioLinkAbandoned(audiolinkId, exclude)) {
+			this.instance.log('debug', `${contextLabel}: link ${audiolinkId} still in use, leaving in place`)
+			return
+		}
+		try {
+			await this.deleteAudioLink(audiolinkId)
+			this.instance.log('debug', `${contextLabel}: deleted abandoned audio link ${audiolinkId}`)
+		} catch (err) {
+			this.instance.log(
+				'warn',
+				`${contextLabel}: failed to delete abandoned audio link ${audiolinkId}: ${err instanceof Error ? err.message : String(err)}`,
+			)
+		}
+	}
+
 	async setMobileDeviceAudioLinkMode(mtUid: number, link: 'iem' | 'mic', modeId: number): Promise<void> {
 		const mobileDevice = this.state.mobileDevices.get(mtUid)
 		if (!mobileDevice) {
@@ -1124,6 +1167,8 @@ export class SpecteraApi extends EventEmitter {
 			return
 		}
 
+		const prevDeviceIemLinkId = mobileDevice.type === MtType.SEK ? mobileDevice.iemAudiolinkId : undefined
+
 		let audiolinkId = audioInput.iemAudiolinkId
 
 		if (audiolinkId < 0) {
@@ -1143,7 +1188,7 @@ export class SpecteraApi extends EventEmitter {
 				// Assign to Audio Input first
 				await this.setAudioInput(inputId, {
 					iemAudiolinkId: audiolinkId,
-				} as Partial<AudioInput>)
+				})
 			} catch (error) {
 				this.instance.log('error', `Audio Routing: Failed to create Audio Link: ${error}`)
 				return
@@ -1165,13 +1210,17 @@ export class SpecteraApi extends EventEmitter {
 		try {
 			await this.setMobileDevice(mtUid, {
 				iemAudiolinkId: audiolinkId,
-			} as Partial<MobileDevice>)
+			})
 			this.instance.log(
 				'debug',
 				`Routed Audio Input ${inputId} to Mobile Device ${mtUid} via Audio Link ${audiolinkId}`,
 			)
 		} catch (error) {
 			this.instance.log('warn', `Audio Routing: Failed to assign Audio Link to Mobile Device: ${error}`)
+		}
+
+		if (isActiveAudioLinkId(prevDeviceIemLinkId) && prevDeviceIemLinkId !== audiolinkId) {
+			await this.cleanupAudioLink(prevDeviceIemLinkId, { mobileDeviceUids: new Set([mtUid]) }, 'Audio Routing')
 		}
 	}
 
@@ -1216,6 +1265,7 @@ export class SpecteraApi extends EventEmitter {
 		}
 
 		const oldLinkID = audioOutput.micAudiolinkId
+		const clearedDeviceUids = new Set<number>()
 		if (oldLinkID && oldLinkID !== -1 && oldLinkID !== audiolinkId) {
 			let isOldLinkShared = false
 			for (const otherOutput of this.state.audioOutputs.values()) {
@@ -1235,21 +1285,18 @@ export class SpecteraApi extends EventEmitter {
 						try {
 							await this.setMobileDevice(otherDevice.mtUid, {
 								micAudiolinkId: -1,
-							} as Partial<MobileDevice>)
+							})
+							clearedDeviceUids.add(otherDevice.mtUid)
 						} catch (error) {
 							this.instance.log('warn', `Audio Routing: Failed to unlink device ${otherDevice.mtUid}: ${error}`)
 						}
 					}
 				}
-				try {
-					await this.updateAudioLink({
-						audiolinkId: oldLinkID,
-						modeId: MicAudiolinkMode['None'],
-					})
-					this.instance.log('debug', `Audio Routing: Set unused link ${oldLinkID} to Empty`)
-				} catch (error) {
-					this.instance.log('warn', `Audio Routing: Failed to clear old link ${oldLinkID}: ${error}`)
-				}
+				await this.cleanupAudioLink(
+					oldLinkID,
+					{ audioOutputIds: new Set([outputId]), mobileDeviceUids: clearedDeviceUids },
+					'Audio Routing',
+				)
 			}
 		}
 
@@ -1257,7 +1304,7 @@ export class SpecteraApi extends EventEmitter {
 			if (mobileDevice.micAudiolinkId !== audiolinkId) {
 				await this.setMobileDevice(mtUid, {
 					micAudiolinkId: audiolinkId,
-				} as Partial<MobileDevice>)
+				})
 			}
 		} catch (error) {
 			this.instance.log('warn', `Audio Routing: Failed to assign Audio Link to Mobile Device: ${error}`)
@@ -1267,7 +1314,7 @@ export class SpecteraApi extends EventEmitter {
 			if (audioOutput.micAudiolinkId !== audiolinkId) {
 				await this.setAudioOutput(outputId, {
 					micAudiolinkId: audiolinkId,
-				} as Partial<AudioOutput>)
+				})
 			}
 			this.instance.log(
 				'debug',
@@ -1346,6 +1393,9 @@ export class SpecteraApi extends EventEmitter {
 			skmPayload.commandBehavior = sourceDevice.commandBehavior
 		}
 
+		const prevTargetMicLinkId = targetDevice.micAudiolinkId
+		const prevTargetIemLinkId = targetDevice.type === MtType.SEK ? targetDevice.iemAudiolinkId : undefined
+
 		try {
 			// Drop the target's mic link first if it would conflict with the link we are moving from the source.
 			if (isActiveAudioLinkId(targetDevice.micAudiolinkId) && targetDevice.micAudiolinkId !== desiredMicId) {
@@ -1354,7 +1404,7 @@ export class SpecteraApi extends EventEmitter {
 						'debug',
 						`Copy Settings: Clearing target mic link ${targetDevice.micAudiolinkId} before reassignment`,
 					)
-					await this.setMobileDevice(targetMtUid, { micAudiolinkId: -1 } as Partial<MobileDevice>)
+					await this.setMobileDevice(targetMtUid, { micAudiolinkId: -1 })
 				} catch (err) {
 					this.instance.log(
 						'warn',
@@ -1369,7 +1419,7 @@ export class SpecteraApi extends EventEmitter {
 						'debug',
 						`Copy Settings: Unassign mic link ${sourceDevice.micAudiolinkId} from source (move to target)`,
 					)
-					await this.setMobileDevice(sourceMtUid, { micAudiolinkId: -1 } as Partial<MobileDevice>)
+					await this.setMobileDevice(sourceMtUid, { micAudiolinkId: -1 })
 				} catch (err) {
 					this.instance.log(
 						'warn',
@@ -1385,7 +1435,7 @@ export class SpecteraApi extends EventEmitter {
 						'debug',
 						`Copy Settings: Clearing target IEM link ${targetIem} before applying copied IEM (source unchanged)`,
 					)
-					await this.setMobileDevice(targetMtUid, { iemAudiolinkId: -1 } as Partial<MobileDevice>)
+					await this.setMobileDevice(targetMtUid, { iemAudiolinkId: -1 })
 				}
 			}
 
@@ -1396,13 +1446,20 @@ export class SpecteraApi extends EventEmitter {
 					'debug',
 					`Copy Settings: Applying IEM link ${desiredIemId} to target (dedicated PUT; source IEM not cleared)`,
 				)
-				await this.setMobileDevice(targetMtUid, { iemAudiolinkId: desiredIemId } as Partial<MobileDevice>)
+				await this.setMobileDevice(targetMtUid, { iemAudiolinkId: desiredIemId })
 			}
 
 			this.instance.log(
 				'debug',
 				`Copy Settings: Cloned settings from ${sourceDevice.name} to ${targetDevice.name} (mic ${desiredMicId}, IEM target ${desiredIemId ?? 'n/a'})`,
 			)
+
+			if (isActiveAudioLinkId(prevTargetMicLinkId) && prevTargetMicLinkId !== desiredMicId) {
+				await this.cleanupAudioLink(prevTargetMicLinkId, { mobileDeviceUids: new Set([targetMtUid]) }, 'Copy Settings')
+			}
+			if (isActiveAudioLinkId(prevTargetIemLinkId) && prevTargetIemLinkId !== desiredIemId) {
+				await this.cleanupAudioLink(prevTargetIemLinkId, { mobileDeviceUids: new Set([targetMtUid]) }, 'Copy Settings')
+			}
 		} catch (error) {
 			this.instance.log('warn', `Copy Settings: Failed to apply settings: ${error}`)
 		}
@@ -1418,6 +1475,7 @@ export class SpecteraApi extends EventEmitter {
 		}
 
 		const iemAudiolinkId = sourceDevice.type === MtType.SEK ? sourceDevice.iemAudiolinkId : undefined
+		const prevTargetIemLinkId = targetDevice.type === MtType.SEK ? targetDevice.iemAudiolinkId : undefined
 
 		if (sourceDevice.rfChannelId !== targetDevice.rfChannelId) {
 			this.instance.log('warn', 'Copy IEM Mix: Devices are on different RF Channels, this might fail')
@@ -1426,10 +1484,14 @@ export class SpecteraApi extends EventEmitter {
 		try {
 			await this.setMobileDevice(targetMtUid, {
 				iemAudiolinkId: iemAudiolinkId,
-			} as Partial<MobileDevice>)
+			})
 			this.instance.log('debug', `Copied IEM Mix from ${sourceMtUid} to ${targetMtUid}`)
 		} catch (error) {
 			this.instance.log('warn', `Copy IEM Mix: Failed to assign Audio Link: ${error}`)
+		}
+
+		if (isActiveAudioLinkId(prevTargetIemLinkId) && prevTargetIemLinkId !== iemAudiolinkId) {
+			await this.cleanupAudioLink(prevTargetIemLinkId, { mobileDeviceUids: new Set([targetMtUid]) }, 'Copy IEM Mix')
 		}
 	}
 }
