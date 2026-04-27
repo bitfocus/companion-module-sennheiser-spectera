@@ -1754,8 +1754,8 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				type: 'dropdown',
 				label: 'Mobile Device',
 				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
+				choices: mobileDeviceChoices,
 				allowCustom: true,
 			},
 			{
