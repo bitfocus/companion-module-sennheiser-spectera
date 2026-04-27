@@ -222,6 +222,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							options: {
 								rfChannel: channelIndex,
 								state: RfState.Active,
+								requireConfirmation: true,
 							},
 						},
 					],
@@ -237,6 +238,20 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					},
 					style: {
 						bgcolor: Color.SpecteraBlue,
+					},
+				},
+				{
+					feedbackId: 'confirmPending' as const,
+					options: {
+						actionType: 'setRfChannelState',
+						setRfChannelState_rfChannel: channelIndex,
+						setRfChannelState_state: RfState.Active,
+					},
+					style: {
+						bgcolor: Color.SpecteraRed,
+						color: Color.White,
+						text: `${channelLabel}\\nACTIVE\\nCONFIRM?`,
+						size: 11,
 					},
 				},
 			],
@@ -261,6 +276,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							options: {
 								rfChannel: channelIndex,
 								state: RfState.Muted,
+								requireConfirmation: true,
 							},
 						},
 					],
@@ -276,6 +292,20 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					},
 					style: {
 						bgcolor: Color.SpecteraYellow,
+					},
+				},
+				{
+					feedbackId: 'confirmPending' as const,
+					options: {
+						actionType: 'setRfChannelState',
+						setRfChannelState_rfChannel: channelIndex,
+						setRfChannelState_state: RfState.Muted,
+					},
+					style: {
+						bgcolor: Color.SpecteraRed,
+						color: Color.White,
+						text: `${channelLabel}\\nMUTE\\nCONFIRM?`,
+						size: 11,
 					},
 				},
 			],

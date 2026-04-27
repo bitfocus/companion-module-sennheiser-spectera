@@ -51,9 +51,24 @@ export function UpdateActions(self: SpecteraInstance): void {
 				default: RfState.Active,
 				id: 'state',
 			},
+			{
+				type: 'checkbox',
+				label: 'Require Confirmation',
+				id: 'requireConfirmation',
+				default: false,
+				tooltip:
+					'This will require a double press of the button to confirm the action. It will timeout after 5 seconds if not confirmed.',
+			},
 		],
 		description: 'Set the RF Channel',
 		callback: async (action) => {
+			if (action.options.requireConfirmation) {
+				const key = self.confirmationKey('setRfChannelState', {
+					rfChannel: action.options.rfChannel,
+					state: action.options.state,
+				})
+				if (!self.confirmAction(key)) return
+			}
 			if (!self.api) return
 			await self.api.setRfChannel(action.options.rfChannel as string, {
 				rfChannelId: action.options.rfChannel as number,

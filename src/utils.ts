@@ -32,6 +32,7 @@ export const CONFIRMABLE_ACTIONS = [
 	{ id: 'copyAllMobileDeviceSettings', label: 'Copy All Mobile Device Settings' },
 	{ id: 'dadRfBinding', label: 'DAD RF Binding' },
 	{ id: 'rfFrequency', label: 'RF Frequency' },
+	{ id: 'setRfChannelState', label: 'RF - State' },
 ] as const
 
 export function getChoicesFromEnum(enumObj: Record<string, string | number>): { id: string | number; label: string }[] {

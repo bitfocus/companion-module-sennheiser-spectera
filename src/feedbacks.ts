@@ -1966,6 +1966,23 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				default: 'On',
 				isVisibleExpression: '$(options:actionType) === "setAudioOutputInterface"',
 			},
+			// setRfChannelState fields
+			{
+				type: 'dropdown',
+				label: 'RF Channel',
+				id: 'setRfChannelState_rfChannel',
+				choices: rfChannelChoices,
+				default: 0,
+				isVisibleExpression: '$(options:actionType) === "setRfChannelState"',
+			},
+			{
+				type: 'dropdown',
+				label: 'RF Channel State',
+				id: 'setRfChannelState_state',
+				choices: getChoicesFromEnum(RfState),
+				default: RfState.Active,
+				isVisibleExpression: '$(options:actionType) === "setRfChannelState"',
+			},
 			// copyAllMobileDeviceSettings fields
 			{
 				type: 'dropdown',
@@ -2004,6 +2021,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				copyAllMobileDeviceSettings: {
 					sourceSerial: 'copyAllMobileDeviceSettings_sourceSerial',
 					targetSerial: 'copyAllMobileDeviceSettings_targetSerial',
+				},
+				setRfChannelState: {
+					rfChannel: 'setRfChannelState_rfChannel',
+					state: 'setRfChannelState_state',
 				},
 			}
 			const params = paramMap[actionType]
