@@ -2661,6 +2661,10 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								options: { inputId: STEREO_INPUT_OFFSET + input1.inputId, serial, modeIdStereo: 7 },
 							},
 							{
+								actionId: 'setAudioInputInterface',
+								options: { inputId: [input1.inputId, input2.inputId], interface: 'passthrough', mode: 'On' },
+							},
+							{
 								actionId: 'mobileDeviceRename',
 								options: {
 									serial,
@@ -2736,6 +2740,10 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							{
 								actionId: 'routeAudioInputToMobileDevice',
 								options: { inputId: input.inputId, serial, modeIdMono: 4 },
+							},
+							{
+								actionId: 'setAudioInputInterface',
+								options: { inputId: [input.inputId], interface: 'passthrough', mode: 'On' },
 							},
 							{
 								actionId: 'mobileDeviceRename',

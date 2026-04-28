@@ -220,7 +220,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Interface',
-				choices: getChoicesFromEnum(InputSource),
+				choices: [...getChoicesFromEnum(InputSource), { id: 'passthrough', label: 'Passthrough' }],
 				default: InputSource.Dante,
 				id: 'interface',
 			},
@@ -254,6 +254,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 		],
 		description: 'Set the audio input interface (Dante, MADI 1, MADI 2).',
 		callback: async (action) => {
+			if (action.options.interface === 'passthrough') return
 			if (!self.api) return
 			const iface = action.options.interface as InputSource
 			const mode = action.options.mode as 'On' | 'Toggle'
