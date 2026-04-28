@@ -1137,7 +1137,8 @@ export function UpdateActions(self: SpecteraInstance): void {
 			},
 		],
 		callback: async (action, context) => {
-			if (!self.api) return
+			const api = self.api
+			if (!api) return
 			const serial = await context.parseVariablesInString(action.options.serial as string)
 			const device = getDeviceBySerial(self.state, serial)
 			if (!device) return
@@ -1146,64 +1147,58 @@ export function UpdateActions(self: SpecteraInstance): void {
 			const defaultModeId = Number(action.options.modeId)
 			const useExisting = Boolean(action.options.useExisting)
 			const outputLinkId = self.state.audioOutputs.get(outputId)?.micAudiolinkId
-			const outputHasActiveLink = outputLinkId !== undefined && outputLinkId > -1
+			const outputHasActiveLink = typeof outputLinkId === 'number' && outputLinkId > -1
 			const deviceLinkId = device.micAudiolinkId
 
 			const alreadyRouted =
-				typeof outputLinkId === 'number' &&
-				outputLinkId > -1 &&
-				typeof deviceLinkId === 'number' &&
-				deviceLinkId > -1 &&
-				outputLinkId === deviceLinkId
+				outputHasActiveLink && typeof deviceLinkId === 'number' && deviceLinkId > -1 && outputLinkId === deviceLinkId
 
 			const disconnectFromOutput = async (micLinkId: number): Promise<void> => {
-				await self.api!.setAudioOutput(outputId, { micAudiolinkId: -1 })
-				await self.api!.cleanupAudioLink(
+				await api.setAudioOutput(outputId, { micAudiolinkId: -1 })
+				await api.cleanupAudioLink(
 					micLinkId,
 					{ audioOutputIds: new Set([outputId]), mobileDeviceUids: new Set([device.mtUid]) },
 					`Instrument Switch (${device.name} → output ${outputId + 1})`,
 				)
 			}
 
-			const connectToOutput = async (): Promise<void> => {
-				// Resolve mode: device's existing mode > output's existing link mode > default
-				let modeId = defaultModeId
-				let modeSource = 'default'
-				if (useExisting) {
-					const deviceModeId = getExistingMicAudiolinkModeFromState(self.state, device)
-					if (deviceModeId !== undefined) {
-						modeId = deviceModeId
-						modeSource = `device ${device.name}`
-					} else if (outputHasActiveLink) {
-						const outputLink = self.state.audioLinks.get(outputLinkId)
-						if (outputLink) {
-							modeId = Number(outputLink.modeId)
-							modeSource = `output link ${outputLinkId}`
-						}
+			// When useExisting: prefer device's link mode, else output's link mode, else dropdown default.
+			const resolveRouteMode = (): { modeId: number; modeSource: string } => {
+				if (!useExisting) {
+					return { modeId: defaultModeId, modeSource: 'default' }
+				}
+				const deviceModeId = getExistingMicAudiolinkModeFromState(self.state, device)
+				if (deviceModeId !== undefined) {
+					return { modeId: deviceModeId, modeSource: `device ${device.name}` }
+				}
+				if (outputHasActiveLink) {
+					const outputLink = self.state.audioLinks.get(outputLinkId)
+					if (outputLink) {
+						return { modeId: Number(outputLink.modeId), modeSource: `output link ${outputLinkId}` }
 					}
 				}
+				return { modeId: defaultModeId, modeSource: 'default' }
+			}
+
+			const connectToOutput = async (): Promise<void> => {
+				const { modeId, modeSource } = resolveRouteMode()
 				self.log(
 					'debug',
 					`Instrument Switch: ${device.name} routed to output ${outputId + 1} (mode ${modeId} from ${modeSource})`,
 				)
-				await self.api!.routeMobileDeviceToAudioOutput(device.mtUid, outputId, modeId)
+				await api.routeMobileDeviceToAudioOutput(device.mtUid, outputId, modeId)
 			}
 
-			if (behavior === 'off') {
-				if (alreadyRouted) {
-					await disconnectFromOutput(deviceLinkId)
-				}
-				return
-			}
-			if (behavior === 'on') {
-				await connectToOutput()
-				return
-			}
-			//Default
-			if (alreadyRouted) {
-				await disconnectFromOutput(deviceLinkId)
-			} else {
-				await connectToOutput()
+			switch (behavior) {
+				case 'off':
+					if (alreadyRouted) await disconnectFromOutput(deviceLinkId)
+					return
+				case 'on':
+					await connectToOutput()
+					return
+				default:
+					if (alreadyRouted) await disconnectFromOutput(deviceLinkId)
+					else await connectToOutput()
 			}
 		},
 	}
