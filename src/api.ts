@@ -1198,6 +1198,11 @@ export class SpecteraApi extends EventEmitter {
 				this.instance.log('error', `Audio Routing: Failed to create Audio Link: ${error}`)
 				return
 			}
+		} else {
+			// Cleanup old link when moving to an existing link
+			if (isActiveAudioLinkId(prevDeviceIemLinkId) && prevDeviceIemLinkId !== audiolinkId) {
+				await this.cleanupAudioLink(prevDeviceIemLinkId, { mobileDeviceUids: new Set([mtUid]) }, 'Audio Routing')
+			}
 		}
 
 		// Assign to Mobile Device
