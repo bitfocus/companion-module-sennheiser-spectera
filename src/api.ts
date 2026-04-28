@@ -1178,6 +1178,11 @@ export class SpecteraApi extends EventEmitter {
 				return
 			}
 
+			// Cleanup before creating new link, in case base station is at 100% utilization
+			if (isActiveAudioLinkId(prevDeviceIemLinkId) && prevDeviceIemLinkId !== audiolinkId) {
+				await this.cleanupAudioLink(prevDeviceIemLinkId, { mobileDeviceUids: new Set([mtUid]) }, 'Audio Routing')
+			}
+
 			try {
 				audiolinkId = await this.createAudioLink({
 					modeId: modeId,
@@ -1193,17 +1198,6 @@ export class SpecteraApi extends EventEmitter {
 				this.instance.log('error', `Audio Routing: Failed to create Audio Link: ${error}`)
 				return
 			}
-		} else {
-			// Existing Audio Link, check if mode needs update
-			/* const audioLink = this.state.audioLinks.get(audiolinkId)
-			if (audioLink && audioLink.modeId !== (modeId as AudiolinkModeId)) {
-				try {
-					await this.updateAudioLink({ audiolinkId, modeId })
-					this.instance.log('debug', `Updated Audio Link ${audiolinkId} mode to ${modeId}`)
-				} catch (error) {
-					this.instance.log('error', `Audio Routing: Failed to update Audio Link mode: ${error}`)
-				}
-			} */
 		}
 
 		// Assign to Mobile Device
@@ -1217,10 +1211,6 @@ export class SpecteraApi extends EventEmitter {
 			)
 		} catch (error) {
 			this.instance.log('warn', `Audio Routing: Failed to assign Audio Link to Mobile Device: ${error}`)
-		}
-
-		if (isActiveAudioLinkId(prevDeviceIemLinkId) && prevDeviceIemLinkId !== audiolinkId) {
-			await this.cleanupAudioLink(prevDeviceIemLinkId, { mobileDeviceUids: new Set([mtUid]) }, 'Audio Routing')
 		}
 	}
 
