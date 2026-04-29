@@ -23,7 +23,6 @@ import {
 	getAudioLinkChoices,
 	getChoicesFromEnum,
 	getDeviceBySerial,
-	getExistingMicAudiolinkModeFromState,
 	getMobileDeviceChoices,
 	rfChannelChoices,
 	sanitizeMobileDeviceName,
@@ -1147,60 +1146,14 @@ export function UpdateActions(self: SpecteraInstance): void {
 			const behavior = (action.options.behavior as string | undefined) ?? 'toggle'
 			const defaultModeId = Number(action.options.modeId)
 			const useExisting = Boolean(action.options.useExisting)
-			const outputLinkId = self.state.audioOutputs.get(outputId)?.micAudiolinkId
-			const outputHasActiveLink = typeof outputLinkId === 'number' && outputLinkId > -1
-			const deviceLinkId = device.micAudiolinkId
 
-			const alreadyRouted =
-				outputHasActiveLink && typeof deviceLinkId === 'number' && deviceLinkId > -1 && outputLinkId === deviceLinkId
-
-			const disconnectFromOutput = async (micLinkId: number): Promise<void> => {
-				await api.setAudioOutput(outputId, { micAudiolinkId: -1 })
-				await api.cleanupAudioLink(
-					micLinkId,
-					{ audioOutputIds: new Set([outputId]), mobileDeviceUids: new Set([device.mtUid]) },
-					`Instrument Switch (${device.name} → output ${outputId + 1})`,
-				)
-			}
-
-			// When useExisting: prefer device's link mode, else output's link mode, else dropdown default.
-			const resolveRouteMode = (): { modeId: number; modeSource: string } => {
-				if (!useExisting) {
-					return { modeId: defaultModeId, modeSource: 'default' }
-				}
-				const deviceModeId = getExistingMicAudiolinkModeFromState(self.state, device)
-				if (deviceModeId !== undefined) {
-					return { modeId: deviceModeId, modeSource: `device ${device.name}` }
-				}
-				if (outputHasActiveLink) {
-					const outputLink = self.state.audioLinks.get(outputLinkId)
-					if (outputLink) {
-						return { modeId: Number(outputLink.modeId), modeSource: `output link ${outputLinkId}` }
-					}
-				}
-				return { modeId: defaultModeId, modeSource: 'default' }
-			}
-
-			const connectToOutput = async (): Promise<void> => {
-				const { modeId, modeSource } = resolveRouteMode()
-				self.log(
-					'debug',
-					`Instrument Switch: ${device.name} routed to output ${outputId + 1} (mode ${modeId} from ${modeSource})`,
-				)
-				await api.routeMobileDeviceToAudioOutput(device.mtUid, outputId, modeId)
-			}
-
-			switch (behavior) {
-				case 'off':
-					if (alreadyRouted) await disconnectFromOutput(deviceLinkId)
-					return
-				case 'on':
-					await connectToOutput()
-					return
-				default:
-					if (alreadyRouted) await disconnectFromOutput(deviceLinkId)
-					else await connectToOutput()
-			}
+			await api.instrumentSwitchMobileDeviceToOutput(
+				device.mtUid,
+				outputId,
+				behavior as 'toggle' | 'on' | 'off',
+				defaultModeId,
+				useExisting,
+			)
 		},
 	}
 

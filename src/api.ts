@@ -24,7 +24,7 @@ import type {
 	InterfaceStatusWordclock,
 } from './types.js'
 import { MtType } from './types.js'
-import { getAntennaFrequency } from './utils.js'
+import { getAntennaFrequency, getExistingMicAudiolinkModeFromState } from './utils.js'
 import type { SpecteraState } from './state.js'
 import { Agent, Dispatcher } from 'undici'
 import {
@@ -1317,6 +1317,64 @@ export class SpecteraApi extends EventEmitter {
 			)
 		} catch (error) {
 			this.instance.log('warn', `Audio Routing: Failed to assign Audio Link to Audio Output: ${error}`)
+		}
+	}
+
+	async instrumentSwitchMobileDeviceToOutput(
+		mtUid: number,
+		outputId: number,
+		behavior: 'toggle' | 'on' | 'off',
+		defaultModeId: number,
+		preserveExistingMode: boolean,
+	): Promise<void> {
+		const device = this.state.mobileDevices.get(mtUid)
+		const output = this.state.audioOutputs.get(outputId)
+		if (!device || !output) return
+
+		const deviceLinkId = device.micAudiolinkId
+		const outputLinkId = output.micAudiolinkId
+
+		const hasActiveOutputLink = isActiveAudioLinkId(outputLinkId)
+		const hasActiveDeviceLink = isActiveAudioLinkId(deviceLinkId)
+
+		const isAlreadyRouted = hasActiveOutputLink && hasActiveDeviceLink && outputLinkId === deviceLinkId
+
+		if (behavior === 'off' || (behavior === 'toggle' && isAlreadyRouted)) {
+			if (isAlreadyRouted && deviceLinkId !== undefined) {
+				await this.setAudioOutput(outputId, { micAudiolinkId: -1 })
+				await this.cleanupAudioLink(
+					deviceLinkId,
+					{ audioOutputIds: new Set([outputId]), mobileDeviceUids: new Set([device.mtUid]) },
+					`Instrument Switch (${device.name} → output ${outputId + 1})`,
+				)
+			}
+			return
+		}
+
+		if (behavior === 'on' || (behavior === 'toggle' && !isAlreadyRouted)) {
+			let modeId = defaultModeId
+			let modeSource = 'default'
+
+			if (preserveExistingMode) {
+				const deviceModeId = getExistingMicAudiolinkModeFromState(this.state, device)
+
+				if (deviceModeId !== undefined) {
+					modeId = deviceModeId
+					modeSource = `device ${device.name}`
+				} else if (hasActiveOutputLink) {
+					const outputLink = this.state.audioLinks.get(outputLinkId)
+					if (outputLink) {
+						modeId = Number(outputLink.modeId)
+						modeSource = `output link ${outputLinkId}`
+					}
+				}
+			}
+
+			this.instance.log(
+				'debug',
+				`Instrument Switch: ${device.name} routed to output ${outputId + 1} (mode ${modeId} from ${modeSource})`,
+			)
+			await this.routeMobileDeviceToAudioOutput(mtUid, outputId, modeId)
 		}
 	}
 
