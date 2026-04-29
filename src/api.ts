@@ -83,6 +83,7 @@ export class SpecteraApi extends EventEmitter {
 	private lastLevelUpdateTime = 0
 	private isInitializing = false
 	private readonly requestQueue: { add: <T>(fn: () => Promise<T>) => Promise<T> }
+	private readonly routingQueue: { add: <T>(fn: () => Promise<T>) => Promise<T> }
 	private destroyed = false
 	private reconnectTimer: ReturnType<typeof setTimeout> | null = null
 	private reconnectAttempt = 0
@@ -129,6 +130,9 @@ export class SpecteraApi extends EventEmitter {
 			concurrency: 1,
 			interval: REQUEST_INTERVAL_MS,
 			intervalCap: 1,
+		})
+		this.routingQueue = new (PQueue as any)({
+			concurrency: 1,
 		})
 	}
 
@@ -1108,7 +1112,42 @@ export class SpecteraApi extends EventEmitter {
 			this.instance.log('debug', `${contextLabel}: link ${audiolinkId} still in use, leaving in place`)
 			return
 		}
+
 		try {
+			// Explicitly unlink any devices still referencing this abandoned link to prevent them from getting stuck
+			for (const device of this.state.mobileDevices.values()) {
+				if (device.micAudiolinkId === audiolinkId) {
+					try {
+						await this.setMobileDevice(device.mtUid, { micAudiolinkId: -1 })
+						device.micAudiolinkId = -1 // Optimistic update
+						this.instance.log(
+							'debug',
+							`${contextLabel}: explicitly unlinked device ${device.mtUid} from abandoned link ${audiolinkId}`,
+						)
+					} catch (_e) {
+						this.instance.log(
+							'warn',
+							`${contextLabel}: failed to unlink device ${device.mtUid} from abandoned link ${audiolinkId}`,
+						)
+					}
+				}
+				if (device.type === MtType.SEK && device.iemAudiolinkId === audiolinkId) {
+					try {
+						await this.setMobileDevice(device.mtUid, { iemAudiolinkId: -1 })
+						device.iemAudiolinkId = -1 // Optimistic update
+						this.instance.log(
+							'debug',
+							`${contextLabel}: explicitly unlinked device ${device.mtUid} (IEM) from abandoned link ${audiolinkId}`,
+						)
+					} catch (_e) {
+						this.instance.log(
+							'warn',
+							`${contextLabel}: failed to unlink device ${device.mtUid} (IEM) from abandoned link ${audiolinkId}`,
+						)
+					}
+				}
+			}
+
 			await this.deleteAudioLink(audiolinkId)
 			this.instance.log('debug', `${contextLabel}: deleted abandoned audio link ${audiolinkId}`)
 		} catch (err) {
@@ -1220,6 +1259,12 @@ export class SpecteraApi extends EventEmitter {
 	}
 
 	async routeMobileDeviceToAudioOutput(mtUid: number, outputId: number, modeId: number): Promise<void> {
+		return this.routingQueue.add(async () => {
+			await this._routeMobileDeviceToAudioOutput(mtUid, outputId, modeId)
+		})
+	}
+
+	private async _routeMobileDeviceToAudioOutput(mtUid: number, outputId: number, modeId: number): Promise<void> {
 		const audioOutput = this.state.audioOutputs.get(outputId)
 		const mobileDevice = this.state.mobileDevices.get(mtUid)
 
@@ -1261,7 +1306,7 @@ export class SpecteraApi extends EventEmitter {
 
 		const oldLinkID = audioOutput.micAudiolinkId
 		const clearedDeviceUids = new Set<number>()
-		if (oldLinkID && oldLinkID !== -1 && oldLinkID !== audiolinkId) {
+		if (isActiveAudioLinkId(oldLinkID) && oldLinkID !== audiolinkId) {
 			let isOldLinkShared = false
 			for (const otherOutput of this.state.audioOutputs.values()) {
 				if (otherOutput.outputId !== outputId && otherOutput.micAudiolinkId === oldLinkID) {
@@ -1281,6 +1326,7 @@ export class SpecteraApi extends EventEmitter {
 							await this.setMobileDevice(otherDevice.mtUid, {
 								micAudiolinkId: -1,
 							})
+							otherDevice.micAudiolinkId = -1 // Optimistic update
 							clearedDeviceUids.add(otherDevice.mtUid)
 						} catch (error) {
 							this.instance.log('warn', `Audio Routing: Failed to unlink device ${otherDevice.mtUid}: ${error}`)
@@ -1300,6 +1346,7 @@ export class SpecteraApi extends EventEmitter {
 				await this.setMobileDevice(mtUid, {
 					micAudiolinkId: audiolinkId,
 				})
+				mobileDevice.micAudiolinkId = audiolinkId ?? -1 // Optimistic update
 			}
 		} catch (error) {
 			this.instance.log('warn', `Audio Routing: Failed to assign Audio Link to Mobile Device: ${error}`)
@@ -1310,6 +1357,7 @@ export class SpecteraApi extends EventEmitter {
 				await this.setAudioOutput(outputId, {
 					micAudiolinkId: audiolinkId,
 				})
+				audioOutput.micAudiolinkId = audiolinkId ?? -1 // Optimistic update
 			}
 			this.instance.log(
 				'debug',
@@ -1327,55 +1375,58 @@ export class SpecteraApi extends EventEmitter {
 		defaultModeId: number,
 		preserveExistingMode: boolean,
 	): Promise<void> {
-		const device = this.state.mobileDevices.get(mtUid)
-		const output = this.state.audioOutputs.get(outputId)
-		if (!device || !output) return
+		return this.routingQueue.add(async () => {
+			const device = this.state.mobileDevices.get(mtUid)
+			const output = this.state.audioOutputs.get(outputId)
+			if (!device || !output) return
 
-		const deviceLinkId = device.micAudiolinkId
-		const outputLinkId = output.micAudiolinkId
+			const deviceLinkId = device.micAudiolinkId
+			const outputLinkId = output.micAudiolinkId
 
-		const hasActiveOutputLink = isActiveAudioLinkId(outputLinkId)
-		const hasActiveDeviceLink = isActiveAudioLinkId(deviceLinkId)
+			const hasActiveOutputLink = isActiveAudioLinkId(outputLinkId)
+			const hasActiveDeviceLink = isActiveAudioLinkId(deviceLinkId)
 
-		const isAlreadyRouted = hasActiveOutputLink && hasActiveDeviceLink && outputLinkId === deviceLinkId
+			const isAlreadyRouted = hasActiveOutputLink && hasActiveDeviceLink && outputLinkId === deviceLinkId
 
-		if (behavior === 'off' || (behavior === 'toggle' && isAlreadyRouted)) {
-			if (isAlreadyRouted && deviceLinkId !== undefined) {
-				await this.setAudioOutput(outputId, { micAudiolinkId: -1 })
-				await this.cleanupAudioLink(
-					deviceLinkId,
-					{ audioOutputIds: new Set([outputId]), mobileDeviceUids: new Set([device.mtUid]) },
-					`Instrument Switch (${device.name} → output ${outputId + 1})`,
-				)
+			if (behavior === 'off' || (behavior === 'toggle' && isAlreadyRouted)) {
+				if (isAlreadyRouted && deviceLinkId !== undefined) {
+					await this.setAudioOutput(outputId, { micAudiolinkId: -1 })
+					output.micAudiolinkId = -1 // Optimistic update
+					await this.cleanupAudioLink(
+						deviceLinkId,
+						{ audioOutputIds: new Set([outputId]), mobileDeviceUids: new Set([device.mtUid]) },
+						`Instrument Switch (${device.name} → output ${outputId + 1})`,
+					)
+				}
+				return
 			}
-			return
-		}
 
-		if (behavior === 'on' || (behavior === 'toggle' && !isAlreadyRouted)) {
-			let modeId = defaultModeId
-			let modeSource = 'default'
+			if (behavior === 'on' || (behavior === 'toggle' && !isAlreadyRouted)) {
+				let modeId = defaultModeId
+				let modeSource = 'default'
 
-			if (preserveExistingMode) {
-				const deviceModeId = getExistingMicAudiolinkModeFromState(this.state, device)
+				if (preserveExistingMode) {
+					const deviceModeId = getExistingMicAudiolinkModeFromState(this.state, device)
 
-				if (deviceModeId !== undefined) {
-					modeId = deviceModeId
-					modeSource = `device ${device.name}`
-				} else if (hasActiveOutputLink) {
-					const outputLink = this.state.audioLinks.get(outputLinkId)
-					if (outputLink) {
-						modeId = Number(outputLink.modeId)
-						modeSource = `output link ${outputLinkId}`
+					if (deviceModeId !== undefined) {
+						modeId = deviceModeId
+						modeSource = `device ${device.name}`
+					} else if (hasActiveOutputLink) {
+						const outputLink = this.state.audioLinks.get(outputLinkId)
+						if (outputLink) {
+							modeId = Number(outputLink.modeId)
+							modeSource = `output link ${outputLinkId}`
+						}
 					}
 				}
-			}
 
-			this.instance.log(
-				'debug',
-				`Instrument Switch: ${device.name} routed to output ${outputId + 1} (mode ${modeId} from ${modeSource})`,
-			)
-			await this.routeMobileDeviceToAudioOutput(mtUid, outputId, modeId)
-		}
+				this.instance.log(
+					'debug',
+					`Instrument Switch: ${device.name} routed to output ${outputId + 1} (mode ${modeId} from ${modeSource})`,
+				)
+				await this._routeMobileDeviceToAudioOutput(mtUid, outputId, modeId)
+			}
+		})
 	}
 
 	async copyMobileDeviceSettings(sourceMtUid: number, targetMtUid: number): Promise<void> {
