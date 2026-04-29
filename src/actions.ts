@@ -953,13 +953,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			const serial = await context.parseVariablesInString(action.options.serial as string)
 			const device = getDeviceBySerial(self.state, serial)
 			if (!device) return
-			const prevIemLinkId = device.type === MtType.SEK ? device.iemAudiolinkId : undefined
-			await self.api.setMobileDevice(device.mtUid, { iemAudiolinkId: -1 })
-			await self.api.cleanupAudioLink(
-				prevIemLinkId,
-				{ mobileDeviceUids: new Set([device.mtUid]) },
-				'Remove IEM Audio Link',
-			)
+			await self.api.removeIemAudioLinkFromDevice(device.mtUid)
 		},
 	}
 
@@ -1080,9 +1074,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 		callback: async (action) => {
 			if (!self.api) return
 			const outputId = Number(action.options.outputId)
-			const prevLinkId = self.state.audioOutputs.get(outputId)?.micAudiolinkId
-			await self.api.setAudioOutput(outputId, { micAudiolinkId: -1 })
-			await self.api.cleanupAudioLink(prevLinkId, { audioOutputIds: new Set([outputId]) }, 'Remove Device from Output')
+			await self.api.removeMobileDeviceFromOutput(outputId)
 		},
 	}
 

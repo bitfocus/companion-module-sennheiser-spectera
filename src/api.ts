@@ -1368,6 +1368,27 @@ export class SpecteraApi extends EventEmitter {
 		}
 	}
 
+	async removeMobileDeviceFromOutput(outputId: number): Promise<void> {
+		return this.routingQueue.add(async () => {
+			const output = this.state.audioOutputs.get(outputId)
+			const prevLinkId = output?.micAudiolinkId
+			await this.setAudioOutput(outputId, { micAudiolinkId: -1 })
+			if (output) output.micAudiolinkId = -1 // Optimistic update
+			await this.cleanupAudioLink(prevLinkId, { audioOutputIds: new Set([outputId]) }, 'Remove Device from Output')
+		})
+	}
+
+	async removeIemAudioLinkFromDevice(mtUid: number): Promise<void> {
+		return this.routingQueue.add(async () => {
+			const device = this.state.mobileDevices.get(mtUid)
+			if (!device) return
+			const prevIemLinkId = device.type === MtType.SEK ? device.iemAudiolinkId : undefined
+			await this.setMobileDevice(mtUid, { iemAudiolinkId: -1 })
+			if (device.type === MtType.SEK) device.iemAudiolinkId = -1 // Optimistic update
+			await this.cleanupAudioLink(prevIemLinkId, { mobileDeviceUids: new Set([mtUid]) }, 'Remove IEM Audio Link')
+		})
+	}
+
 	async instrumentSwitchMobileDeviceToOutput(
 		mtUid: number,
 		outputId: number,
