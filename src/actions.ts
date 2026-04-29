@@ -7,9 +7,7 @@ import {
 	CableEmulation,
 	LedBrightness,
 	InputSource,
-	MobileDevice,
 	MtType,
-	RfChannel,
 	RFChannels,
 	RfState,
 	RfStateStartup,
@@ -25,7 +23,6 @@ import {
 	getAudioLinkChoices,
 	getChoicesFromEnum,
 	getDeviceBySerial,
-	getExistingMicAudiolinkModeFromState,
 	getMobileDeviceChoices,
 	rfChannelChoices,
 	sanitizeMobileDeviceName,
@@ -53,17 +50,29 @@ export function UpdateActions(self: SpecteraInstance): void {
 				default: RfState.Active,
 				id: 'state',
 			},
+			{
+				type: 'checkbox',
+				label: 'Require Confirmation',
+				id: 'requireConfirmation',
+				default: false,
+				tooltip:
+					'This will require a double press of the button to confirm the action. It will timeout after 5 seconds if not confirmed.',
+			},
 		],
 		description: 'Set the RF Channel',
 		callback: async (action) => {
+			if (action.options.requireConfirmation) {
+				const key = self.confirmationKey('setRfChannelState', {
+					rfChannel: action.options.rfChannel,
+					state: action.options.state,
+				})
+				if (!self.confirmAction(key)) return
+			}
 			if (!self.api) return
-			await self.api.setRfChannel(
-				action.options.rfChannel as string,
-				{
-					rfChannelId: action.options.rfChannel as number,
-					rfState: action.options.state as RfState,
-				} as Partial<RfChannel>,
-			)
+			await self.api.setRfChannel(action.options.rfChannel as string, {
+				rfChannelId: action.options.rfChannel as number,
+				rfState: action.options.state as RfState,
+			})
 		},
 	}
 
@@ -88,13 +97,10 @@ export function UpdateActions(self: SpecteraInstance): void {
 		description: 'Set the RF Channel Startup State',
 		callback: async (action) => {
 			if (!self.api) return
-			await self.api.setRfChannel(
-				action.options.rfChannel as string,
-				{
-					rfChannelId: action.options.rfChannel as number,
-					rfStateOnStartup: action.options.state as RfStateStartup,
-				} as Partial<RfChannel>,
-			)
+			await self.api.setRfChannel(action.options.rfChannel as string, {
+				rfChannelId: action.options.rfChannel as number,
+				rfStateOnStartup: action.options.state as RfStateStartup,
+			})
 		},
 	}
 
@@ -119,13 +125,10 @@ export function UpdateActions(self: SpecteraInstance): void {
 		description: 'Set the RF Channel TX Power',
 		callback: async (action) => {
 			if (!self.api) return
-			await self.api.setRfChannel(
-				action.options.rfChannel as string,
-				{
-					rfChannelId: action.options.rfChannel as number,
-					txPower: action.options.txPower as TxPower,
-				} as Partial<RfChannel>,
-			)
+			await self.api.setRfChannel(action.options.rfChannel as string, {
+				rfChannelId: action.options.rfChannel as number,
+				txPower: action.options.txPower as TxPower,
+			})
 		},
 	}
 
@@ -150,13 +153,10 @@ export function UpdateActions(self: SpecteraInstance): void {
 		description: 'Set the RF Channel Bandwidth Mode',
 		callback: async (action) => {
 			if (!self.api) return
-			await self.api.setRfChannel(
-				action.options.rfChannel as string,
-				{
-					rfChannelId: action.options.rfChannel as number,
-					bandwidthMode: action.options.bandwidthMode as BandwidthMode,
-				} as Partial<RfChannel>,
-			)
+			await self.api.setRfChannel(action.options.rfChannel as string, {
+				rfChannelId: action.options.rfChannel as number,
+				bandwidthMode: action.options.bandwidthMode as BandwidthMode,
+			})
 		},
 	}
 
@@ -196,13 +196,10 @@ export function UpdateActions(self: SpecteraInstance): void {
 				})
 				if (!self.confirmAction(key)) return
 			}
-			await self.api.setRfChannel(
-				action.options.rfChannel as string,
-				{
-					rfChannelId: action.options.rfChannel as number,
-					frequency: Number(action.options.frequency) * 1000,
-				} as Partial<RfChannel>,
-			)
+			await self.api.setRfChannel(action.options.rfChannel as string, {
+				rfChannelId: action.options.rfChannel as number,
+				frequency: Number(action.options.frequency) * 1000,
+			})
 		},
 	}
 
@@ -222,7 +219,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Interface',
-				choices: getChoicesFromEnum(InputSource),
+				choices: [...getChoicesFromEnum(InputSource), { id: 'passthrough', label: 'Passthrough' }],
 				default: InputSource.Dante,
 				id: 'interface',
 			},
@@ -256,6 +253,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 		],
 		description: 'Set the audio input interface (Dante, MADI 1, MADI 2).',
 		callback: async (action) => {
+			if (action.options.interface === 'passthrough') return
 			if (!self.api) return
 			const iface = action.options.interface as InputSource
 			const mode = action.options.mode as 'On' | 'Toggle'
@@ -307,13 +305,10 @@ export function UpdateActions(self: SpecteraInstance): void {
 		description: 'Set the DAD LED Brightness',
 		callback: async (action) => {
 			if (!self.api) return
-			await self.api.setAntenna(
-				action.options.dad as AntennaPortId,
-				{
-					antennaPortId: action.options.dad as AntennaPortId,
-					ledBrightness: action.options.ledBrightness as LedBrightness,
-				} as Partial<Antenna>,
-			)
+			await self.api.setAntenna(action.options.dad as AntennaPortId, {
+				antennaPortId: action.options.dad as AntennaPortId,
+				ledBrightness: action.options.ledBrightness as LedBrightness,
+			})
 		},
 	}
 
@@ -341,13 +336,10 @@ export function UpdateActions(self: SpecteraInstance): void {
 		description: 'Set the DAD Identify',
 		callback: async (action) => {
 			if (!self.api) return
-			await self.api.setAntenna(
-				action.options.dad as AntennaPortId,
-				{
-					antennaPortId: action.options.dad as AntennaPortId,
-					identify: action.options.identify === 'true',
-				} as Partial<Antenna>,
-			)
+			await self.api.setAntenna(action.options.dad as AntennaPortId, {
+				antennaPortId: action.options.dad as AntennaPortId,
+				identify: action.options.identify === 'true',
+			})
 		},
 	}
 
@@ -458,7 +450,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			const device = getDeviceBySerial(self.state, serial)
 			if (!device) return
 			const rfChannelId = action.options.rfChannel === -1 ? undefined : (action.options.rfChannel as number)
-			await self.api.setMobileDevice(device.mtUid, { rfChannelId } as Partial<MobileDevice>)
+			await self.api.setMobileDevice(device.mtUid, { rfChannelId })
 		},
 	}
 
@@ -492,7 +484,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			if (!device) return
 			await self.api.setMobileDevice(device.mtUid, {
 				identify: action.options.identify === 'true',
-			} as Partial<MobileDevice>)
+			})
 		},
 	}
 
@@ -523,7 +515,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			if (!device) return
 			await self.api.setMobileDevice(device.mtUid, {
 				ledBrightness: action.options.ledBrightness as LedBrightness,
-			} as Partial<MobileDevice>)
+			})
 		},
 	}
 
@@ -588,7 +580,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 				if (device.headphoneVolumeMin !== undefined && volume < device.headphoneVolumeMin) {
 					volume = device.headphoneVolumeMin
 				}
-				await self.api.setMobileDevice(device.mtUid, { headphoneVolume: volume } as Partial<MobileDevice>)
+				await self.api.setMobileDevice(device.mtUid, { headphoneVolume: volume })
 			}
 		},
 	}
@@ -647,7 +639,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 				}
 				if (balance < -100) balance = -100
 				if (balance > 100) balance = 100
-				await self.api.setMobileDevice(device.mtUid, { headphoneBalance: balance } as Partial<MobileDevice>)
+				await self.api.setMobileDevice(device.mtUid, { headphoneBalance: balance })
 			}
 		},
 	}
@@ -713,7 +705,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 					if (gain < -10) gain = -10
 					if (gain > 42) gain = 42
 				}
-				await self.api.setMobileDevice(device.mtUid, { micPreampGain: gain } as Partial<MobileDevice>)
+				await self.api.setMobileDevice(device.mtUid, { micPreampGain: gain })
 			}
 		},
 	}
@@ -752,7 +744,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 				}
 			}
 
-			await self.api.setMobileDevice(device.mtUid, { micLowCutHz: frequency } as Partial<MobileDevice>)
+			await self.api.setMobileDevice(device.mtUid, { micLowCutHz: frequency })
 		},
 	}
 
@@ -783,7 +775,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			if (!device) return
 			await self.api.setMobileDevice(device.mtUid, {
 				cableEmulation: action.options.cableEmulation as CableEmulation,
-			} as Partial<MobileDevice>)
+			})
 		},
 	}
 
@@ -814,7 +806,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			if (!device) return
 			await self.api.setMobileDevice(device.mtUid, {
 				micLineSelection: action.options.mode as MicLineSelection,
-			} as Partial<MobileDevice>)
+			})
 		},
 	}
 
@@ -853,7 +845,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			await self.api.setMobileDevice(device.mtUid, {
 				micTestToneEnabled: action.options.enable as boolean,
 				micTestToneLevel: level,
-			} as Partial<MobileDevice>)
+			})
 		},
 	}
 
@@ -886,7 +878,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			const sanitizedName = sanitizeMobileDeviceName(rawName)
 			await self.api.setMobileDevice(device.mtUid, {
 				name: sanitizedName,
-			} as Partial<MobileDevice>)
+			})
 		},
 	}
 
@@ -961,7 +953,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			const serial = await context.parseVariablesInString(action.options.serial as string)
 			const device = getDeviceBySerial(self.state, serial)
 			if (!device) return
-			await self.api.setMobileDevice(device.mtUid, { iemAudiolinkId: -1 })
+			await self.api.removeIemAudioLinkFromDevice(device.mtUid)
 		},
 	}
 
@@ -1082,7 +1074,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 		callback: async (action) => {
 			if (!self.api) return
 			const outputId = Number(action.options.outputId)
-			await self.api.setAudioOutput(outputId, { micAudiolinkId: -1 })
+			await self.api.removeMobileDeviceFromOutput(outputId)
 		},
 	}
 
@@ -1137,7 +1129,8 @@ export function UpdateActions(self: SpecteraInstance): void {
 			},
 		],
 		callback: async (action, context) => {
-			if (!self.api) return
+			const api = self.api
+			if (!api) return
 			const serial = await context.parseVariablesInString(action.options.serial as string)
 			const device = getDeviceBySerial(self.state, serial)
 			if (!device) return
@@ -1145,83 +1138,14 @@ export function UpdateActions(self: SpecteraInstance): void {
 			const behavior = (action.options.behavior as string | undefined) ?? 'toggle'
 			const defaultModeId = Number(action.options.modeId)
 			const useExisting = Boolean(action.options.useExisting)
-			const outputLinkId = self.state.audioOutputs.get(outputId)?.micAudiolinkId
-			const outputHasActiveLink = outputLinkId !== undefined && outputLinkId > -1
-			const deviceLinkId = device.micAudiolinkId
 
-			const alreadyRouted =
-				typeof outputLinkId === 'number' &&
-				outputLinkId > -1 &&
-				typeof deviceLinkId === 'number' &&
-				deviceLinkId > -1 &&
-				outputLinkId === deviceLinkId
-
-			const disconnectFromOutput = async (micLinkId: number): Promise<void> => {
-				await self.api!.setAudioOutput(outputId, { micAudiolinkId: -1 })
-
-				const activeLink = (id: number | undefined): boolean => id !== undefined && id > -1
-				const linkStillUsedByOutput = [...self.state.audioOutputs.values()].some(
-					(o) => o.outputId !== outputId && activeLink(o.micAudiolinkId) && o.micAudiolinkId === micLinkId,
-				)
-				const linkStillUsedByDevice = [...self.state.mobileDevices.values()].some(
-					(d) => d.mtUid !== device.mtUid && activeLink(d.micAudiolinkId) && d.micAudiolinkId === micLinkId,
-				)
-
-				const clearLinkMode = activeLink(micLinkId) && !linkStillUsedByOutput && !linkStillUsedByDevice
-				if (clearLinkMode) {
-					await self.api!.updateAudioLink({
-						audiolinkId: micLinkId,
-						modeId: MicAudiolinkMode['None'],
-					})
-				}
-				self.log(
-					'debug',
-					clearLinkMode
-						? `Instrument Switch: ${device.name} removed from output ${outputId + 1}; mic link ${micLinkId} was unused, set to Empty`
-						: `Instrument Switch: ${device.name} removed from output ${outputId + 1}; mic link ${micLinkId} left as-is (still in use elsewhere)`,
-				)
-			}
-
-			const connectToOutput = async (): Promise<void> => {
-				// Resolve mode: device's existing mode > output's existing link mode > default
-				let modeId = defaultModeId
-				let modeSource = 'default'
-				if (useExisting) {
-					const deviceModeId = getExistingMicAudiolinkModeFromState(self.state, device)
-					if (deviceModeId !== undefined) {
-						modeId = deviceModeId
-						modeSource = `device ${device.name}`
-					} else if (outputHasActiveLink) {
-						const outputLink = self.state.audioLinks.get(outputLinkId)
-						if (outputLink) {
-							modeId = Number(outputLink.modeId)
-							modeSource = `output link ${outputLinkId}`
-						}
-					}
-				}
-				self.log(
-					'debug',
-					`Instrument Switch: ${device.name} routed to output ${outputId + 1} (mode ${modeId} from ${modeSource})`,
-				)
-				await self.api!.routeMobileDeviceToAudioOutput(device.mtUid, outputId, modeId)
-			}
-
-			if (behavior === 'off') {
-				if (alreadyRouted) {
-					await disconnectFromOutput(deviceLinkId)
-				}
-				return
-			}
-			if (behavior === 'on') {
-				await connectToOutput()
-				return
-			}
-			//Default
-			if (alreadyRouted) {
-				await disconnectFromOutput(deviceLinkId)
-			} else {
-				await connectToOutput()
-			}
+			await api.instrumentSwitchMobileDeviceToOutput(
+				device.mtUid,
+				outputId,
+				behavior as 'toggle' | 'on' | 'off',
+				defaultModeId,
+				useExisting,
+			)
 		},
 	}
 
