@@ -368,6 +368,10 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 				name: `${deviceVariableLabel} - Mic Test Tone Level`,
 			},
 			{
+				variableId: `${deviceVariableId}_command_behavior`,
+				name: `${deviceVariableLabel} - Command Behavior`,
+			},
+			{
 				variableId: `${deviceVariableId}_command_state`,
 				name: `${deviceVariableLabel} - Command State`,
 			},
@@ -479,10 +483,6 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 				{
 					variableId: `${deviceVariableId}_mic_lowcut_hz`,
 					name: `${deviceVariableLabel} - Mic Lowcut Hz`,
-				},
-				{
-					variableId: `${deviceVariableId}_command_behavior`,
-					name: `${deviceVariableLabel} - Command Behavior`,
 				},
 				{
 					variableId: `${deviceVariableId}_mic_module`,
@@ -621,6 +621,7 @@ export function getMobileDeviceVariables(device: MobileDevice): Record<string, V
 		[`${deviceVariableId}_mic_audiolink_active`]: device.micAudiolinkActive,
 		[`${deviceVariableId}_mic_test_tone_enabled`]: device.micTestToneEnabled,
 		[`${deviceVariableId}_mic_test_tone_level`]: device.micTestToneLevel,
+		[`${deviceVariableId}_command_behavior`]: device.commandBehavior,
 		[`${deviceVariableId}_command_state`]: device.commandState,
 		[`${deviceVariableId}_mic_lqi`]: device.micLqi,
 		[`${deviceVariableId}_interference`]: device.interference?.severity,
@@ -657,7 +658,6 @@ export function getMobileDeviceVariables(device: MobileDevice): Record<string, V
 		variables[`${deviceVariableId}_mic_preamp_gain`] = device.micPreampGain
 		variables[`${deviceVariableId}_mic_lowcut_hz`] =
 			device.micLowCutHz === MicLowCutHzSKM.Off ? 'Off' : device.micLowCutHz
-		variables[`${deviceVariableId}_command_behavior`] = device.commandBehavior
 		variables[`${deviceVariableId}_mic_module`] = device.micModule?.name
 	}
 

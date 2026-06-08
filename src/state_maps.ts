@@ -225,7 +225,8 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 		variable: 'mic_test_tone_level',
 		valueFn: passthrough,
 	},
-	commandState: { variable: 'command_state', valueFn: passthrough },
+	commandBehavior: { feedback: 'mobileDeviceCommandBehavior', variable: 'command_behavior', valueFn: passthrough },
+	commandState: { feedback: 'mobileDeviceCommandState', variable: 'command_state', valueFn: passthrough },
 	micLqi: { feedback: 'mobileDeviceMicLqi', variable: 'mic_lqi', valueFn: passthrough },
 	interference: {
 		feedback: 'mobileDeviceInterference',
@@ -301,7 +302,6 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 	},
 	iemLqi: { feedback: 'mobileDeviceIemLqi', variable: 'iem_lqi', valueFn: passthrough },
 	// SKM specific
-	commandBehavior: { variable: 'command_behavior', valueFn: passthrough },
 	micModule: {
 		variable: 'mic_module',
 		valueFn: (v: unknown): VariableValue => (v as MicModule | undefined)?.name,

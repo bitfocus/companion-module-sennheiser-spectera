@@ -157,6 +157,21 @@ export enum MicLowCutHzSKM {
 	'120 Hz' = 120,
 }
 
+export enum CommandBehavior {
+	Disabled = 'Disabled',
+	Momentary = 'Momentary',
+	Latching = 'Latching',
+}
+
+export enum CommandState {
+	Unknown = 'Unknown',
+	NotAvailable = 'NotAvailable',
+	Released = 'Released',
+	Pressed = 'Pressed',
+	Unlatched = 'Unlatched',
+	Latched = 'Latched',
+}
+
 // Interfaces
 export interface AudioLink {
 	audiolinkId: number
@@ -247,7 +262,8 @@ export interface MobileDeviceBase {
 	micAudiolinkActive?: boolean
 	micTestToneEnabled?: boolean
 	micTestToneLevel?: number
-	commandState?: string
+	commandBehavior?: CommandBehavior
+	commandState?: CommandState
 	micLqi?: number
 	interference?: { severity: Interference }
 	dominantAntenna?: string
@@ -276,7 +292,6 @@ export interface SKMDevice extends MobileDeviceBase {
 	type: MtType.SKM
 	micPreampGain: number
 	micLowCutHz: MicLowCutHzSKM
-	commandBehavior: string
 	micModule?: MicModule
 }
 

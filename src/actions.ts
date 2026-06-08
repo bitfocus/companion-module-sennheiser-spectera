@@ -17,6 +17,7 @@ import {
 	MicLowCutHzSKM,
 	IemAudiolinkMode,
 	MicAudiolinkMode,
+	CommandBehavior,
 } from './types.js'
 import {
 	audioOutputChannelChoices,
@@ -521,6 +522,37 @@ export function UpdateActions(self: SpecteraInstance): void {
 			})
 		},
 	} */
+
+	actions['mobileDeviceCommandBehavior'] = {
+		name: 'Mobile Device - Command Behavior',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'serial',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
+				choices: mobileDeviceChoices,
+				allowCustom: true,
+			},
+			{
+				type: 'dropdown',
+				label: 'Command Behavior',
+				choices: getChoicesFromEnum(CommandBehavior),
+				default: CommandBehavior.Disabled,
+				id: 'commandBehavior',
+			},
+		],
+		description: 'Set Command Behavior for a Mobile Device',
+		callback: async (action, context) => {
+			if (!self.api) return
+			const serial = await context.parseVariablesInString(action.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
+			if (!device) return
+			await self.api.setMobileDevice(device.mtUid, {
+				commandBehavior: action.options.commandBehavior as CommandBehavior,
+			})
+		},
+	}
 
 	actions['mobileDeviceLedBrightness'] = {
 		name: 'Mobile Device - LED Brightness',

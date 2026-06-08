@@ -22,6 +22,8 @@ import {
 	MicLowCutHzSKM,
 	InterfaceInputStatus,
 	InputSource,
+	CommandBehavior,
+	CommandState,
 } from './types.js'
 import {
 	audioOutputChannelChoices,
@@ -1104,6 +1106,68 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			const serial = await context.parseVariablesInString(feedback.options.serial as string)
 			const device = getDeviceBySerial(self.state, serial)
 			return device?.sleep === true
+		},
+	}
+
+	feedbacks['mobileDeviceCommandBehavior'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Command Behavior',
+		description: 'Indicates if the mobile device matches the selected command behavior mode',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'serial',
+				default: mobileDeviceChoices[0].id,
+				choices: mobileDeviceChoices,
+				allowCustom: true,
+			},
+			{
+				type: 'dropdown',
+				label: 'Command Behavior',
+				choices: getChoicesFromEnum(CommandBehavior),
+				default: CommandBehavior.Disabled,
+				id: 'commandBehavior',
+			},
+		],
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
+			return device?.commandBehavior === feedback.options.commandBehavior
+		},
+	}
+
+	feedbacks['mobileDeviceCommandState'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Command State',
+		description: 'Indicates if the mobile device matches the selected command state',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'serial',
+				default: mobileDeviceChoices[0].id,
+				choices: mobileDeviceChoices,
+				allowCustom: true,
+			},
+			{
+				type: 'dropdown',
+				label: 'Command State',
+				choices: getChoicesFromEnum(CommandState),
+				default: CommandState.Unknown,
+				id: 'commandState',
+			},
+		],
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
+			return device?.commandState === feedback.options.commandState
 		},
 	}
 
