@@ -416,6 +416,12 @@ export interface BaseStationIdentity {
 	vendor: string
 }
 
+export interface SscVersion {
+	protocol: string
+	schema: string
+	schemaDetailed: string
+}
+
 export interface BaseStationState {
 	state: BaseStationStatus
 	warnings: string[]

@@ -17,6 +17,7 @@ import type {
 	BaseStationSite,
 	BaseStationState,
 	BaseStationIdentity,
+	SscVersion,
 	AudioLevels,
 	AudioLevel,
 	InterfaceStatusAudioNetwork,
@@ -60,6 +61,15 @@ import {
 } from './state_maps.js'
 
 const REQUEST_INTERVAL_MS = 20
+
+/** API schema version this module targets */
+const EXPECTED_API_SCHEMA = '18.0'
+
+function parseSchemaVersion(schema: string): { major: number; minor: number } | null {
+	const match = /^(\d+)\.(\d+)/.exec(schema)
+	if (!match) return null
+	return { major: Number(match[1]), minor: Number(match[2]) }
+}
 
 function isActiveAudioLinkId(id: number | undefined): boolean {
 	return id !== undefined && id > -1
@@ -195,9 +205,47 @@ export class SpecteraApi extends EventEmitter {
 	async performLogin(): Promise<void> {
 		try {
 			await this.getBaseStationState()
+			await this.checkApiCompatibility()
 		} catch (error) {
 			this.instance.log('debug', `Login failed: ${error instanceof Error ? error.message : String(error)}`)
 			throw error
+		}
+	}
+
+	private async checkApiCompatibility(): Promise<void> {
+		try {
+			const version = await this.getSscVersion()
+			const deviceSchema = parseSchemaVersion(version.schema)
+			const expectedSchema = parseSchemaVersion(EXPECTED_API_SCHEMA)
+
+			this.instance.log('debug', `Spectera Base Station API ${version.schema}, SSC Protocol ${version.protocol}`)
+
+			if (!deviceSchema || !expectedSchema) {
+				this.instance.log('warn', `Unable to verify Base Station API version (${version.schema})`)
+				return
+			}
+
+			if (deviceSchema.major !== expectedSchema.major) {
+				this.instance.log(
+					'warn',
+					`Base Station API version ${version.schema} differs from module expected version ${EXPECTED_API_SCHEMA}. The module may not work correctly.`,
+				)
+			} else if (deviceSchema.minor < expectedSchema.minor) {
+				this.instance.log(
+					'warn',
+					`Base Station API version ${version.schema} is older than module expected version ${EXPECTED_API_SCHEMA}. Some features may be unavailable.`,
+				)
+			} else if (deviceSchema.minor > expectedSchema.minor) {
+				this.instance.log(
+					'info',
+					`Base Station API version ${version.schema} is newer than module expected version ${EXPECTED_API_SCHEMA}. Some device features may not be supported yet.`,
+				)
+			}
+		} catch (error) {
+			this.instance.log(
+				'warn',
+				`Unable to check API version: ${error instanceof Error ? error.message : String(error)}`,
+			)
 		}
 	}
 
@@ -1044,6 +1092,10 @@ export class SpecteraApi extends EventEmitter {
 			fanId,
 			errorState: errorState.errorState ?? errorState,
 		}
+	}
+
+	async getSscVersion(): Promise<SscVersion> {
+		return this.sendRequest<SscVersion>('GET', '/ssc/version')
 	}
 
 	async getBaseStationIdentity(): Promise<BaseStationIdentity> {
