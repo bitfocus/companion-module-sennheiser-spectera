@@ -488,6 +488,40 @@ export function UpdateActions(self: SpecteraInstance): void {
 		},
 	}
 
+	/* actions['mobileDeviceSleep'] = {
+		name: 'Mobile Device - Sleep',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'serial',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
+				choices: mobileDeviceChoices,
+				allowCustom: true,
+			},
+			{
+				type: 'dropdown',
+				label: 'Sleep',
+				choices: [
+					{ id: 'true', label: 'Sleep' },
+					{ id: 'false', label: 'Wake' },
+				],
+				default: 'true',
+				id: 'sleep',
+			},
+		],
+		description: 'Set Sleep state for a Mobile Device',
+		callback: async (action, context) => {
+			if (!self.api) return
+			const serial = await context.parseVariablesInString(action.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
+			if (!device) return
+			await self.api.setMobileDevice(device.mtUid, {
+				sleep: action.options.sleep === 'true',
+			})
+		},
+	} */
+
 	actions['mobileDeviceLedBrightness'] = {
 		name: 'Mobile Device - LED Brightness',
 		options: [
