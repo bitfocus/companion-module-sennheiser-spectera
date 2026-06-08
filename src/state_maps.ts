@@ -12,6 +12,7 @@ import type {
 	AntennaBinding,
 	SEKDevice,
 	SKMDevice,
+	MobileDeviceBase,
 	AudioLink,
 	InterferenceDetail,
 	MicModule,
@@ -29,6 +30,7 @@ import {
 	MicLowCutHzSKM,
 	MtType,
 	InputSource,
+	MtState,
 } from './types.js'
 import { formatBatteryRuntimeMinutes } from './utils.js'
 
@@ -169,14 +171,19 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 		valueFn: passthrough,
 	},
 	serial: { variable: 'serial', valueFn: passthrough },
-	connected: { feedback: 'mobileDeviceConnected', variable: 'connected', valueFn: passthrough },
 	lastConnected: {
 		feedback: 'mobileDeviceLastConnected',
 		variable: 'last_connected',
 		valueFn: passthrough,
 	},
 	sleep: { feedback: 'mobileDeviceSleep', variable: 'sleep', valueFn: passthrough },
-	state: { feedback: 'mobileDeviceState', variable: 'state', valueFn: passthrough },
+	state: {
+		feedback: ['mobileDeviceState', 'mobileDeviceConnected'],
+		variableSuffixes: [
+			{ suffix: 'state', valueFn: passthrough },
+			{ suffix: 'connected', valueFn: (_v, state) => (state as MobileDeviceBase).state === MtState.Connected },
+		],
+	},
 	batteryFillLevel: {
 		feedback: 'mobileDeviceBatteryLevel',
 		variable: 'battery_level',

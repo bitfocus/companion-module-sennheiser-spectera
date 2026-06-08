@@ -562,7 +562,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		callback: async (feedback, context) => {
 			const serial = await context.parseVariablesInString(feedback.options.serial as string)
 			const device = getDeviceBySerial(self.state, serial)
-			return device?.connected === true
+			return device?.state === MtState.Connected
 		},
 	}
 

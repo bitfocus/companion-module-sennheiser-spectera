@@ -231,7 +231,6 @@ export interface MobileDeviceBase {
 	reverseIdentify?: boolean
 	name: string
 	serial?: string
-	connected?: boolean
 	sleep: boolean
 	state: MtState
 	lastConnected?: string

@@ -12,7 +12,7 @@ import type {
 	BaseStationState,
 	BaseStationSite,
 } from './types.js'
-import { MtType, RfState, RFChannels, RfStateStartup, MicLowCutHzSEK, MicLowCutHzSKM } from './types.js'
+import { MtType, RfState, RFChannels, RfStateStartup, MicLowCutHzSEK, MicLowCutHzSKM, MtState } from './types.js'
 import {
 	StateMap,
 	VariableValue,
@@ -609,7 +609,7 @@ export function getMobileDeviceVariables(device: MobileDevice): Record<string, V
 		[`${deviceVariableId}_rf_channel_id`]: device.rfChannelId,
 		[`${deviceVariableId}_identify`]: device.identify,
 		[`${deviceVariableId}_reverse_identify`]: device.reverseIdentify,
-		[`${deviceVariableId}_connected`]: device.connected,
+		[`${deviceVariableId}_connected`]: device.state === MtState.Connected,
 		[`${deviceVariableId}_last_connected`]: device.lastConnected === 'NotAvailable' ? 'Now' : device.lastConnected,
 		[`${deviceVariableId}_sleep`]: device.sleep,
 		[`${deviceVariableId}_state`]: device.state,
