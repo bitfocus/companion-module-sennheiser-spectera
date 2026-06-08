@@ -1,6 +1,69 @@
-import { combineRgb } from '@companion-module/base'
+import { combineRgb, type InputValue } from '@companion-module/base'
 import { SpecteraState } from './state.js'
 import { Antenna, AudiolinkModeId, MobileDevice, MtType, RfChannel, RFChannels } from './types.js'
+import type { LedColors } from './types.js'
+
+export const DEFAULT_CONNECTED_STATE_COLOR = '#00A100'
+export const DEFAULT_LED_COLORS: LedColors = {
+	rfActive: '#00A100',
+	rfMuted: '#A18700',
+}
+
+export const LED_COLOR_PRESETS = ['#000000', '#008700', '#00A100', '#00FF00', '#877200', '#A18700', '#FFD700'] as const
+
+function toHexByte(value: number): string {
+	return Math.max(0, Math.min(255, value)).toString(16).padStart(2, '0').toUpperCase()
+}
+
+/** Normalize a Companion colorpicker value to #RRGGBB for the Spectera API. */
+export function normalizeHexColor(color: InputValue | undefined): string {
+	if (color === undefined || color === null || color === '') return ''
+
+	if (typeof color === 'boolean' || Array.isArray(color)) return ''
+
+	if (typeof color === 'number') {
+		const r = (color >> 16) & 0xff
+		const g = (color >> 8) & 0xff
+		const b = color & 0xff
+		return `#${toHexByte(r)}${toHexByte(g)}${toHexByte(b)}`
+	}
+
+	const trimmed = color.trim()
+	if (trimmed.startsWith('#')) {
+		const hex = trimmed.slice(1)
+		if (hex.length === 3) {
+			return `#${hex[0]}${hex[0]}${hex[1]}${hex[1]}${hex[2]}${hex[2]}`.toUpperCase()
+		}
+		if (hex.length >= 6) {
+			return `#${hex.slice(0, 6).toUpperCase()}`
+		}
+	}
+
+	const rgbMatch = trimmed.match(/^rgba?\(\s*(\d+)\s*,\s*(\d+)\s*,\s*(\d+)/i)
+	if (rgbMatch) {
+		return `#${toHexByte(Number(rgbMatch[1]))}${toHexByte(Number(rgbMatch[2]))}${toHexByte(Number(rgbMatch[3]))}`
+	}
+
+	return trimmed
+}
+
+export function colorsMatch(a: string | undefined, b: InputValue | undefined): boolean {
+	if (!a || b === undefined || b === '') return false
+	return normalizeHexColor(a).toLowerCase() === normalizeHexColor(b).toLowerCase()
+}
+
+/** Convert a Spectera hex color or Companion colorpicker value to a Companion bgcolor number. */
+export function toCompanionColor(color: InputValue | undefined): number | undefined {
+	const hex = normalizeHexColor(color)
+	if (!hex.startsWith('#') || hex.length < 7) return undefined
+
+	const r = parseInt(hex.slice(1, 3), 16)
+	const g = parseInt(hex.slice(3, 5), 16)
+	const b = parseInt(hex.slice(5, 7), 16)
+	if (Number.isNaN(r) || Number.isNaN(g) || Number.isNaN(b)) return undefined
+
+	return combineRgb(r, g, b)
+}
 
 export const Color = {
 	Black: combineRgb(0, 0, 0),

@@ -1487,7 +1487,7 @@ export class SpecteraApi extends EventEmitter {
 
 		const payload: Partial<MobileDevice> = {
 			name: sourceDevice.name,
-			ledBrightness: sourceDevice.ledBrightness,
+			connectedStateColor: sourceDevice.connectedStateColor,
 			micPreampGain: sourceDevice.micPreampGain,
 			micAudiolinkId: desiredMicId,
 			rfChannelId: sourceDevice.rfChannelId,

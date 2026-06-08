@@ -4,7 +4,6 @@ import {
 	AntennaPortId,
 	BandwidthMode,
 	DeviceStatus,
-	LedBrightness,
 	BaseStationStatus,
 	CableEmulation,
 	RFChannels,
@@ -35,7 +34,14 @@ import {
 	rfChannelChoices,
 	STEREO_INPUT_OFFSET,
 } from './utils.js'
-import { Color } from './utils.js'
+import {
+	Color,
+	colorsMatch,
+	DEFAULT_CONNECTED_STATE_COLOR,
+	DEFAULT_LED_COLORS,
+	LED_COLOR_PRESETS,
+	toCompanionColor,
+} from './utils.js'
 
 export function UpdateFeedbacks(self: SpecteraInstance): void {
 	const feedbacks: CompanionFeedbackDefinitions = {}
@@ -435,10 +441,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			}
 		},
 	}
-	feedbacks['dadLedBrightness'] = {
+	feedbacks['dadConnectedStateColor'] = {
 		type: 'boolean',
-		name: 'DAD - LED Brightness',
-		description: 'DAD - LED Brightness',
+		name: 'DAD - LED Colors',
+		description: 'Check if the DAD LED colors match the selected colors',
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
 		},
@@ -451,16 +457,28 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				id: 'dad',
 			},
 			{
-				type: 'dropdown',
-				label: 'LED Brightness',
-				choices: getChoicesFromEnum(LedBrightness),
-				default: LedBrightness.Standard,
-				id: 'ledBrightness',
+				type: 'colorpicker',
+				label: 'RF Active Color',
+				id: 'rfActive',
+				default: DEFAULT_LED_COLORS.rfActive!,
+				returnType: 'string',
+				presetColors: [...LED_COLOR_PRESETS],
+			},
+			{
+				type: 'colorpicker',
+				label: 'RF Muted Color',
+				id: 'rfMuted',
+				default: DEFAULT_LED_COLORS.rfMuted!,
+				returnType: 'string',
+				presetColors: [...LED_COLOR_PRESETS],
 			},
 		],
 		callback: async (feedback) => {
-			const antennaLedBrightness = self.state.antennas.get(feedback.options.dad as AntennaPortId)?.ledBrightness
-			return antennaLedBrightness === feedback.options.ledBrightness
+			const ledColors = self.state.antennas.get(feedback.options.dad as AntennaPortId)?.ledColors
+			return (
+				colorsMatch(ledColors?.rfActive, feedback.options.rfActive) &&
+				colorsMatch(ledColors?.rfMuted, feedback.options.rfMuted)
+			)
 		},
 	}
 	feedbacks['dadBindings'] = {
@@ -1235,10 +1253,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		},
 	}
 
-	feedbacks['mobileDeviceLedBrightness'] = {
+	feedbacks['mobileDeviceConnectedStateColor'] = {
 		type: 'boolean',
-		name: 'Mobile Device - LED Brightness',
-		description: 'Check LED Brightness',
+		name: 'Mobile Device - Connected State Color Match',
+		description: 'Check if the Connected State LED color matches the selected color',
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
 		},
@@ -1252,17 +1270,43 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				allowCustom: true,
 			},
 			{
-				type: 'dropdown',
-				label: 'Brightness',
-				id: 'brightness',
-				default: LedBrightness.Standard,
-				choices: getChoicesFromEnum(LedBrightness),
+				type: 'colorpicker',
+				label: 'Connected State Color',
+				id: 'connectedStateColor',
+				default: DEFAULT_CONNECTED_STATE_COLOR,
+				returnType: 'string',
+				presetColors: [...LED_COLOR_PRESETS],
 			},
 		],
 		callback: async (feedback, context) => {
 			const serial = await context.parseVariablesInString(feedback.options.serial as string)
 			const device = getDeviceBySerial(self.state, serial)
-			return device?.ledBrightness === feedback.options.brightness
+			return colorsMatch(device?.connectedStateColor, feedback.options.connectedStateColor)
+		},
+	}
+
+	feedbacks['mobileDeviceConnectedStateColorCurrent'] = {
+		type: 'advanced',
+		name: 'Mobile Device - Connected State Color',
+		description: 'Change the background color to the Connected State LED color.',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'serial',
+				default: mobileDeviceChoices[0].id,
+				choices: mobileDeviceChoices,
+				allowCustom: true,
+			},
+		],
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
+			if (!device) return { bgcolor: undefined }
+
+			return {
+				bgcolor: toCompanionColor(device.connectedStateColor),
+			}
 		},
 	}
 

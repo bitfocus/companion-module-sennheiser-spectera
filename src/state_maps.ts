@@ -134,7 +134,13 @@ export const AntennaStateMap: StateMap<Antenna> = {
 	},
 	version: { variable: 'version', valueFn: passthrough },
 	identify: { feedback: 'dadIdentify', variable: 'identify', valueFn: passthrough },
-	ledBrightness: { feedback: 'dadLedBrightness', variable: 'led_brightness', valueFn: passthrough },
+	ledColors: {
+		feedback: 'dadConnectedStateColor',
+		variableSuffixes: [
+			{ suffix: 'led_rf_active', valueFn: (v) => (v as { rfActive?: string })?.rfActive },
+			{ suffix: 'led_rf_muted', valueFn: (v) => (v as { rfMuted?: string })?.rfMuted },
+		],
+	},
 	bindings: { feedback: 'dadBindings', variable: 'bindings', valueFn: toBindingLabel },
 }
 
@@ -198,9 +204,9 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 	version: { variable: 'version', valueFn: passthrough },
 	versionMismatch: { variable: 'version_mismatch', valueFn: passthrough },
 	fccId: { variable: 'fcc_id', valueFn: passthrough },
-	ledBrightness: {
-		feedback: 'mobileDeviceLedBrightness',
-		variable: 'led_brightness',
+	connectedStateColor: {
+		feedback: ['mobileDeviceConnectedStateColor', 'mobileDeviceConnectedStateColorCurrent'],
+		variable: 'connected_state_color',
 		valueFn: passthrough,
 	},
 	swUpdatePossible: { variable: 'sw_update_possible', valueFn: passthrough },

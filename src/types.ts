@@ -75,11 +75,9 @@ export enum TempStatus {
 	Critical = 'Critical',
 }
 
-export enum LedBrightness {
-	Off = 'Off',
-	Dim = 'Dim',
-	Standard = 'Standard',
-	Bright = 'Bright',
+export interface LedColors {
+	rfActive?: string
+	rfMuted?: string
 }
 
 export enum AntennaPortId {
@@ -227,7 +225,7 @@ export interface Antenna {
 	type: string
 	version?: string
 	identify: boolean
-	ledBrightness: LedBrightness
+	ledColors?: LedColors
 	bindings: AntennaBinding[]
 }
 
@@ -255,7 +253,7 @@ export interface MobileDeviceBase {
 	version?: string
 	versionMismatch?: boolean
 	fccId?: string
-	ledBrightness?: LedBrightness
+	connectedStateColor?: string
 	swUpdatePossible?: boolean
 	swUpdateProgress?: number
 	micAudiolinkId?: number

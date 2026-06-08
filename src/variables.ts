@@ -269,8 +269,12 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 				name: `DAD ${label} - Identify`,
 			},
 			{
-				variableId: `dad_${port}_led_brightness`,
-				name: `DAD ${label} - LED Brightness`,
+				variableId: `dad_${port}_led_rf_active`,
+				name: `DAD ${label} - LED RF Active Color`,
+			},
+			{
+				variableId: `dad_${port}_led_rf_muted`,
+				name: `DAD ${label} - LED RF Muted Color`,
 			},
 			{
 				variableId: `dad_${port}_bindings`,
@@ -348,8 +352,8 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 				name: `${deviceVariableLabel} - Battery Low`,
 			},
 			{
-				variableId: `${deviceVariableId}_led_brightness`,
-				name: `${deviceVariableLabel} - LED Brightness`,
+				variableId: `${deviceVariableId}_connected_state_color`,
+				name: `${deviceVariableLabel} - Connected State Color`,
 			},
 			{
 				variableId: `${deviceVariableId}_mic_audiolink_id`,
@@ -589,7 +593,8 @@ export function getAntennaVariables(
 		[`dad_${port}_temp_fahrenheit`]:
 			antenna.temperature && antenna.temperature > -55 ? (antenna.temperature * 9) / 5 + 32 : 'Off',
 		[`dad_${port}_identify`]: antenna.identify,
-		[`dad_${port}_led_brightness`]: antenna.ledBrightness,
+		[`dad_${port}_led_rf_active`]: antenna.ledColors?.rfActive,
+		[`dad_${port}_led_rf_muted`]: antenna.ledColors?.rfMuted,
 		[`dad_${port}_bindings`]: bindingLabel ?? 'None',
 		[`dad_${port}_mismatch`]: antenna.bindings[0]?.mismatch,
 		//[`dad_${port}_version`]: antenna.version,
@@ -616,7 +621,7 @@ export function getMobileDeviceVariables(device: MobileDevice): Record<string, V
 		[`${deviceVariableId}_battery_level`]: device.batteryFillLevel === -1 ? 'Off' : device.batteryFillLevel,
 		[`${deviceVariableId}_battery_runtime`]: formatBatteryRuntimeMinutes(device.batteryRuntime),
 		[`${deviceVariableId}_battery_low`]: device.batteryLow,
-		[`${deviceVariableId}_led_brightness`]: device.ledBrightness,
+		[`${deviceVariableId}_connected_state_color`]: device.connectedStateColor,
 		[`${deviceVariableId}_mic_audiolink_id`]: device.micAudiolinkId,
 		[`${deviceVariableId}_mic_audiolink_active`]: device.micAudiolinkActive,
 		[`${deviceVariableId}_mic_test_tone_enabled`]: device.micTestToneEnabled,

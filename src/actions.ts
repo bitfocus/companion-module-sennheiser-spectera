@@ -5,7 +5,6 @@ import {
 	AntennaPortId,
 	BandwidthMode,
 	CableEmulation,
-	LedBrightness,
 	InputSource,
 	MtType,
 	RFChannels,
@@ -28,6 +27,10 @@ import {
 	rfChannelChoices,
 	sanitizeMobileDeviceName,
 	STEREO_INPUT_OFFSET,
+	DEFAULT_CONNECTED_STATE_COLOR,
+	DEFAULT_LED_COLORS,
+	LED_COLOR_PRESETS,
+	normalizeHexColor,
 } from './utils.js'
 
 export function UpdateActions(self: SpecteraInstance): void {
@@ -285,8 +288,8 @@ export function UpdateActions(self: SpecteraInstance): void {
 	}
 
 	//DAD Actions
-	actions['dadLedBrightness'] = {
-		name: 'DAD - LED Brightness',
+	actions['dadConnectedStateColor'] = {
+		name: 'DAD - LED Colors',
 		options: [
 			{
 				type: 'dropdown',
@@ -296,19 +299,31 @@ export function UpdateActions(self: SpecteraInstance): void {
 				id: 'dad',
 			},
 			{
-				type: 'dropdown',
-				label: 'LED Brightness',
-				choices: getChoicesFromEnum(LedBrightness),
-				default: LedBrightness.Standard,
-				id: 'ledBrightness',
+				type: 'colorpicker',
+				label: 'RF Active Color',
+				id: 'rfActive',
+				default: DEFAULT_LED_COLORS.rfActive!,
+				returnType: 'string',
+				presetColors: [...LED_COLOR_PRESETS],
+			},
+			{
+				type: 'colorpicker',
+				label: 'RF Muted Color',
+				id: 'rfMuted',
+				default: DEFAULT_LED_COLORS.rfMuted!,
+				returnType: 'string',
+				presetColors: [...LED_COLOR_PRESETS],
 			},
 		],
-		description: 'Set the DAD LED Brightness',
+		description: 'Set custom LED colors for a DAD antenna',
 		callback: async (action) => {
 			if (!self.api) return
 			await self.api.setAntenna(action.options.dad as AntennaPortId, {
 				antennaPortId: action.options.dad as AntennaPortId,
-				ledBrightness: action.options.ledBrightness as LedBrightness,
+				ledColors: {
+					rfActive: normalizeHexColor(action.options.rfActive),
+					rfMuted: normalizeHexColor(action.options.rfMuted),
+				},
 			})
 		},
 	}
@@ -554,8 +569,8 @@ export function UpdateActions(self: SpecteraInstance): void {
 		},
 	}
 
-	actions['mobileDeviceLedBrightness'] = {
-		name: 'Mobile Device - LED Brightness',
+	actions['mobileDeviceConnectedStateColor'] = {
+		name: 'Mobile Device - Connected State LED Color',
 		options: [
 			{
 				type: 'dropdown',
@@ -566,21 +581,22 @@ export function UpdateActions(self: SpecteraInstance): void {
 				allowCustom: true,
 			},
 			{
-				type: 'dropdown',
-				label: 'LED Brightness',
-				choices: getChoicesFromEnum(LedBrightness),
-				default: LedBrightness.Standard,
-				id: 'ledBrightness',
+				type: 'colorpicker',
+				label: 'Connected State Color',
+				id: 'connectedStateColor',
+				default: DEFAULT_CONNECTED_STATE_COLOR,
+				returnType: 'string',
+				presetColors: [...LED_COLOR_PRESETS],
 			},
 		],
-		description: 'Set LED Brightness for a Mobile Device',
+		description: 'Set the Connected State LED color for a Mobile Device',
 		callback: async (action, context) => {
 			if (!self.api) return
 			const serial = await context.parseVariablesInString(action.options.serial as string)
 			const device = getDeviceBySerial(self.state, serial)
 			if (!device) return
 			await self.api.setMobileDevice(device.mtUid, {
-				ledBrightness: action.options.ledBrightness as LedBrightness,
+				connectedStateColor: normalizeHexColor(action.options.connectedStateColor),
 			})
 		},
 	}
