@@ -24,8 +24,14 @@ import {
 	CommandBehavior,
 	CommandState,
 } from './types.js'
+import type { AudioLevels } from './types.js'
 import {
 	audioOutputChannelChoices,
+	audioOutputInterfaceProps,
+	audioOutputCommandContextChoices,
+	audioOutputStateChoices,
+	type AudioOutputInterfaceId,
+	type AudioOutputCommandContext,
 	CONFIRMABLE_ACTIONS,
 	getChoicesFromEnum,
 	getDeviceBySerial,
@@ -887,7 +893,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		],
 		callback: async (feedback) => {
 			const inputId = feedback.options.inputId as number
-			const currentSource = self.state.audioInputs.get(inputId)?.source
+			const currentSource = self.state.audioInputs.get(inputId)?.inputSource
 			return currentSource === feedback.options.interface
 		},
 	}
@@ -913,29 +919,34 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Interface',
-				choices: [
-					{ id: 'commandModeAudioNetwork', label: 'Dante' },
-					{ id: 'commandModeMadi1', label: 'MADI 1' },
-					{ id: 'commandModeMadi2', label: 'MADI 2' },
-				],
+				choices: [...audioOutputChannelChoices],
 				default: 'commandModeAudioNetwork',
 				id: 'interface',
 			},
 			{
 				type: 'dropdown',
+				label: 'Command Mode',
+				choices: [...audioOutputCommandContextChoices],
+				default: 'disabled',
+				id: 'context',
+				tooltip:
+					'Which routing setting to evaluate: when the Command Mode feature is disabled (On/Off) or enabled (On/Off/Mute/Talk).',
+			},
+			{
+				type: 'dropdown',
 				label: 'State',
-				choices: [
-					{ id: 'On', label: 'On' },
-					{ id: 'Off', label: 'Off' },
-				],
+				choices: [...audioOutputStateChoices],
 				default: 'On',
 				id: 'state',
+				tooltip: 'Mute/Talk only apply if the Command Mode is set to "Enabled".',
 			},
 		],
 		callback: async (feedback) => {
 			const outputId = feedback.options.outputId as number
-			const iface = feedback.options.interface as 'commandModeAudioNetwork' | 'commandModeMadi1' | 'commandModeMadi2'
-			const current = self.state.audioOutputs.get(outputId)?.[iface]
+			const iface = feedback.options.interface as AudioOutputInterfaceId
+			const context = (feedback.options.context as AudioOutputCommandContext) ?? 'disabled'
+			const prop = audioOutputInterfaceProps[iface][context]
+			const current = self.state.audioOutputs.get(outputId)?.[prop]
 			return current === feedback.options.state
 		},
 	}
@@ -1767,13 +1778,17 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		],
 		callback: async (feedback) => {
 			const levels = self.state.audioLevels
-			const iface = feedback.options.interface as
+			// Option IDs keep the legacy `danteIn`/`danteOut` values for config stability; the AoIP
+			// metering fields are now named `aoIpIn`/`aoIpOut`, so map those two.
+			const optionIface = feedback.options.interface as
 				| 'danteIn'
 				| 'danteOut'
 				| 'madi1In'
 				| 'madi1Out'
 				| 'madi2In'
 				| 'madi2Out'
+			const iface: keyof AudioLevels =
+				optionIface === 'danteIn' ? 'aoIpIn' : optionIface === 'danteOut' ? 'aoIpOut' : optionIface
 			const channel = Number(feedback.options.channel) - 1
 			const threshold = Number(feedback.options.threshold)
 
@@ -2064,12 +2079,22 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			},
 			{
 				type: 'dropdown',
+				label: 'Command Mode',
+				id: 'setAudioOutputInterface_context',
+				choices: [...audioOutputCommandContextChoices],
+				default: 'disabled',
+				isVisibleExpression: '$(options:actionType) === "setAudioOutputInterface"',
+			},
+			{
+				type: 'dropdown',
 				label: 'Mode',
 				id: 'setAudioOutputInterface_mode',
 				choices: [
 					{ id: 'On', label: 'On' },
 					{ id: 'Off', label: 'Off' },
 					{ id: 'Toggle', label: 'Toggle' },
+					{ id: 'Mute', label: 'Mute' },
+					{ id: 'Talk', label: 'Talk' },
 				],
 				default: 'On',
 				isVisibleExpression: '$(options:actionType) === "setAudioOutputInterface"',
@@ -2124,6 +2149,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				setAudioOutputInterface: {
 					outputId: 'setAudioOutputInterface_outputId',
 					interface: 'setAudioOutputInterface_interface',
+					context: 'setAudioOutputInterface_context',
 					mode: 'setAudioOutputInterface_mode',
 				},
 				copyAllMobileDeviceSettings: {

@@ -84,6 +84,36 @@ export const audioOutputChannelChoices = [
 	{ id: 'commandModeMadi2', label: 'MADI 2' },
 ] as const
 
+export type AudioOutputInterfaceId = (typeof audioOutputChannelChoices)[number]['id']
+export type AudioOutputCommandContext = 'disabled' | 'enabled'
+
+/**
+ * Maps the config-stable interface selector IDs (kept from the pre-AoIP module) to the API 18.0
+ * audio-output properties. Each interface now has two properties: one for when the Command button
+ * feature is disabled (`On`/`Off` routing) and one for when it is enabled (`On`/`Off`/`Mute`/`Talk`).
+ */
+export const audioOutputInterfaceProps: Record<
+	AudioOutputInterfaceId,
+	Record<AudioOutputCommandContext, keyof import('./types.js').AudioOutput>
+> = {
+	commandModeAudioNetwork: { disabled: 'aoIpEnableIfCommandIsDisabled', enabled: 'aoIpEnableIfCommandIsEnabled' },
+	commandModeMadi1: { disabled: 'madi1EnableIfCommandIsDisabled', enabled: 'madi1EnableIfCommandIsEnabled' },
+	commandModeMadi2: { disabled: 'madi2EnableIfCommandIsDisabled', enabled: 'madi2EnableIfCommandIsEnabled' },
+}
+
+export const audioOutputCommandContextChoices = [
+	{ id: 'disabled', label: 'Disabled' },
+	{ id: 'enabled', label: 'Enabled' },
+] as const
+
+/** Full set of output states. On/Off apply to both contexts; Mute/Talk only to the enabled context. */
+export const audioOutputStateChoices = [
+	{ id: 'On', label: 'On' },
+	{ id: 'Off', label: 'Off' },
+	{ id: 'Mute', label: 'Mute (Command Mode Enabled)' },
+	{ id: 'Talk', label: 'Talk (Command Mode Enabled)' },
+] as const
+
 export const rfChannelChoices = [
 	{ label: 'RF Channel 1', id: 0 },
 	{ label: 'RF Channel 2', id: 1 },

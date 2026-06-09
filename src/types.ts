@@ -64,9 +64,9 @@ export enum MtType {
 }
 
 export enum InputSource {
-	Dante = 'dante',
-	'MADI 1' = 'madi1',
-	'MADI 2' = 'madi2',
+	Dante = 'AoIp',
+	'MADI 1' = 'Madi1',
+	'MADI 2' = 'Madi2',
 }
 
 export enum TempStatus {
@@ -180,16 +180,24 @@ export interface AudioLink {
 export interface AudioInput {
 	inputId: number
 	iemAudiolinkId: number
-	source: InputSource
+	inputSource: InputSource
 	name: string
 }
+
+/** Output routing mode when the Command button feature is disabled. */
+export type AudioOutputIfCommandIsDisabled = 'On' | 'Off'
+/** Output routing mode when the Command button feature is enabled. */
+export type AudioOutputIfCommandIsEnabled = 'On' | 'Off' | 'Mute' | 'Talk'
 
 export interface AudioOutput {
 	outputId: number
 	micAudiolinkId: number
-	commandModeAudioNetwork: string
-	commandModeMadi1: string
-	commandModeMadi2: string
+	aoIpEnableIfCommandIsDisabled: AudioOutputIfCommandIsDisabled
+	madi1EnableIfCommandIsDisabled: AudioOutputIfCommandIsDisabled
+	madi2EnableIfCommandIsDisabled: AudioOutputIfCommandIsDisabled
+	aoIpEnableIfCommandIsEnabled: AudioOutputIfCommandIsEnabled
+	madi1EnableIfCommandIsEnabled: AudioOutputIfCommandIsEnabled
+	madi2EnableIfCommandIsEnabled: AudioOutputIfCommandIsEnabled
 }
 
 export interface RfChannel {
@@ -376,10 +384,10 @@ export interface AudioLevel {
 export interface AudioLevels {
 	madi1In?: AudioLevel
 	madi2In?: AudioLevel
-	danteIn?: AudioLevel
+	aoIpIn?: AudioLevel
 	madi1Out?: AudioLevel
 	madi2Out?: AudioLevel
-	danteOut?: AudioLevel
+	aoIpOut?: AudioLevel
 	updateCounter: number
 }
 
@@ -452,6 +460,7 @@ export enum AudioNetworkType {
 	None = 'None',
 	Unknown = 'Unknown',
 	Dante = 'Dante',
+	Ravenna = 'Ravenna',
 }
 
 export enum MadiModuleType {
@@ -465,13 +474,13 @@ export enum OutputClockSource {
 	Internal48kHz = 'Internal48kHz',
 	Internal96kHz = 'Internal96kHz',
 	WordclockIn = 'WordclockIn',
-	AudioNetwork = 'AudioNetwork',
+	AoIp = 'AoIp',
 	Madi1In = 'Madi1In',
 	Madi2In = 'Madi2In',
 }
 
 export interface InterfaceStatusAudioNetwork {
-	audioNetworkType: AudioNetworkType
+	aoIpType: AudioNetworkType
 	status: InterfaceInputStatus
 	sampleRateHz: number
 	mute: boolean
@@ -487,7 +496,7 @@ export interface InterfaceStatusMadi {
 		fewerChannelsThanUsed: boolean
 	}
 	outputStatus: {
-		clockSource: OutputClockSource
+		outputClockSource: OutputClockSource
 		clockSourceStatus: InterfaceInputStatus
 		fallbackToInternalClockActive: boolean
 		sampleRateHz: number
@@ -502,7 +511,7 @@ export interface InterfaceStatusWordclock {
 		sampleRateHz: number
 	}
 	outputStatus: {
-		clockSource: OutputClockSource
+		outputClockSource: OutputClockSource
 		clockSourceStatus: InterfaceInputStatus
 		fallbackToInternalClockActive: boolean
 		sampleRateHz: number

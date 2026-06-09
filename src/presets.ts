@@ -1071,6 +1071,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								options: {
 									outputId: [output.outputId],
 									interface: channel.id,
+									context: 'disabled',
 									mode: 'Toggle',
 									requireConfirmation: false,
 								},
@@ -1085,6 +1086,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 						options: {
 							outputId: output.outputId,
 							interface: channel.id,
+							context: 'disabled',
 							state: 'On',
 						},
 						style: {

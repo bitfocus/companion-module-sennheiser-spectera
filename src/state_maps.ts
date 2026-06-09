@@ -145,7 +145,7 @@ export const AntennaStateMap: StateMap<Antenna> = {
 }
 
 export const AudioInputStateMap: StateMap<AudioInput> = {
-	source: { feedback: 'audioInputInterface', variable: 'interface', valueFn: toInputSourceLabel },
+	inputSource: { feedback: 'audioInputInterface', variable: 'interface', valueFn: toInputSourceLabel },
 	name: { variable: 'name', valueFn: passthrough },
 	iemAudiolinkId: {
 		feedback: ['iemAudioInputLinked', 'iemAudioInputNoLinkId'],
@@ -156,9 +156,12 @@ export const AudioInputStateMap: StateMap<AudioInput> = {
 
 export const AudioOutputStateMap: StateMap<AudioOutput> = {
 	micAudiolinkId: { feedback: 'mobileDeviceOutputLinked', variable: 'mic_link_id', valueFn: passthrough },
-	commandModeAudioNetwork: { feedback: 'audioOutputInterface', valueFn: passthrough },
-	commandModeMadi1: { feedback: 'audioOutputInterface', valueFn: passthrough },
-	commandModeMadi2: { feedback: 'audioOutputInterface', valueFn: passthrough },
+	aoIpEnableIfCommandIsDisabled: { feedback: 'audioOutputInterface', valueFn: passthrough },
+	madi1EnableIfCommandIsDisabled: { feedback: 'audioOutputInterface', valueFn: passthrough },
+	madi2EnableIfCommandIsDisabled: { feedback: 'audioOutputInterface', valueFn: passthrough },
+	aoIpEnableIfCommandIsEnabled: { feedback: 'audioOutputInterface', valueFn: passthrough },
+	madi1EnableIfCommandIsEnabled: { feedback: 'audioOutputInterface', valueFn: passthrough },
+	madi2EnableIfCommandIsEnabled: { feedback: 'audioOutputInterface', valueFn: passthrough },
 }
 
 export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
@@ -374,7 +377,7 @@ export const MadiInputStateMap: StateMap<InterfaceStatusMadi['inputStatus']> = {
 }
 
 export const MadiOutputStateMap: StateMap<InterfaceStatusMadi['outputStatus']> = {
-	clockSource: { variable: 'output_clock_source', valueFn: passthrough },
+	outputClockSource: { variable: 'output_clock_source', valueFn: passthrough },
 	clockSourceStatus: {
 		feedback: 'audioInterfaceStatus',
 		variable: 'output_clock_source_status',
@@ -392,7 +395,7 @@ export const WordclockInputStateMap: StateMap<InterfaceStatusWordclock['inputSta
 }
 
 export const WordclockOutputStateMap: StateMap<InterfaceStatusWordclock['outputStatus']> = {
-	clockSource: { variable: 'output_clock_source', valueFn: passthrough },
+	outputClockSource: { variable: 'output_clock_source', valueFn: passthrough },
 	clockSourceStatus: {
 		feedback: 'audioInterfaceStatus',
 		variable: 'output_clock_source_status',

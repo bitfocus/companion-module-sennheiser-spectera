@@ -75,6 +75,14 @@ function isActiveAudioLinkId(id: number | undefined): boolean {
 	return id !== undefined && id > -1
 }
 
+/**
+ * Translate an audio input object coming off the Base Station into the module's canonical form.
+ */
+function normalizeAudioInput(raw: AudioInput & { source?: unknown }): AudioInput {
+	raw.inputSource = raw.inputSource ?? raw.source
+	return raw
+}
+
 interface AudioLinkCheck {
 	audioOutputIds?: ReadonlySet<number>
 	mobileDeviceUids?: ReadonlySet<number>
@@ -116,8 +124,8 @@ export class SpecteraApi extends EventEmitter {
 		'/api/device/identity',
 		'/api/device/state',
 		'/api/device/site',
-		'/api/audio/levels',
-		'/api/audio/interface/audionetwork/status',
+		'/api/audio/metering',
+		'/api/audio/interface/aoip/status',
 		'/api/audio/interface/madi1/status',
 		'/api/audio/interface/madi2/status',
 		'/api/audio/interface/wordclock/status',
@@ -673,13 +681,19 @@ export class SpecteraApi extends EventEmitter {
 		if (now - this.lastLevelUpdateTime >= 500) {
 			this.lastLevelUpdateTime = now
 
-			const interfaces: (keyof AudioLevels)[] = ['madi1In', 'madi2In', 'danteIn', 'madi1Out', 'madi2Out', 'danteOut']
+			// Map each metering payload field to its the original variable names
+			const interfaces: { field: keyof AudioLevels; varBase: string }[] = [
+				{ field: 'madi1In', varBase: 'madi1_in' },
+				{ field: 'madi2In', varBase: 'madi2_in' },
+				{ field: 'aoIpIn', varBase: 'dante_in' },
+				{ field: 'madi1Out', varBase: 'madi1_out' },
+				{ field: 'madi2Out', varBase: 'madi2_out' },
+				{ field: 'aoIpOut', varBase: 'dante_out' },
+			]
 
-			for (const iface of interfaces) {
-				const levelData = levels[iface] as AudioLevel | undefined
+			for (const { field, varBase: ifaceName } of interfaces) {
+				const levelData = levels[field] as AudioLevel | undefined
 				if (levelData) {
-					const ifaceName = iface.replace(/([A-Z])/g, '_$1').toLowerCase()
-
 					levelData.peak.forEach((val, index) => {
 						const varName = `audio_level_${ifaceName}_${index + 1}_peak`
 						if (this.variableCache[varName] !== val) {
@@ -711,6 +725,7 @@ export class SpecteraApi extends EventEmitter {
 
 			if (key.startsWith('/api/audio/inputs/')) {
 				const oldState = this.state.audioInputs.get(value.inputId)
+				normalizeAudioInput(value)
 				this.state.updateAudioInput(value)
 				const displayId = value.inputId + 1
 				this.handleStateUpdate(
@@ -895,9 +910,9 @@ export class SpecteraApi extends EventEmitter {
 				const oldState = this.state.basestation.site ? { ...this.state.basestation.site } : undefined
 				this.state.updateBaseStationSite(value)
 				this.handleStateUpdate('', oldState, value, BaseStationSiteMap, changedVariables, feedbacksToCheck)
-			} else if (key === '/api/audio/levels') {
+			} else if (key === '/api/audio/metering') {
 				this.processAudioLevels(value as AudioLevels, changedVariables)
-			} else if (key === '/api/audio/interface/audionetwork/status') {
+			} else if (key === '/api/audio/interface/aoip/status') {
 				const oldState = this.state.audioNetwork ? { ...this.state.audioNetwork } : undefined
 				this.state.updateAudioNetwork(value)
 				this.handleStateUpdate('dante_', oldState, value, AudioNetworkStateMap, changedVariables, feedbacksToCheck)
@@ -1005,7 +1020,8 @@ export class SpecteraApi extends EventEmitter {
 	}
 
 	async getAudioInputs(): Promise<AudioInput[]> {
-		return this.sendRequest<AudioInput[]>('GET', '/audio/inputs')
+		const inputs = await this.sendRequest<AudioInput[]>('GET', '/audio/inputs')
+		return inputs.map((i) => normalizeAudioInput(i))
 	}
 
 	async setAudioInput(inputId: number, state: Partial<AudioInput>): Promise<void> {
@@ -1014,7 +1030,7 @@ export class SpecteraApi extends EventEmitter {
 			throw new Error(`Audio input ${inputId} not found`)
 		}
 
-		const payload = {
+		const payload: Record<string, unknown> = {
 			...state,
 			inputId,
 		}
@@ -1111,11 +1127,11 @@ export class SpecteraApi extends EventEmitter {
 	}
 
 	async getAudioLevels(): Promise<AudioLevels> {
-		return this.sendRequest<AudioLevels>('GET', '/audio/levels')
+		return this.sendRequest<AudioLevels>('GET', '/audio/metering')
 	}
 
 	async getAudioNetworkStatus(): Promise<InterfaceStatusAudioNetwork> {
-		return this.sendRequest<InterfaceStatusAudioNetwork>('GET', '/audio/interface/audionetwork/status')
+		return this.sendRequest<InterfaceStatusAudioNetwork>('GET', '/audio/interface/aoip/status')
 	}
 
 	async getMadiStatus(interfaceId: 'madi1' | 'madi2'): Promise<InterfaceStatusMadi> {

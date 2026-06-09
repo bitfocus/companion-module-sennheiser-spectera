@@ -20,6 +20,11 @@ import {
 } from './types.js'
 import {
 	audioOutputChannelChoices,
+	audioOutputStateChoices,
+	audioOutputInterfaceProps,
+	audioOutputCommandContextChoices,
+	type AudioOutputInterfaceId,
+	type AudioOutputCommandContext,
 	getAudioLinkChoices,
 	getChoicesFromEnum,
 	getDeviceBySerial,
@@ -277,11 +282,11 @@ export function UpdateActions(self: SpecteraInstance): void {
 				}
 				if (mode === 'Toggle') {
 					nextSource =
-						current?.source === action.options.interface ? (action.options.toggleInterface as InputSource) : iface
+						current?.inputSource === action.options.interface ? (action.options.toggleInterface as InputSource) : iface
 				} else {
 					nextSource = iface
 				}
-				await self.api.setAudioInput(inputId, { source: nextSource })
+				await self.api.setAudioInput(inputId, { inputSource: nextSource })
 			}
 			self.checkFeedbacks('audioInputInterface')
 		},
@@ -1253,14 +1258,20 @@ export function UpdateActions(self: SpecteraInstance): void {
 			},
 			{
 				type: 'dropdown',
+				label: 'Command Mode',
+				choices: [...audioOutputCommandContextChoices],
+				default: 'disabled',
+				id: 'context',
+				tooltip:
+					'Which Command Mode to change the routing setting for: disabled (On/Off) or enabled (On/Off/Mute/Talk).',
+			},
+			{
+				type: 'dropdown',
 				label: 'Mode',
-				choices: [
-					{ id: 'On', label: 'On' },
-					{ id: 'Off', label: 'Off' },
-					{ id: 'Toggle', label: 'Toggle' },
-				],
+				choices: [{ id: 'Toggle', label: 'Toggle' }, ...audioOutputStateChoices],
 				default: 'On',
 				id: 'mode',
+				tooltip: 'Mute/Talk only apply if the Command Mode is set to "Enabled".',
 			},
 			{
 				type: 'checkbox',
@@ -1280,29 +1291,37 @@ export function UpdateActions(self: SpecteraInstance): void {
 				: rawOutputIds !== undefined && rawOutputIds !== null && rawOutputIds !== ''
 					? [Number(rawOutputIds)]
 					: []
-			const iface = action.options.interface as (typeof audioOutputChannelChoices)[number]['id']
-			const modeOption = action.options.mode as 'On' | 'Off' | 'Toggle'
+			const iface = action.options.interface as AudioOutputInterfaceId
+			const context = (action.options.context as AudioOutputCommandContext) ?? 'disabled'
+			const modeOption = action.options.mode as 'On' | 'Off' | 'Toggle' | 'Mute' | 'Talk'
+			// Mute/Talk are only valid for the enabled mode.
+			if (context === 'disabled' && (modeOption === 'Mute' || modeOption === 'Talk')) {
+				self.log('warn', 'Mute/Talk are only valid when Command Mode is enabled.')
+				return
+			}
 			if (action.options.requireConfirmation) {
 				const key = self.confirmationKey('setAudioOutputInterface', {
 					outputId: action.options.outputId,
 					interface: action.options.interface,
+					context: action.options.context,
 					mode: action.options.mode,
 				})
 				if (!self.confirmAction(key)) return
 			}
-			const outputIfaceKeys = audioOutputChannelChoices.map((c) => c.id)
+			const prop = audioOutputInterfaceProps[iface][context]
+			const disabledProps = audioOutputChannelChoices.map((c) => audioOutputInterfaceProps[c.id].disabled)
 			for (const outputId of outputIds) {
-				let mode = modeOption
+				let mode: 'On' | 'Off' | 'Mute' | 'Talk' = modeOption === 'Toggle' ? 'On' : modeOption
 				const current = self.state.audioOutputs.get(outputId)
 				if (current?.micAudiolinkId === -1) continue
-				if (mode === 'Toggle') {
-					mode = current?.[iface] === 'On' ? 'Off' : 'On'
+				if (modeOption === 'Toggle') {
+					mode = current?.[prop] === 'On' ? 'Off' : 'On'
 				}
-				if (mode === 'Off') {
-					const onCount = outputIfaceKeys.filter((id) => current?.[id] === 'On').length
-					if (current?.[iface] === 'On' && onCount === 1) continue
+				if (context === 'disabled' && mode === 'Off') {
+					const onCount = disabledProps.filter((p) => current?.[p] === 'On').length
+					if (current?.[prop] === 'On' && onCount === 1) continue
 				}
-				await self.api.setAudioOutput(outputId, { [iface]: mode })
+				await self.api.setAudioOutput(outputId, { [prop]: mode })
 			}
 			self.checkFeedbacks('audioOutputInterface')
 		},

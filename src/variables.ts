@@ -512,7 +512,7 @@ export function getAudioInputVariables(
 ): Record<string, VariableValue> {
 	const displayId = input.inputId + 1
 	return {
-		[`audio_input_${displayId}_interface`]: inputSourceLabels[input.source] ?? input.source,
+		[`audio_input_${displayId}_interface`]: inputSourceLabels[input.inputSource] ?? input.inputSource,
 		//[`audio_input_${displayId}_name`]: input.name || 'None',
 		[`audio_input_${displayId}_iem_link_id`]: input.iemAudiolinkId,
 		[`audio_input_${displayId}_iem_link_devices`]: getAudioInputIemLinkDevices(input, mobileDevices),
@@ -545,9 +545,9 @@ export function getAudioOutputVariables(
  */
 export function getAudioOutputActiveChannels(output: AudioOutput): string {
 	const active: string[] = []
-	if (output.commandModeAudioNetwork === 'On') active.push('Dante')
-	if (output.commandModeMadi1 === 'On') active.push('MADI 1')
-	if (output.commandModeMadi2 === 'On') active.push('MADI 2')
+	if (output.aoIpEnableIfCommandIsDisabled === 'On') active.push('Dante')
+	if (output.madi1EnableIfCommandIsDisabled === 'On') active.push('MADI 1')
+	if (output.madi2EnableIfCommandIsDisabled === 'On') active.push('MADI 2')
 	return active.length ? active.join(', ') : 'None'
 }
 
