@@ -29,6 +29,7 @@ import {
 	getChoicesFromEnum,
 	getDeviceBySerial,
 	getMobileDeviceChoices,
+	parseMobileDeviceSettingsJson,
 	rfChannelChoices,
 	sanitizeMobileDeviceName,
 	STEREO_INPUT_OFFSET,
@@ -1373,6 +1374,72 @@ export function UpdateActions(self: SpecteraInstance): void {
 			if (!sourceDevice || !targetDevice) return
 
 			await self.api.copyMobileDeviceSettings(sourceDevice.mtUid, targetDevice.mtUid)
+		},
+	}
+
+	actions['setMobileDeviceSettingsJson'] = {
+		name: 'Mobile Device - Set Settings From JSON',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Target Mobile Device',
+				id: 'serial',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
+				choices: mobileDeviceChoices,
+				allowCustom: true,
+			},
+			{
+				type: 'textinput',
+				label: 'Settings JSON',
+				id: 'json',
+				default: '',
+				useVariables: true,
+				tooltip:
+					'Paste the value of another mobile device’s "Settings (JSON)" variable, e.g. $(spectera:SEK_1234567890_settings_json).',
+			},
+			{
+				type: 'checkbox',
+				label: 'Require Confirmation',
+				id: 'requireConfirmation',
+				default: false,
+				tooltip:
+					'This will require a double press of the button to confirm the action. It will timeout after 5 seconds if not confirmed.',
+			},
+		],
+		description:
+			'Apply a set of mobile-device settings from a JSON string (typically a device’s Settings (JSON) variable).',
+		callback: async (action, context) => {
+			if (!self.api) return
+			const serial = await context.parseVariablesInString(action.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
+			if (!device) {
+				self.log('warn', `Set Settings From JSON: Mobile Device "${serial}" not found`)
+				return
+			}
+
+			const rawJson = await context.parseVariablesInString(action.options.json as string)
+			const { payload, warnings, error } = parseMobileDeviceSettingsJson(rawJson, device)
+
+			if (error) {
+				self.log('warn', `Set Settings From JSON: ${error}`)
+				return
+			}
+			for (const warning of warnings) {
+				self.log('info', `Set Settings From JSON (${device.name}): ${warning}`)
+			}
+			const appliedKeys = Object.keys(payload)
+			if (appliedKeys.length === 0) {
+				self.log('warn', `Set Settings From JSON (${device.name}): no valid settings to apply`)
+				return
+			}
+
+			if (action.options.requireConfirmation) {
+				const key = self.confirmationKey('setMobileDeviceSettingsJson', { serial })
+				if (!self.confirmAction(key)) return
+			}
+
+			await self.api.setMobileDevice(device.mtUid, payload)
+			self.log('debug', `Set Settings From JSON (${device.name}): applied ${appliedKeys.join(', ')}`)
 		},
 	}
 

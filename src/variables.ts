@@ -25,7 +25,7 @@ import {
 	inputSourceLabels,
 	psuStatusLabels,
 } from './state_maps.js'
-import { formatBatteryRuntimeMinutes, getAntennaFrequency } from './utils.js'
+import { formatBatteryRuntimeMinutes, getAntennaFrequency, getPortableMobileDeviceSettings } from './utils.js'
 
 const rfStateStartupLabels: Record<RfStateStartup, string> = {
 	[RfStateStartup.Active]: 'Active',
@@ -298,6 +298,10 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 			{
 				variableId: `${deviceVariableId}_name`,
 				name: `${deviceVariableLabel} - Name`,
+			},
+			{
+				variableId: `${deviceVariableId}_settings_json`,
+				name: `${deviceVariableLabel} - Settings (JSON)`,
 			},
 			{
 				variableId: `${deviceVariableId}_mt_uid`,
@@ -608,6 +612,7 @@ export function getMobileDeviceVariables(device: MobileDevice): Record<string, V
 
 	const variables: Record<string, VariableValue> = {
 		[`${deviceVariableId}_name`]: device.name,
+		[`${deviceVariableId}_settings_json`]: JSON.stringify(getPortableMobileDeviceSettings(device)),
 		[`${deviceVariableId}_mt_uid`]: device.mtUid,
 		[`${deviceVariableId}_mt_type`]: device.type,
 		[`${deviceVariableId}_frequency_range`]: device.frequencyRange,

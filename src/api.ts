@@ -25,7 +25,7 @@ import type {
 	InterfaceStatusWordclock,
 } from './types.js'
 import { MtType } from './types.js'
-import { getAntennaFrequency, getExistingMicAudiolinkModeFromState } from './utils.js'
+import { getAntennaFrequency, getExistingMicAudiolinkModeFromState, getPortableMobileDeviceSettings } from './utils.js'
 import type { SpecteraState } from './state.js'
 import { Agent, Dispatcher } from 'undici'
 import {
@@ -850,6 +850,14 @@ export class SpecteraApi extends EventEmitter {
 						changedVariables,
 						feedbacksToCheck,
 					)
+					// settings_json is a composite of many fields and isn't in MobileDeviceStateMap, so
+					// recompute it here whenever the device changes to keep the exported snapshot current.
+					const settingsJsonVar = `${prefix}settings_json`
+					const settingsJsonVal = JSON.stringify(getPortableMobileDeviceSettings(value))
+					if (this.variableCache[settingsJsonVar] !== settingsJsonVal) {
+						changedVariables[settingsJsonVar] = settingsJsonVal
+						this.variableCache[settingsJsonVar] = settingsJsonVal
+					}
 					structureChanged = !oldState || oldState.name !== value.name
 					// Recompute iem_link_devices for any audio input affected by this device's link change
 					const oldIemLinkId = oldState?.type === MtType.SEK ? oldState.iemAudiolinkId : undefined

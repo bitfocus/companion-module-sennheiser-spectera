@@ -1,6 +1,18 @@
 import { combineRgb, type InputValue } from '@companion-module/base'
 import { SpecteraState } from './state.js'
-import { Antenna, AudiolinkModeId, MobileDevice, MtType, RfChannel, RFChannels } from './types.js'
+import {
+	Antenna,
+	AudiolinkModeId,
+	CableEmulation,
+	CommandBehavior,
+	MicLineSelection,
+	MicLowCutHzSEK,
+	MicLowCutHzSKM,
+	MobileDevice,
+	MtType,
+	RfChannel,
+	RFChannels,
+} from './types.js'
 import type { LedColors } from './types.js'
 
 export const DEFAULT_CONNECTED_STATE_COLOR = '#00A100'
@@ -183,6 +195,220 @@ export function getDeviceBySerial(state: SpecteraState, serial: string): MobileD
 		if (device.serial === serial) return device
 	}
 	return undefined
+}
+
+//Portable Mobile Device Settings for JSON backups
+
+export interface PortableMobileDeviceSettings {
+	/** Source device type. Used on import to decide whether type-specific settings may be applied. */
+	type: MtType
+	name?: string
+	connectedStateColor?: string
+	micPreampGain?: number
+	rfChannelId?: number
+	micTestToneEnabled?: boolean
+	micTestToneLevel?: number
+	// SEK-only
+	headphoneVolume?: number
+	headphoneBalance?: number
+	headphoneVolumeLimit?: number
+	micLineSelection?: MicLineSelection
+	cableEmulation?: CableEmulation
+	// SEK + SKM (different valid value sets per type)
+	micLowCutHz?: number
+	commandBehavior?: CommandBehavior
+}
+
+const PORTABLE_SHARED_KEYS = [
+	'name',
+	'connectedStateColor',
+	'micPreampGain',
+	'rfChannelId',
+	'micTestToneEnabled',
+	'micTestToneLevel',
+] as const
+
+const PORTABLE_SEK_KEYS = [
+	'headphoneVolume',
+	'headphoneBalance',
+	'headphoneVolumeLimit',
+	'micLineSelection',
+	'cableEmulation',
+	'micLowCutHz',
+	'commandBehavior',
+] as const
+
+const PORTABLE_SKM_KEYS = ['micLowCutHz', 'commandBehavior'] as const
+
+//Every available key plus the `type`. Anything else is dropped.
+const PORTABLE_ALLOWED_KEYS = new Set<string>([
+	'type',
+	...PORTABLE_SHARED_KEYS,
+	...PORTABLE_SEK_KEYS,
+	...PORTABLE_SKM_KEYS,
+])
+
+//Build the transferable settings object for a device, omitting any undefined fields.
+export function getPortableMobileDeviceSettings(device: MobileDevice): PortableMobileDeviceSettings {
+	const settings: PortableMobileDeviceSettings = {
+		type: device.type,
+		name: device.name,
+		connectedStateColor: device.connectedStateColor,
+		micPreampGain: device.micPreampGain,
+		rfChannelId: device.rfChannelId,
+		micTestToneEnabled: device.micTestToneEnabled,
+		micTestToneLevel: device.micTestToneLevel,
+	}
+
+	if (device.type === MtType.SEK) {
+		settings.headphoneVolume = device.headphoneVolume
+		settings.headphoneBalance = device.headphoneBalance
+		settings.headphoneVolumeLimit = device.headphoneVolumeLimit
+		settings.micLineSelection = device.micLineSelection
+		settings.cableEmulation = device.cableEmulation
+		settings.micLowCutHz = device.micLowCutHz
+		settings.commandBehavior = device.commandBehavior
+	} else if (device.type === MtType.SKM) {
+		settings.micLowCutHz = device.micLowCutHz
+		settings.commandBehavior = device.commandBehavior
+	}
+
+	for (const key of Object.keys(settings) as (keyof PortableMobileDeviceSettings)[]) {
+		if (settings[key] === undefined) delete settings[key]
+	}
+	return settings
+}
+
+function isFiniteNumber(value: unknown): value is number {
+	return typeof value === 'number' && Number.isFinite(value)
+}
+
+function clamp(value: number, min: number, max: number): number {
+	return Math.max(min, Math.min(max, value))
+}
+
+//True when `value` is one of the enum's defined values (ignores numeric-enum reverse-map keys).
+function isEnumValue(enumObj: Record<string, string | number>, value: unknown): boolean {
+	return getChoicesFromEnum(enumObj).some((choice) => choice.id === value)
+}
+
+export interface ParsedMobileDeviceSettings {
+	//Validated, sanitized payload ready to hand to `setMobileDevice`. May be empty.
+	payload: Partial<MobileDevice>
+	//Non-fatal issues: keys that were ignored or coerced.
+	warnings: string[]
+	//Set when the JSON could not be used at all; `payload` will be empty.
+	error?: string
+}
+
+//Parse and validate a `_settings_json` string against a target device.
+export function parseMobileDeviceSettingsJson(raw: string, target: MobileDevice): ParsedMobileDeviceSettings {
+	const warnings: string[] = []
+	const payload: Partial<MobileDevice> = {}
+
+	const trimmed = (raw ?? '').trim()
+	if (!trimmed) return { payload, warnings, error: 'Settings JSON is empty' }
+
+	let parsed: unknown
+	try {
+		parsed = JSON.parse(trimmed)
+	} catch (err) {
+		return { payload, warnings, error: `Invalid JSON: ${err instanceof Error ? err.message : String(err)}` }
+	}
+
+	if (typeof parsed !== 'object' || parsed === null || Array.isArray(parsed)) {
+		return { payload, warnings, error: 'Settings JSON must be a JSON object' }
+	}
+	const obj = parsed as Record<string, unknown>
+
+	// Drop (and report) anything outside the allow-list so identity/status fields can never reach the device.
+	const unknownKeys = Object.keys(obj).filter((key) => !PORTABLE_ALLOWED_KEYS.has(key))
+	if (unknownKeys.length > 0) warnings.push(`Ignoring unsupported keys: ${unknownKeys.join(', ')}`)
+
+	// Type-specific settings only apply when the source is the same type (or omitted the type entirely).
+	const srcType = obj.type
+	let applyTypeSpecific = true
+	if (srcType !== undefined && srcType !== target.type) {
+		applyTypeSpecific = false
+		const srcTypeLabel = typeof srcType === 'string' ? srcType : JSON.stringify(srcType)
+		warnings.push(`Source type ${srcTypeLabel} differs from target ${target.type}; applying shared settings only.`)
+	}
+
+	const p = payload as Record<string, unknown>
+
+	// ---- Shared settings ----
+	if (obj.name !== undefined) {
+		if (typeof obj.name === 'string') {
+			const name = sanitizeMobileDeviceName(obj.name)
+			if (name) p.name = name
+			else warnings.push('Ignoring name: empty after sanitization.')
+		} else warnings.push('Ignoring name: not a string.')
+	}
+	if (obj.connectedStateColor !== undefined) {
+		const color = typeof obj.connectedStateColor === 'string' ? normalizeHexColor(obj.connectedStateColor) : ''
+		if (color.startsWith('#') && color.length === 7) p.connectedStateColor = color
+		else warnings.push('Ignoring connectedStateColor: invalid color value.')
+	}
+	if (obj.micPreampGain !== undefined) {
+		if (isFiniteNumber(obj.micPreampGain))
+			p.micPreampGain = clamp(obj.micPreampGain, target.type === MtType.SEK ? -6 : -10, 42)
+		else warnings.push('Ignoring micPreampGain: not a number.')
+	}
+	if (obj.rfChannelId !== undefined) {
+		if (obj.rfChannelId === 0 || obj.rfChannelId === 1) p.rfChannelId = obj.rfChannelId
+		else warnings.push('Ignoring rfChannelId: must be 0 or 1.')
+	}
+	if (obj.micTestToneEnabled !== undefined) {
+		if (typeof obj.micTestToneEnabled === 'boolean') p.micTestToneEnabled = obj.micTestToneEnabled
+		else warnings.push('Ignoring micTestToneEnabled: not a boolean.')
+	}
+	if (obj.micTestToneLevel !== undefined) {
+		if (isFiniteNumber(obj.micTestToneLevel)) p.micTestToneLevel = obj.micTestToneLevel
+		else warnings.push('Ignoring micTestToneLevel: not a number.')
+	}
+
+	// ---- Type-specific settings ----
+	if (applyTypeSpecific && target.type === MtType.SEK) {
+		if (obj.headphoneVolume !== undefined) {
+			if (isFiniteNumber(obj.headphoneVolume)) p.headphoneVolume = clamp(obj.headphoneVolume, -100, 27.5)
+			else warnings.push('Ignoring headphoneVolume: not a number.')
+		}
+		if (obj.headphoneBalance !== undefined) {
+			if (isFiniteNumber(obj.headphoneBalance)) p.headphoneBalance = clamp(obj.headphoneBalance, -100, 100)
+			else warnings.push('Ignoring headphoneBalance: not a number.')
+		}
+		if (obj.headphoneVolumeLimit !== undefined) {
+			if (isFiniteNumber(obj.headphoneVolumeLimit)) p.headphoneVolumeLimit = clamp(obj.headphoneVolumeLimit, -100, 27.5)
+			else warnings.push('Ignoring headphoneVolumeLimit: not a number.')
+		}
+		if (obj.micLineSelection !== undefined) {
+			if (isEnumValue(MicLineSelection, obj.micLineSelection)) p.micLineSelection = obj.micLineSelection
+			else warnings.push('Ignoring micLineSelection: invalid value.')
+		}
+		if (obj.cableEmulation !== undefined) {
+			if (isEnumValue(CableEmulation, obj.cableEmulation)) p.cableEmulation = obj.cableEmulation
+			else warnings.push('Ignoring cableEmulation: invalid value.')
+		}
+		if (obj.micLowCutHz !== undefined) {
+			if (isEnumValue(MicLowCutHzSEK, obj.micLowCutHz)) p.micLowCutHz = obj.micLowCutHz
+			else warnings.push('Ignoring micLowCutHz: invalid value for SEK.')
+		}
+		if (obj.commandBehavior !== undefined) {
+			if (isEnumValue(CommandBehavior, obj.commandBehavior)) p.commandBehavior = obj.commandBehavior
+			else warnings.push('Ignoring commandBehavior: invalid value.')
+		}
+	} else if (applyTypeSpecific && target.type === MtType.SKM) {
+		if (obj.micLowCutHz !== undefined) {
+			if (isEnumValue(MicLowCutHzSKM, obj.micLowCutHz)) p.micLowCutHz = obj.micLowCutHz
+			else warnings.push('Ignoring micLowCutHz: invalid value for SKM.')
+		}
+		if (obj.commandBehavior !== undefined) {
+			if (isEnumValue(CommandBehavior, obj.commandBehavior)) p.commandBehavior = obj.commandBehavior
+			else warnings.push('Ignoring commandBehavior: invalid value.')
+		}
+	}
+
+	return { payload, warnings }
 }
 
 //Mic link `modeId` from module state for this device only (not the selected output).
