@@ -683,11 +683,11 @@ export class SpecteraApi extends EventEmitter {
 
 			// Map each metering payload field to its the original variable names
 			const interfaces: { field: keyof AudioLevels; varBase: string }[] = [
-				{ field: 'madi1In', varBase: 'madi1_in' },
-				{ field: 'madi2In', varBase: 'madi2_in' },
+				{ field: 'madi1In', varBase: 'madi_1_in' },
+				{ field: 'madi2In', varBase: 'madi_2_in' },
 				{ field: 'aoIpIn', varBase: 'dante_in' },
-				{ field: 'madi1Out', varBase: 'madi1_out' },
-				{ field: 'madi2Out', varBase: 'madi2_out' },
+				{ field: 'madi1Out', varBase: 'madi_1_out' },
+				{ field: 'madi2Out', varBase: 'madi_2_out' },
 				{ field: 'aoIpOut', varBase: 'dante_out' },
 			]
 
