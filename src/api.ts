@@ -99,6 +99,7 @@ export class SpecteraApi extends EventEmitter {
 	private readonly dispatcher: Dispatcher
 	private variableCache: Record<string, string | number | boolean | undefined> = {}
 	private lastLevelUpdateTime = 0
+	private static readonly LEVEL_UPDATE_INTERVAL_MS = 150
 	private isInitializing = false
 	private readonly requestQueue: { add: <T>(fn: () => Promise<T>) => Promise<T> }
 	private readonly routingQueue: { add: <T>(fn: () => Promise<T>) => Promise<T> }
@@ -678,7 +679,7 @@ export class SpecteraApi extends EventEmitter {
 		if (this.isInitializing) return
 
 		const now = Date.now()
-		if (now - this.lastLevelUpdateTime >= 500) {
+		if (now - this.lastLevelUpdateTime >= SpecteraApi.LEVEL_UPDATE_INTERVAL_MS) {
 			this.lastLevelUpdateTime = now
 
 			// Map each metering payload field to its the original variable names
