@@ -9,14 +9,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Added
 
-- Mobile Device - Command Behavior action
-- Mobile Device - Command Behavior and Command State feedbacks
-- Command Behavior variable for all mobile devices
+- **Mobile Device - Command Behavior** action, feedback, and variable
+- **Mobile Device - Command State** feedback
+- **Mobile Device - Set Settings From JSON** action to copy settings from another device between connections.
+- **Mobile Device - Settings (JSON)** variable for all mobile devices, for use with the "Set Settings From JSON" action
+- API compatibility check now logs a warning when the connected Base Station firmware is unsupported
+
+### Changed
+
+- Mobile Devices and DADs now use configurable LED colors instead of LED brightness. All existing actions and feedbacks will migrate to the default color values.
+- DAD - LED Colors (previously LED brightness) can be customized separately for RF active and RF muted states
+- Audio Output - Interface actions and feedbacks now support Command Mode. All existing actions and feedbacks will be set to "Disabled" by default.
 
 ### Fixed
 
-- Mobile Device - Connected feedback breaking after updating Spectera Basestation to v1.4.0
-- Mobile Device - Connected variable now derived from device state instead of the deprecated `connected` field
+- Mobile Device - Connected feedback and `connected` variable breaking after updating Spectera Basestation to v1.4.0
+- MADI audio level variables showing no value
+- More performant audio meter updates for feedback and variables
 
 ## [1.0.1] - 2026-04-29
 
