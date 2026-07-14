@@ -14,7 +14,7 @@ export enum RFChannels {
 	Off = 'Off',
 	'RF Channel 1' = 'RfChannel0',
 	'RF Channel 2' = 'RfChannel1',
-	'Scan' = 'Scan',
+	Scan = 'Scan',
 }
 
 export enum TxPower {
@@ -100,7 +100,7 @@ export enum AudiolinkModeId {
 	'MAX Link Density (Mono)' = 2,
 	'MAX Range (Mono)' = 1,
 	'None (Stereo)' = 1002,
-	'None' = 1001,
+	None = 1001,
 }
 
 export enum IemAudiolinkMode {
@@ -113,7 +113,7 @@ export enum IemAudiolinkMode {
 	'MAX Link Density (Mono)' = 2,
 	'MAX Range (Mono)' = 1,
 	'None (Stereo)' = 1002,
-	'None' = 1001,
+	None = 1001,
 }
 
 export enum MicAudiolinkMode {
@@ -124,7 +124,7 @@ export enum MicAudiolinkMode {
 	'LIVE Link Density (Mono)' = 3,
 	'MAX Link Density (Mono)' = 2,
 	'MAX Range (Mono)' = 1,
-	'None' = 1001,
+	None = 1001,
 }
 
 export enum MicLineSelection {
@@ -140,7 +140,7 @@ export enum MicLineSelectionAuto {
 }
 
 export enum MicLowCutHzSEK {
-	'Off' = 20,
+	Off = 20,
 	'30 Hz' = 30,
 	'60 Hz' = 60,
 	'80 Hz' = 80,
@@ -149,7 +149,7 @@ export enum MicLowCutHzSEK {
 }
 
 export enum MicLowCutHzSKM {
-	'Off' = 60,
+	Off = 60,
 	'80 Hz' = 80,
 	'100 Hz' = 100,
 	'120 Hz' = 120,

@@ -1781,12 +1781,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			// Option IDs keep the legacy `danteIn`/`danteOut` values for config stability; the AoIP
 			// metering fields are now named `aoIpIn`/`aoIpOut`, so map those two.
 			const optionIface = feedback.options.interface as
-				| 'danteIn'
-				| 'danteOut'
-				| 'madi1In'
-				| 'madi1Out'
-				| 'madi2In'
-				| 'madi2Out'
+				'danteIn' | 'danteOut' | 'madi1In' | 'madi1Out' | 'madi2In' | 'madi2Out'
 			const iface: keyof AudioLevels =
 				optionIface === 'danteIn' ? 'aoIpIn' : optionIface === 'danteOut' ? 'aoIpOut' : optionIface
 			const channel = Number(feedback.options.channel) - 1
@@ -1929,13 +1924,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		],
 		callback: async (feedback) => {
 			const interfaceId = feedback.options.interface as
-				| 'audioNetwork'
-				| 'madi1In'
-				| 'madi1Out'
-				| 'madi2In'
-				| 'madi2Out'
-				| 'wordclockIn'
-				| 'wordclockOut'
+				'audioNetwork' | 'madi1In' | 'madi1Out' | 'madi2In' | 'madi2Out' | 'wordclockIn' | 'wordclockOut'
 			let status: InterfaceInputStatus | undefined
 
 			switch (interfaceId) {
