@@ -22,5 +22,5 @@
 	"legacyIds": [],
 	"manufacturer": "Sennheiser",
 	"products": ["Spectera"],
-	"keywords": ["Audio", "Wireless", "RF"]
+	"keywords": ["Audio", "Wireless", "RF", "Transmitter", "Receiver", "Dante", "MADI", "AoIp", "Microphone", "IEM"]
 }
