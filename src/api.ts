@@ -1597,6 +1597,7 @@ export class SpecteraApi extends EventEmitter {
 			sekPayload.micLineSelectionAutoValue = sourceDevice.micLineSelectionAutoValue
 			sekPayload.micLowCutHz = sourceDevice.micLowCutHz
 			sekPayload.cableEmulation = sourceDevice.cableEmulation
+			sekPayload.commandBehavior = sourceDevice.commandBehavior
 		} else if (sameType && sourceDevice.type === MtType.SKM) {
 			const skmPayload = payload as Partial<SKMDevice>
 			skmPayload.micLowCutHz = sourceDevice.micLowCutHz
