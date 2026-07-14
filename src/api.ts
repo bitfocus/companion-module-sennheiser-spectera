@@ -63,7 +63,7 @@ import {
 const REQUEST_INTERVAL_MS = 20
 
 /** API schema version this module targets */
-const EXPECTED_API_SCHEMA = '18.0'
+const EXPECTED_API_SCHEMA = '18.1'
 
 function parseSchemaVersion(schema: string): { major: number; minor: number } | null {
 	const match = /^(\d+)\.(\d+)/.exec(schema)
@@ -160,10 +160,10 @@ export class SpecteraApi extends EventEmitter {
 		return `Basic ${Buffer.from(credentials).toString('base64')}`
 	}
 
-	async sendRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
+	async sendRequest<T>(method: string, path: string, body?: unknown, options?: { quiet?: boolean }): Promise<T> {
 		return this.requestQueue.add(async () => {
 			try {
-				return await this.executeRequest<T>(method, path, body)
+				return await this.executeRequest<T>(method, path, body, options)
 			} catch (err) {
 				this.instance.log(
 					'debug',
@@ -174,7 +174,12 @@ export class SpecteraApi extends EventEmitter {
 		})
 	}
 
-	private async executeRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
+	private async executeRequest<T>(
+		method: string,
+		path: string,
+		body?: unknown,
+		requestOptions?: { quiet?: boolean },
+	): Promise<T> {
 		const url = `https://${this.host}:443/api${path}`
 		const options: RequestInit = {
 			method,
@@ -190,7 +195,9 @@ export class SpecteraApi extends EventEmitter {
 			options.body = JSON.stringify(body)
 		}
 
-		this.instance.log('debug', `API Request: ${method} ${path} ${body ? JSON.stringify(body) : ''}`)
+		if (!requestOptions?.quiet) {
+			this.instance.log('debug', `API Request: ${method} ${path} ${body ? JSON.stringify(body) : ''}`)
+		}
 
 		const response = await fetch(url, { ...options, dispatcher: this.dispatcher } as any)
 
@@ -246,7 +253,7 @@ export class SpecteraApi extends EventEmitter {
 				)
 			} else if (deviceSchema.minor > expectedSchema.minor) {
 				this.instance.log(
-					'info',
+					'warn',
 					`Base Station API version ${version.schema} is newer than module expected version ${EXPECTED_API_SCHEMA}. Some device features may not be supported yet.`,
 				)
 			}
@@ -408,7 +415,8 @@ export class SpecteraApi extends EventEmitter {
 	private async runHeartbeat(): Promise<void> {
 		if (this.destroyed) return
 		try {
-			await this.getBaseStationState()
+			// Quiet: this polls every 5s and would otherwise flood the debug log
+			await this.sendRequest('GET', '/device/state', undefined, { quiet: true })
 			// Detect silent SSE stream death — use subscribe start time as fallback
 			// when no SSE events have ever been received (lastSSEEventTime === 0)
 			const timeSinceActivity =
@@ -424,7 +432,7 @@ export class SpecteraApi extends EventEmitter {
 				return
 			}
 		} catch (_err) {
-			this.instance.log('warn', 'Connection lost to Spectera.')
+			this.instance.log('warn', 'Connection lost to Spectera, attempting to reconnect...')
 			this.stopHeartbeat()
 			if (this.abortController) {
 				this.abortController.abort()
