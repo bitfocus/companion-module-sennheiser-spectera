@@ -5,7 +5,6 @@ import {
 	AntennaPortId,
 	BandwidthMode,
 	CableEmulation,
-	LedBrightness,
 	InputSource,
 	MtType,
 	RFChannels,
@@ -17,16 +16,27 @@ import {
 	MicLowCutHzSKM,
 	IemAudiolinkMode,
 	MicAudiolinkMode,
+	CommandBehavior,
 } from './types.js'
 import {
 	audioOutputChannelChoices,
+	audioOutputStateChoices,
+	audioOutputInterfaceProps,
+	audioOutputCommandContextChoices,
+	type AudioOutputInterfaceId,
+	type AudioOutputCommandContext,
 	getAudioLinkChoices,
 	getChoicesFromEnum,
 	getDeviceBySerial,
 	getMobileDeviceChoices,
+	parseMobileDeviceSettingsJson,
 	rfChannelChoices,
 	sanitizeMobileDeviceName,
 	STEREO_INPUT_OFFSET,
+	DEFAULT_CONNECTED_STATE_COLOR,
+	DEFAULT_LED_COLORS,
+	LED_COLOR_PRESETS,
+	normalizeHexColor,
 } from './utils.js'
 
 export function UpdateActions(self: SpecteraInstance): void {
@@ -273,19 +283,19 @@ export function UpdateActions(self: SpecteraInstance): void {
 				}
 				if (mode === 'Toggle') {
 					nextSource =
-						current?.source === action.options.interface ? (action.options.toggleInterface as InputSource) : iface
+						current?.inputSource === action.options.interface ? (action.options.toggleInterface as InputSource) : iface
 				} else {
 					nextSource = iface
 				}
-				await self.api.setAudioInput(inputId, { source: nextSource })
+				await self.api.setAudioInput(inputId, { inputSource: nextSource })
 			}
 			self.checkFeedbacks('audioInputInterface')
 		},
 	}
 
 	//DAD Actions
-	actions['dadLedBrightness'] = {
-		name: 'DAD - LED Brightness',
+	actions['dadConnectedStateColor'] = {
+		name: 'DAD - LED Colors',
 		options: [
 			{
 				type: 'dropdown',
@@ -295,19 +305,31 @@ export function UpdateActions(self: SpecteraInstance): void {
 				id: 'dad',
 			},
 			{
-				type: 'dropdown',
-				label: 'LED Brightness',
-				choices: getChoicesFromEnum(LedBrightness),
-				default: LedBrightness.Standard,
-				id: 'ledBrightness',
+				type: 'colorpicker',
+				label: 'RF Active Color',
+				id: 'rfActive',
+				default: DEFAULT_LED_COLORS.rfActive!,
+				returnType: 'string',
+				presetColors: [...LED_COLOR_PRESETS],
+			},
+			{
+				type: 'colorpicker',
+				label: 'RF Muted Color',
+				id: 'rfMuted',
+				default: DEFAULT_LED_COLORS.rfMuted!,
+				returnType: 'string',
+				presetColors: [...LED_COLOR_PRESETS],
 			},
 		],
-		description: 'Set the DAD LED Brightness',
+		description: 'Set custom LED colors for a DAD antenna',
 		callback: async (action) => {
 			if (!self.api) return
 			await self.api.setAntenna(action.options.dad as AntennaPortId, {
 				antennaPortId: action.options.dad as AntennaPortId,
-				ledBrightness: action.options.ledBrightness as LedBrightness,
+				ledColors: {
+					rfActive: normalizeHexColor(action.options.rfActive),
+					rfMuted: normalizeHexColor(action.options.rfMuted),
+				},
 			})
 		},
 	}
@@ -488,8 +510,8 @@ export function UpdateActions(self: SpecteraInstance): void {
 		},
 	}
 
-	actions['mobileDeviceLedBrightness'] = {
-		name: 'Mobile Device - LED Brightness',
+	/* actions['mobileDeviceSleep'] = {
+		name: 'Mobile Device - Sleep',
 		options: [
 			{
 				type: 'dropdown',
@@ -501,20 +523,86 @@ export function UpdateActions(self: SpecteraInstance): void {
 			},
 			{
 				type: 'dropdown',
-				label: 'LED Brightness',
-				choices: getChoicesFromEnum(LedBrightness),
-				default: LedBrightness.Standard,
-				id: 'ledBrightness',
+				label: 'Sleep',
+				choices: [
+					{ id: 'true', label: 'Sleep' },
+					{ id: 'false', label: 'Wake' },
+				],
+				default: 'true',
+				id: 'sleep',
 			},
 		],
-		description: 'Set LED Brightness for a Mobile Device',
+		description: 'Set Sleep state for a Mobile Device',
 		callback: async (action, context) => {
 			if (!self.api) return
 			const serial = await context.parseVariablesInString(action.options.serial as string)
 			const device = getDeviceBySerial(self.state, serial)
 			if (!device) return
 			await self.api.setMobileDevice(device.mtUid, {
-				ledBrightness: action.options.ledBrightness as LedBrightness,
+				sleep: action.options.sleep === 'true',
+			})
+		},
+	} */
+
+	actions['mobileDeviceCommandBehavior'] = {
+		name: 'Mobile Device - Command Behavior',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'serial',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
+				choices: mobileDeviceChoices,
+				allowCustom: true,
+			},
+			{
+				type: 'dropdown',
+				label: 'Command Behavior',
+				choices: getChoicesFromEnum(CommandBehavior),
+				default: CommandBehavior.Disabled,
+				id: 'commandBehavior',
+			},
+		],
+		description: 'Set Command Behavior for a Mobile Device',
+		callback: async (action, context) => {
+			if (!self.api) return
+			const serial = await context.parseVariablesInString(action.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
+			if (!device) return
+			await self.api.setMobileDevice(device.mtUid, {
+				commandBehavior: action.options.commandBehavior as CommandBehavior,
+			})
+		},
+	}
+
+	actions['mobileDeviceConnectedStateColor'] = {
+		name: 'Mobile Device - Connected State LED Color',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'serial',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
+				choices: mobileDeviceChoices,
+				allowCustom: true,
+			},
+			{
+				type: 'colorpicker',
+				label: 'Connected State Color',
+				id: 'connectedStateColor',
+				default: DEFAULT_CONNECTED_STATE_COLOR,
+				returnType: 'string',
+				presetColors: [...LED_COLOR_PRESETS],
+			},
+		],
+		description: 'Set the Connected State LED color for a Mobile Device',
+		callback: async (action, context) => {
+			if (!self.api) return
+			const serial = await context.parseVariablesInString(action.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
+			if (!device) return
+			await self.api.setMobileDevice(device.mtUid, {
+				connectedStateColor: normalizeHexColor(action.options.connectedStateColor),
 			})
 		},
 	}
@@ -1171,14 +1259,20 @@ export function UpdateActions(self: SpecteraInstance): void {
 			},
 			{
 				type: 'dropdown',
+				label: 'Command Mode',
+				choices: [...audioOutputCommandContextChoices],
+				default: 'disabled',
+				id: 'context',
+				tooltip:
+					'Which Command Mode to change the routing setting for: disabled (On/Off) or enabled (On/Off/Mute/Talk).',
+			},
+			{
+				type: 'dropdown',
 				label: 'Mode',
-				choices: [
-					{ id: 'On', label: 'On' },
-					{ id: 'Off', label: 'Off' },
-					{ id: 'Toggle', label: 'Toggle' },
-				],
+				choices: [{ id: 'Toggle', label: 'Toggle' }, ...audioOutputStateChoices],
 				default: 'On',
 				id: 'mode',
+				tooltip: 'Mute/Talk only apply if the Command Mode is set to "Enabled".',
 			},
 			{
 				type: 'checkbox',
@@ -1198,29 +1292,37 @@ export function UpdateActions(self: SpecteraInstance): void {
 				: rawOutputIds !== undefined && rawOutputIds !== null && rawOutputIds !== ''
 					? [Number(rawOutputIds)]
 					: []
-			const iface = action.options.interface as (typeof audioOutputChannelChoices)[number]['id']
-			const modeOption = action.options.mode as 'On' | 'Off' | 'Toggle'
+			const iface = action.options.interface as AudioOutputInterfaceId
+			const context = (action.options.context as AudioOutputCommandContext) ?? 'disabled'
+			const modeOption = action.options.mode as 'On' | 'Off' | 'Toggle' | 'Mute' | 'Talk'
+			// Mute/Talk are only valid for the enabled mode.
+			if (context === 'disabled' && (modeOption === 'Mute' || modeOption === 'Talk')) {
+				self.log('warn', 'Mute/Talk are only valid when Command Mode is enabled.')
+				return
+			}
 			if (action.options.requireConfirmation) {
 				const key = self.confirmationKey('setAudioOutputInterface', {
 					outputId: action.options.outputId,
 					interface: action.options.interface,
+					context: action.options.context,
 					mode: action.options.mode,
 				})
 				if (!self.confirmAction(key)) return
 			}
-			const outputIfaceKeys = audioOutputChannelChoices.map((c) => c.id)
+			const prop = audioOutputInterfaceProps[iface][context]
+			const disabledProps = audioOutputChannelChoices.map((c) => audioOutputInterfaceProps[c.id].disabled)
 			for (const outputId of outputIds) {
-				let mode = modeOption
+				let mode: 'On' | 'Off' | 'Mute' | 'Talk' = modeOption === 'Toggle' ? 'On' : modeOption
 				const current = self.state.audioOutputs.get(outputId)
 				if (current?.micAudiolinkId === -1) continue
-				if (mode === 'Toggle') {
-					mode = current?.[iface] === 'On' ? 'Off' : 'On'
+				if (modeOption === 'Toggle') {
+					mode = current?.[prop] === 'On' ? 'Off' : 'On'
 				}
-				if (mode === 'Off') {
-					const onCount = outputIfaceKeys.filter((id) => current?.[id] === 'On').length
-					if (current?.[iface] === 'On' && onCount === 1) continue
+				if (context === 'disabled' && mode === 'Off') {
+					const onCount = disabledProps.filter((p) => current?.[p] === 'On').length
+					if (current?.[prop] === 'On' && onCount === 1) continue
 				}
-				await self.api.setAudioOutput(outputId, { [iface]: mode })
+				await self.api.setAudioOutput(outputId, { [prop]: mode })
 			}
 			self.checkFeedbacks('audioOutputInterface')
 		},
@@ -1272,6 +1374,72 @@ export function UpdateActions(self: SpecteraInstance): void {
 			if (!sourceDevice || !targetDevice) return
 
 			await self.api.copyMobileDeviceSettings(sourceDevice.mtUid, targetDevice.mtUid)
+		},
+	}
+
+	actions['setMobileDeviceSettingsJson'] = {
+		name: 'Mobile Device - Set Settings From JSON',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Target Mobile Device',
+				id: 'serial',
+				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
+				choices: mobileDeviceChoices,
+				allowCustom: true,
+			},
+			{
+				type: 'textinput',
+				label: 'Settings JSON',
+				id: 'json',
+				default: '',
+				useVariables: true,
+				tooltip:
+					'Paste the value of another mobile device’s "Settings (JSON)" variable, e.g. $(spectera:SEK_1234567890_settings_json).',
+			},
+			{
+				type: 'checkbox',
+				label: 'Require Confirmation',
+				id: 'requireConfirmation',
+				default: false,
+				tooltip:
+					'This will require a double press of the button to confirm the action. It will timeout after 5 seconds if not confirmed.',
+			},
+		],
+		description:
+			'Apply a set of mobile-device settings from a JSON string (typically a device’s Settings (JSON) variable).',
+		callback: async (action, context) => {
+			if (!self.api) return
+			const serial = await context.parseVariablesInString(action.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
+			if (!device) {
+				self.log('warn', `Set Settings From JSON: Mobile Device "${serial}" not found`)
+				return
+			}
+
+			const rawJson = await context.parseVariablesInString(action.options.json as string)
+			const { payload, warnings, error } = parseMobileDeviceSettingsJson(rawJson, device)
+
+			if (error) {
+				self.log('warn', `Set Settings From JSON: ${error}`)
+				return
+			}
+			for (const warning of warnings) {
+				self.log('info', `Set Settings From JSON (${device.name}): ${warning}`)
+			}
+			const appliedKeys = Object.keys(payload)
+			if (appliedKeys.length === 0) {
+				self.log('warn', `Set Settings From JSON (${device.name}): no valid settings to apply`)
+				return
+			}
+
+			if (action.options.requireConfirmation) {
+				const key = self.confirmationKey('setMobileDeviceSettingsJson', { serial })
+				if (!self.confirmAction(key)) return
+			}
+
+			await self.api.setMobileDevice(device.mtUid, payload)
+			self.log('debug', `Set Settings From JSON (${device.name}): applied ${appliedKeys.join(', ')}`)
 		},
 	}
 

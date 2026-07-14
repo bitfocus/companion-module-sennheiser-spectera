@@ -14,7 +14,7 @@ export enum RFChannels {
 	Off = 'Off',
 	'RF Channel 1' = 'RfChannel0',
 	'RF Channel 2' = 'RfChannel1',
-	'Scan' = 'Scan',
+	Scan = 'Scan',
 }
 
 export enum TxPower {
@@ -64,9 +64,9 @@ export enum MtType {
 }
 
 export enum InputSource {
-	Dante = 'dante',
-	'MADI 1' = 'madi1',
-	'MADI 2' = 'madi2',
+	Dante = 'AoIp',
+	'MADI 1' = 'Madi1',
+	'MADI 2' = 'Madi2',
 }
 
 export enum TempStatus {
@@ -75,11 +75,9 @@ export enum TempStatus {
 	Critical = 'Critical',
 }
 
-export enum LedBrightness {
-	Off = 'Off',
-	Dim = 'Dim',
-	Standard = 'Standard',
-	Bright = 'Bright',
+export interface LedColors {
+	rfActive?: string
+	rfMuted?: string
 }
 
 export enum AntennaPortId {
@@ -102,7 +100,7 @@ export enum AudiolinkModeId {
 	'MAX Link Density (Mono)' = 2,
 	'MAX Range (Mono)' = 1,
 	'None (Stereo)' = 1002,
-	'None' = 1001,
+	None = 1001,
 }
 
 export enum IemAudiolinkMode {
@@ -115,7 +113,7 @@ export enum IemAudiolinkMode {
 	'MAX Link Density (Mono)' = 2,
 	'MAX Range (Mono)' = 1,
 	'None (Stereo)' = 1002,
-	'None' = 1001,
+	None = 1001,
 }
 
 export enum MicAudiolinkMode {
@@ -126,7 +124,7 @@ export enum MicAudiolinkMode {
 	'LIVE Link Density (Mono)' = 3,
 	'MAX Link Density (Mono)' = 2,
 	'MAX Range (Mono)' = 1,
-	'None' = 1001,
+	None = 1001,
 }
 
 export enum MicLineSelection {
@@ -142,7 +140,7 @@ export enum MicLineSelectionAuto {
 }
 
 export enum MicLowCutHzSEK {
-	'Off' = 20,
+	Off = 20,
 	'30 Hz' = 30,
 	'60 Hz' = 60,
 	'80 Hz' = 80,
@@ -151,10 +149,25 @@ export enum MicLowCutHzSEK {
 }
 
 export enum MicLowCutHzSKM {
-	'Off' = 60,
+	Off = 60,
 	'80 Hz' = 80,
 	'100 Hz' = 100,
 	'120 Hz' = 120,
+}
+
+export enum CommandBehavior {
+	Disabled = 'Disabled',
+	Momentary = 'Momentary',
+	Latching = 'Latching',
+}
+
+export enum CommandState {
+	Unknown = 'Unknown',
+	NotAvailable = 'NotAvailable',
+	Released = 'Released',
+	Pressed = 'Pressed',
+	Unlatched = 'Unlatched',
+	Latched = 'Latched',
 }
 
 // Interfaces
@@ -167,16 +180,24 @@ export interface AudioLink {
 export interface AudioInput {
 	inputId: number
 	iemAudiolinkId: number
-	source: InputSource
+	inputSource: InputSource
 	name: string
 }
+
+/** Output routing mode when the Command button feature is disabled. */
+export type AudioOutputIfCommandIsDisabled = 'On' | 'Off'
+/** Output routing mode when the Command button feature is enabled. */
+export type AudioOutputIfCommandIsEnabled = 'On' | 'Off' | 'Mute' | 'Talk'
 
 export interface AudioOutput {
 	outputId: number
 	micAudiolinkId: number
-	commandModeAudioNetwork: string
-	commandModeMadi1: string
-	commandModeMadi2: string
+	aoIpEnableIfCommandIsDisabled: AudioOutputIfCommandIsDisabled
+	madi1EnableIfCommandIsDisabled: AudioOutputIfCommandIsDisabled
+	madi2EnableIfCommandIsDisabled: AudioOutputIfCommandIsDisabled
+	aoIpEnableIfCommandIsEnabled: AudioOutputIfCommandIsEnabled
+	madi1EnableIfCommandIsEnabled: AudioOutputIfCommandIsEnabled
+	madi2EnableIfCommandIsEnabled: AudioOutputIfCommandIsEnabled
 }
 
 export interface RfChannel {
@@ -212,7 +233,7 @@ export interface Antenna {
 	type: string
 	version?: string
 	identify: boolean
-	ledBrightness: LedBrightness
+	ledColors?: LedColors
 	bindings: AntennaBinding[]
 }
 
@@ -231,7 +252,6 @@ export interface MobileDeviceBase {
 	reverseIdentify?: boolean
 	name: string
 	serial?: string
-	connected?: boolean
 	sleep: boolean
 	state: MtState
 	lastConnected?: string
@@ -241,14 +261,15 @@ export interface MobileDeviceBase {
 	version?: string
 	versionMismatch?: boolean
 	fccId?: string
-	ledBrightness?: LedBrightness
+	connectedStateColor?: string
 	swUpdatePossible?: boolean
 	swUpdateProgress?: number
 	micAudiolinkId?: number
 	micAudiolinkActive?: boolean
 	micTestToneEnabled?: boolean
 	micTestToneLevel?: number
-	commandState?: string
+	commandBehavior?: CommandBehavior
+	commandState?: CommandState
 	micLqi?: number
 	interference?: { severity: Interference }
 	dominantAntenna?: string
@@ -277,7 +298,6 @@ export interface SKMDevice extends MobileDeviceBase {
 	type: MtType.SKM
 	micPreampGain: number
 	micLowCutHz: MicLowCutHzSKM
-	commandBehavior: string
 	micModule?: MicModule
 }
 
@@ -364,10 +384,10 @@ export interface AudioLevel {
 export interface AudioLevels {
 	madi1In?: AudioLevel
 	madi2In?: AudioLevel
-	danteIn?: AudioLevel
+	aoIpIn?: AudioLevel
 	madi1Out?: AudioLevel
 	madi2Out?: AudioLevel
-	danteOut?: AudioLevel
+	aoIpOut?: AudioLevel
 	updateCounter: number
 }
 
@@ -404,6 +424,12 @@ export interface BaseStationIdentity {
 	vendor: string
 }
 
+export interface SscVersion {
+	protocol: string
+	schema: string
+	schemaDetailed: string
+}
+
 export interface BaseStationState {
 	state: BaseStationStatus
 	warnings: string[]
@@ -434,6 +460,7 @@ export enum AudioNetworkType {
 	None = 'None',
 	Unknown = 'Unknown',
 	Dante = 'Dante',
+	Ravenna = 'Ravenna',
 }
 
 export enum MadiModuleType {
@@ -447,13 +474,13 @@ export enum OutputClockSource {
 	Internal48kHz = 'Internal48kHz',
 	Internal96kHz = 'Internal96kHz',
 	WordclockIn = 'WordclockIn',
-	AudioNetwork = 'AudioNetwork',
+	AoIp = 'AoIp',
 	Madi1In = 'Madi1In',
 	Madi2In = 'Madi2In',
 }
 
 export interface InterfaceStatusAudioNetwork {
-	audioNetworkType: AudioNetworkType
+	aoIpType: AudioNetworkType
 	status: InterfaceInputStatus
 	sampleRateHz: number
 	mute: boolean
@@ -469,7 +496,7 @@ export interface InterfaceStatusMadi {
 		fewerChannelsThanUsed: boolean
 	}
 	outputStatus: {
-		clockSource: OutputClockSource
+		outputClockSource: OutputClockSource
 		clockSourceStatus: InterfaceInputStatus
 		fallbackToInternalClockActive: boolean
 		sampleRateHz: number
@@ -484,7 +511,7 @@ export interface InterfaceStatusWordclock {
 		sampleRateHz: number
 	}
 	outputStatus: {
-		clockSource: OutputClockSource
+		outputClockSource: OutputClockSource
 		clockSourceStatus: InterfaceInputStatus
 		fallbackToInternalClockActive: boolean
 		sampleRateHz: number

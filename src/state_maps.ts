@@ -12,6 +12,7 @@ import type {
 	AntennaBinding,
 	SEKDevice,
 	SKMDevice,
+	MobileDeviceBase,
 	AudioLink,
 	InterferenceDetail,
 	MicModule,
@@ -29,6 +30,7 @@ import {
 	MicLowCutHzSKM,
 	MtType,
 	InputSource,
+	MtState,
 } from './types.js'
 import { formatBatteryRuntimeMinutes } from './utils.js'
 
@@ -132,12 +134,18 @@ export const AntennaStateMap: StateMap<Antenna> = {
 	},
 	version: { variable: 'version', valueFn: passthrough },
 	identify: { feedback: 'dadIdentify', variable: 'identify', valueFn: passthrough },
-	ledBrightness: { feedback: 'dadLedBrightness', variable: 'led_brightness', valueFn: passthrough },
+	ledColors: {
+		feedback: 'dadConnectedStateColor',
+		variableSuffixes: [
+			{ suffix: 'led_rf_active', valueFn: (v) => (v as { rfActive?: string })?.rfActive },
+			{ suffix: 'led_rf_muted', valueFn: (v) => (v as { rfMuted?: string })?.rfMuted },
+		],
+	},
 	bindings: { feedback: 'dadBindings', variable: 'bindings', valueFn: toBindingLabel },
 }
 
 export const AudioInputStateMap: StateMap<AudioInput> = {
-	source: { feedback: 'audioInputInterface', variable: 'interface', valueFn: toInputSourceLabel },
+	inputSource: { feedback: 'audioInputInterface', variable: 'interface', valueFn: toInputSourceLabel },
 	name: { variable: 'name', valueFn: passthrough },
 	iemAudiolinkId: {
 		feedback: ['iemAudioInputLinked', 'iemAudioInputNoLinkId'],
@@ -148,9 +156,12 @@ export const AudioInputStateMap: StateMap<AudioInput> = {
 
 export const AudioOutputStateMap: StateMap<AudioOutput> = {
 	micAudiolinkId: { feedback: 'mobileDeviceOutputLinked', variable: 'mic_link_id', valueFn: passthrough },
-	commandModeAudioNetwork: { feedback: 'audioOutputInterface', valueFn: passthrough },
-	commandModeMadi1: { feedback: 'audioOutputInterface', valueFn: passthrough },
-	commandModeMadi2: { feedback: 'audioOutputInterface', valueFn: passthrough },
+	aoIpEnableIfCommandIsDisabled: { feedback: 'audioOutputInterface', valueFn: passthrough },
+	madi1EnableIfCommandIsDisabled: { feedback: 'audioOutputInterface', valueFn: passthrough },
+	madi2EnableIfCommandIsDisabled: { feedback: 'audioOutputInterface', valueFn: passthrough },
+	aoIpEnableIfCommandIsEnabled: { feedback: 'audioOutputInterface', valueFn: passthrough },
+	madi1EnableIfCommandIsEnabled: { feedback: 'audioOutputInterface', valueFn: passthrough },
+	madi2EnableIfCommandIsEnabled: { feedback: 'audioOutputInterface', valueFn: passthrough },
 }
 
 export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
@@ -169,14 +180,19 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 		valueFn: passthrough,
 	},
 	serial: { variable: 'serial', valueFn: passthrough },
-	connected: { feedback: 'mobileDeviceConnected', variable: 'connected', valueFn: passthrough },
 	lastConnected: {
 		feedback: 'mobileDeviceLastConnected',
 		variable: 'last_connected',
 		valueFn: passthrough,
 	},
 	sleep: { feedback: 'mobileDeviceSleep', variable: 'sleep', valueFn: passthrough },
-	state: { feedback: 'mobileDeviceState', variable: 'state', valueFn: passthrough },
+	state: {
+		feedback: ['mobileDeviceState', 'mobileDeviceConnected'],
+		variableSuffixes: [
+			{ suffix: 'state', valueFn: passthrough },
+			{ suffix: 'connected', valueFn: (_v, state) => (state as MobileDeviceBase).state === MtState.Connected },
+		],
+	},
 	batteryFillLevel: {
 		feedback: 'mobileDeviceBatteryLevel',
 		variable: 'battery_level',
@@ -191,9 +207,9 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 	version: { variable: 'version', valueFn: passthrough },
 	versionMismatch: { variable: 'version_mismatch', valueFn: passthrough },
 	fccId: { variable: 'fcc_id', valueFn: passthrough },
-	ledBrightness: {
-		feedback: 'mobileDeviceLedBrightness',
-		variable: 'led_brightness',
+	connectedStateColor: {
+		feedback: ['mobileDeviceConnectedStateColor', 'mobileDeviceConnectedStateColorCurrent'],
+		variable: 'connected_state_color',
 		valueFn: passthrough,
 	},
 	swUpdatePossible: { variable: 'sw_update_possible', valueFn: passthrough },
@@ -218,7 +234,8 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 		variable: 'mic_test_tone_level',
 		valueFn: passthrough,
 	},
-	commandState: { variable: 'command_state', valueFn: passthrough },
+	commandBehavior: { feedback: 'mobileDeviceCommandBehavior', variable: 'command_behavior', valueFn: passthrough },
+	commandState: { feedback: 'mobileDeviceCommandState', variable: 'command_state', valueFn: passthrough },
 	micLqi: { feedback: 'mobileDeviceMicLqi', variable: 'mic_lqi', valueFn: passthrough },
 	interference: {
 		feedback: 'mobileDeviceInterference',
@@ -294,7 +311,6 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 	},
 	iemLqi: { feedback: 'mobileDeviceIemLqi', variable: 'iem_lqi', valueFn: passthrough },
 	// SKM specific
-	commandBehavior: { variable: 'command_behavior', valueFn: passthrough },
 	micModule: {
 		variable: 'mic_module',
 		valueFn: (v: unknown): VariableValue => (v as MicModule | undefined)?.name,
@@ -361,7 +377,7 @@ export const MadiInputStateMap: StateMap<InterfaceStatusMadi['inputStatus']> = {
 }
 
 export const MadiOutputStateMap: StateMap<InterfaceStatusMadi['outputStatus']> = {
-	clockSource: { variable: 'output_clock_source', valueFn: passthrough },
+	outputClockSource: { variable: 'output_clock_source', valueFn: passthrough },
 	clockSourceStatus: {
 		feedback: 'audioInterfaceStatus',
 		variable: 'output_clock_source_status',
@@ -379,7 +395,7 @@ export const WordclockInputStateMap: StateMap<InterfaceStatusWordclock['inputSta
 }
 
 export const WordclockOutputStateMap: StateMap<InterfaceStatusWordclock['outputStatus']> = {
-	clockSource: { variable: 'output_clock_source', valueFn: passthrough },
+	outputClockSource: { variable: 'output_clock_source', valueFn: passthrough },
 	clockSourceStatus: {
 		feedback: 'audioInterfaceStatus',
 		variable: 'output_clock_source_status',

@@ -7,4 +7,5 @@ DEBUG-*
 /.yarn
 /.vscode
 /docs
+/builds
 .DS_Store

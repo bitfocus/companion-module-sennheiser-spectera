@@ -17,6 +17,7 @@ import type {
 	BaseStationSite,
 	BaseStationState,
 	BaseStationIdentity,
+	SscVersion,
 	AudioLevels,
 	AudioLevel,
 	InterfaceStatusAudioNetwork,
@@ -24,7 +25,7 @@ import type {
 	InterfaceStatusWordclock,
 } from './types.js'
 import { MtType } from './types.js'
-import { getAntennaFrequency, getExistingMicAudiolinkModeFromState } from './utils.js'
+import { getAntennaFrequency, getExistingMicAudiolinkModeFromState, getPortableMobileDeviceSettings } from './utils.js'
 import type { SpecteraState } from './state.js'
 import { Agent, Dispatcher } from 'undici'
 import {
@@ -61,8 +62,25 @@ import {
 
 const REQUEST_INTERVAL_MS = 20
 
+/** API schema version this module targets */
+const EXPECTED_API_SCHEMA = '18.1'
+
+function parseSchemaVersion(schema: string): { major: number; minor: number } | null {
+	const match = /^(\d+)\.(\d+)/.exec(schema)
+	if (!match) return null
+	return { major: Number(match[1]), minor: Number(match[2]) }
+}
+
 function isActiveAudioLinkId(id: number | undefined): boolean {
 	return id !== undefined && id > -1
+}
+
+/**
+ * Translate an audio input object coming off the Base Station into the module's canonical form.
+ */
+function normalizeAudioInput(raw: AudioInput & { source?: unknown }): AudioInput {
+	raw.inputSource = raw.inputSource ?? raw.source
+	return raw
 }
 
 interface AudioLinkCheck {
@@ -81,6 +99,7 @@ export class SpecteraApi extends EventEmitter {
 	private readonly dispatcher: Dispatcher
 	private variableCache: Record<string, string | number | boolean | undefined> = {}
 	private lastLevelUpdateTime = 0
+	private static readonly LEVEL_UPDATE_INTERVAL_MS = 150
 	private isInitializing = false
 	private readonly requestQueue: { add: <T>(fn: () => Promise<T>) => Promise<T> }
 	private readonly routingQueue: { add: <T>(fn: () => Promise<T>) => Promise<T> }
@@ -106,8 +125,8 @@ export class SpecteraApi extends EventEmitter {
 		'/api/device/identity',
 		'/api/device/state',
 		'/api/device/site',
-		'/api/audio/levels',
-		'/api/audio/interface/audionetwork/status',
+		'/api/audio/metering',
+		'/api/audio/interface/aoip/status',
 		'/api/audio/interface/madi1/status',
 		'/api/audio/interface/madi2/status',
 		'/api/audio/interface/wordclock/status',
@@ -141,10 +160,10 @@ export class SpecteraApi extends EventEmitter {
 		return `Basic ${Buffer.from(credentials).toString('base64')}`
 	}
 
-	async sendRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
+	async sendRequest<T>(method: string, path: string, body?: unknown, options?: { quiet?: boolean }): Promise<T> {
 		return this.requestQueue.add(async () => {
 			try {
-				return await this.executeRequest<T>(method, path, body)
+				return await this.executeRequest<T>(method, path, body, options)
 			} catch (err) {
 				this.instance.log(
 					'debug',
@@ -155,7 +174,12 @@ export class SpecteraApi extends EventEmitter {
 		})
 	}
 
-	private async executeRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
+	private async executeRequest<T>(
+		method: string,
+		path: string,
+		body?: unknown,
+		requestOptions?: { quiet?: boolean },
+	): Promise<T> {
 		const url = `https://${this.host}:443/api${path}`
 		const options: RequestInit = {
 			method,
@@ -171,7 +195,9 @@ export class SpecteraApi extends EventEmitter {
 			options.body = JSON.stringify(body)
 		}
 
-		this.instance.log('debug', `API Request: ${method} ${path} ${body ? JSON.stringify(body) : ''}`)
+		if (!requestOptions?.quiet) {
+			this.instance.log('debug', `API Request: ${method} ${path} ${body ? JSON.stringify(body) : ''}`)
+		}
 
 		const response = await fetch(url, { ...options, dispatcher: this.dispatcher } as any)
 
@@ -195,9 +221,47 @@ export class SpecteraApi extends EventEmitter {
 	async performLogin(): Promise<void> {
 		try {
 			await this.getBaseStationState()
+			await this.checkApiCompatibility()
 		} catch (error) {
 			this.instance.log('debug', `Login failed: ${error instanceof Error ? error.message : String(error)}`)
 			throw error
+		}
+	}
+
+	private async checkApiCompatibility(): Promise<void> {
+		try {
+			const version = await this.getSscVersion()
+			const deviceSchema = parseSchemaVersion(version.schema)
+			const expectedSchema = parseSchemaVersion(EXPECTED_API_SCHEMA)
+
+			this.instance.log('debug', `Spectera Base Station API ${version.schema}, SSC Protocol ${version.protocol}`)
+
+			if (!deviceSchema || !expectedSchema) {
+				this.instance.log('warn', `Unable to verify Base Station API version (${version.schema})`)
+				return
+			}
+
+			if (deviceSchema.major !== expectedSchema.major) {
+				this.instance.log(
+					'warn',
+					`Base Station API version ${version.schema} differs from module expected version ${EXPECTED_API_SCHEMA}. The module may not work correctly.`,
+				)
+			} else if (deviceSchema.minor < expectedSchema.minor) {
+				this.instance.log(
+					'warn',
+					`Base Station API version ${version.schema} is older than module expected version ${EXPECTED_API_SCHEMA}. Some features may be unavailable.`,
+				)
+			} else if (deviceSchema.minor > expectedSchema.minor) {
+				this.instance.log(
+					'warn',
+					`Base Station API version ${version.schema} is newer than module expected version ${EXPECTED_API_SCHEMA}. Some device features may not be supported yet.`,
+				)
+			}
+		} catch (error) {
+			this.instance.log(
+				'warn',
+				`Unable to check API version: ${error instanceof Error ? error.message : String(error)}`,
+			)
 		}
 	}
 
@@ -351,7 +415,8 @@ export class SpecteraApi extends EventEmitter {
 	private async runHeartbeat(): Promise<void> {
 		if (this.destroyed) return
 		try {
-			await this.getBaseStationState()
+			// Quiet: this polls every 5s and would otherwise flood the debug log
+			await this.sendRequest('GET', '/device/state', undefined, { quiet: true })
 			// Detect silent SSE stream death — use subscribe start time as fallback
 			// when no SSE events have ever been received (lastSSEEventTime === 0)
 			const timeSinceActivity =
@@ -367,7 +432,7 @@ export class SpecteraApi extends EventEmitter {
 				return
 			}
 		} catch (_err) {
-			this.instance.log('warn', 'Connection lost to Spectera.')
+			this.instance.log('warn', 'Connection lost to Spectera, attempting to reconnect...')
 			this.stopHeartbeat()
 			if (this.abortController) {
 				this.abortController.abort()
@@ -622,16 +687,22 @@ export class SpecteraApi extends EventEmitter {
 		if (this.isInitializing) return
 
 		const now = Date.now()
-		if (now - this.lastLevelUpdateTime >= 500) {
+		if (now - this.lastLevelUpdateTime >= SpecteraApi.LEVEL_UPDATE_INTERVAL_MS) {
 			this.lastLevelUpdateTime = now
 
-			const interfaces: (keyof AudioLevels)[] = ['madi1In', 'madi2In', 'danteIn', 'madi1Out', 'madi2Out', 'danteOut']
+			// Map each metering payload field to its the original variable names
+			const interfaces: { field: keyof AudioLevels; varBase: string }[] = [
+				{ field: 'madi1In', varBase: 'madi_1_in' },
+				{ field: 'madi2In', varBase: 'madi_2_in' },
+				{ field: 'aoIpIn', varBase: 'dante_in' },
+				{ field: 'madi1Out', varBase: 'madi_1_out' },
+				{ field: 'madi2Out', varBase: 'madi_2_out' },
+				{ field: 'aoIpOut', varBase: 'dante_out' },
+			]
 
-			for (const iface of interfaces) {
-				const levelData = levels[iface] as AudioLevel | undefined
+			for (const { field, varBase: ifaceName } of interfaces) {
+				const levelData = levels[field] as AudioLevel | undefined
 				if (levelData) {
-					const ifaceName = iface.replace(/([A-Z])/g, '_$1').toLowerCase()
-
 					levelData.peak.forEach((val, index) => {
 						const varName = `audio_level_${ifaceName}_${index + 1}_peak`
 						if (this.variableCache[varName] !== val) {
@@ -663,6 +734,7 @@ export class SpecteraApi extends EventEmitter {
 
 			if (key.startsWith('/api/audio/inputs/')) {
 				const oldState = this.state.audioInputs.get(value.inputId)
+				normalizeAudioInput(value)
 				this.state.updateAudioInput(value)
 				const displayId = value.inputId + 1
 				this.handleStateUpdate(
@@ -787,6 +859,14 @@ export class SpecteraApi extends EventEmitter {
 						changedVariables,
 						feedbacksToCheck,
 					)
+					// settings_json is a composite of many fields and isn't in MobileDeviceStateMap, so
+					// recompute it here whenever the device changes to keep the exported snapshot current.
+					const settingsJsonVar = `${prefix}settings_json`
+					const settingsJsonVal = JSON.stringify(getPortableMobileDeviceSettings(value))
+					if (this.variableCache[settingsJsonVar] !== settingsJsonVal) {
+						changedVariables[settingsJsonVar] = settingsJsonVal
+						this.variableCache[settingsJsonVar] = settingsJsonVal
+					}
 					structureChanged = !oldState || oldState.name !== value.name
 					// Recompute iem_link_devices for any audio input affected by this device's link change
 					const oldIemLinkId = oldState?.type === MtType.SEK ? oldState.iemAudiolinkId : undefined
@@ -847,9 +927,9 @@ export class SpecteraApi extends EventEmitter {
 				const oldState = this.state.basestation.site ? { ...this.state.basestation.site } : undefined
 				this.state.updateBaseStationSite(value)
 				this.handleStateUpdate('', oldState, value, BaseStationSiteMap, changedVariables, feedbacksToCheck)
-			} else if (key === '/api/audio/levels') {
+			} else if (key === '/api/audio/metering') {
 				this.processAudioLevels(value as AudioLevels, changedVariables)
-			} else if (key === '/api/audio/interface/audionetwork/status') {
+			} else if (key === '/api/audio/interface/aoip/status') {
 				const oldState = this.state.audioNetwork ? { ...this.state.audioNetwork } : undefined
 				this.state.updateAudioNetwork(value)
 				this.handleStateUpdate('dante_', oldState, value, AudioNetworkStateMap, changedVariables, feedbacksToCheck)
@@ -957,7 +1037,8 @@ export class SpecteraApi extends EventEmitter {
 	}
 
 	async getAudioInputs(): Promise<AudioInput[]> {
-		return this.sendRequest<AudioInput[]>('GET', '/audio/inputs')
+		const inputs = await this.sendRequest<AudioInput[]>('GET', '/audio/inputs')
+		return inputs.map((i) => normalizeAudioInput(i))
 	}
 
 	async setAudioInput(inputId: number, state: Partial<AudioInput>): Promise<void> {
@@ -966,7 +1047,7 @@ export class SpecteraApi extends EventEmitter {
 			throw new Error(`Audio input ${inputId} not found`)
 		}
 
-		const payload = {
+		const payload: Record<string, unknown> = {
 			...state,
 			inputId,
 		}
@@ -1046,6 +1127,10 @@ export class SpecteraApi extends EventEmitter {
 		}
 	}
 
+	async getSscVersion(): Promise<SscVersion> {
+		return this.sendRequest<SscVersion>('GET', '/ssc/version')
+	}
+
 	async getBaseStationIdentity(): Promise<BaseStationIdentity> {
 		return this.sendRequest<BaseStationIdentity>('GET', '/device/identity')
 	}
@@ -1059,11 +1144,11 @@ export class SpecteraApi extends EventEmitter {
 	}
 
 	async getAudioLevels(): Promise<AudioLevels> {
-		return this.sendRequest<AudioLevels>('GET', '/audio/levels')
+		return this.sendRequest<AudioLevels>('GET', '/audio/metering')
 	}
 
 	async getAudioNetworkStatus(): Promise<InterfaceStatusAudioNetwork> {
-		return this.sendRequest<InterfaceStatusAudioNetwork>('GET', '/audio/interface/audionetwork/status')
+		return this.sendRequest<InterfaceStatusAudioNetwork>('GET', '/audio/interface/aoip/status')
 	}
 
 	async getMadiStatus(interfaceId: 'madi1' | 'madi2'): Promise<InterfaceStatusMadi> {
@@ -1487,7 +1572,7 @@ export class SpecteraApi extends EventEmitter {
 
 		const payload: Partial<MobileDevice> = {
 			name: sourceDevice.name,
-			ledBrightness: sourceDevice.ledBrightness,
+			connectedStateColor: sourceDevice.connectedStateColor,
 			micPreampGain: sourceDevice.micPreampGain,
 			micAudiolinkId: desiredMicId,
 			rfChannelId: sourceDevice.rfChannelId,
@@ -1512,6 +1597,7 @@ export class SpecteraApi extends EventEmitter {
 			sekPayload.micLineSelectionAutoValue = sourceDevice.micLineSelectionAutoValue
 			sekPayload.micLowCutHz = sourceDevice.micLowCutHz
 			sekPayload.cableEmulation = sourceDevice.cableEmulation
+			sekPayload.commandBehavior = sourceDevice.commandBehavior
 		} else if (sameType && sourceDevice.type === MtType.SKM) {
 			const skmPayload = payload as Partial<SKMDevice>
 			skmPayload.micLowCutHz = sourceDevice.micLowCutHz

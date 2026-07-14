@@ -4,7 +4,6 @@ import {
 	AntennaPortId,
 	BandwidthMode,
 	DeviceStatus,
-	LedBrightness,
 	BaseStationStatus,
 	CableEmulation,
 	RFChannels,
@@ -22,9 +21,17 @@ import {
 	MicLowCutHzSKM,
 	InterfaceInputStatus,
 	InputSource,
+	CommandBehavior,
+	CommandState,
 } from './types.js'
+import type { AudioLevels } from './types.js'
 import {
 	audioOutputChannelChoices,
+	audioOutputInterfaceProps,
+	audioOutputCommandContextChoices,
+	audioOutputStateChoices,
+	type AudioOutputInterfaceId,
+	type AudioOutputCommandContext,
 	CONFIRMABLE_ACTIONS,
 	getChoicesFromEnum,
 	getDeviceBySerial,
@@ -33,7 +40,14 @@ import {
 	rfChannelChoices,
 	STEREO_INPUT_OFFSET,
 } from './utils.js'
-import { Color } from './utils.js'
+import {
+	Color,
+	colorsMatch,
+	DEFAULT_CONNECTED_STATE_COLOR,
+	DEFAULT_LED_COLORS,
+	LED_COLOR_PRESETS,
+	toCompanionColor,
+} from './utils.js'
 
 export function UpdateFeedbacks(self: SpecteraInstance): void {
 	const feedbacks: CompanionFeedbackDefinitions = {}
@@ -433,10 +447,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			}
 		},
 	}
-	feedbacks['dadLedBrightness'] = {
+	feedbacks['dadConnectedStateColor'] = {
 		type: 'boolean',
-		name: 'DAD - LED Brightness',
-		description: 'DAD - LED Brightness',
+		name: 'DAD - LED Colors',
+		description: 'Check if the DAD LED colors match the selected colors',
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
 		},
@@ -449,16 +463,28 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				id: 'dad',
 			},
 			{
-				type: 'dropdown',
-				label: 'LED Brightness',
-				choices: getChoicesFromEnum(LedBrightness),
-				default: LedBrightness.Standard,
-				id: 'ledBrightness',
+				type: 'colorpicker',
+				label: 'RF Active Color',
+				id: 'rfActive',
+				default: DEFAULT_LED_COLORS.rfActive!,
+				returnType: 'string',
+				presetColors: [...LED_COLOR_PRESETS],
+			},
+			{
+				type: 'colorpicker',
+				label: 'RF Muted Color',
+				id: 'rfMuted',
+				default: DEFAULT_LED_COLORS.rfMuted!,
+				returnType: 'string',
+				presetColors: [...LED_COLOR_PRESETS],
 			},
 		],
 		callback: async (feedback) => {
-			const antennaLedBrightness = self.state.antennas.get(feedback.options.dad as AntennaPortId)?.ledBrightness
-			return antennaLedBrightness === feedback.options.ledBrightness
+			const ledColors = self.state.antennas.get(feedback.options.dad as AntennaPortId)?.ledColors
+			return (
+				colorsMatch(ledColors?.rfActive, feedback.options.rfActive) &&
+				colorsMatch(ledColors?.rfMuted, feedback.options.rfMuted)
+			)
 		},
 	}
 	feedbacks['dadBindings'] = {
@@ -562,7 +588,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		callback: async (feedback, context) => {
 			const serial = await context.parseVariablesInString(feedback.options.serial as string)
 			const device = getDeviceBySerial(self.state, serial)
-			return device?.connected === true
+			return device?.state === MtState.Connected
 		},
 	}
 
@@ -867,7 +893,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		],
 		callback: async (feedback) => {
 			const inputId = feedback.options.inputId as number
-			const currentSource = self.state.audioInputs.get(inputId)?.source
+			const currentSource = self.state.audioInputs.get(inputId)?.inputSource
 			return currentSource === feedback.options.interface
 		},
 	}
@@ -893,29 +919,34 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Interface',
-				choices: [
-					{ id: 'commandModeAudioNetwork', label: 'Dante' },
-					{ id: 'commandModeMadi1', label: 'MADI 1' },
-					{ id: 'commandModeMadi2', label: 'MADI 2' },
-				],
+				choices: [...audioOutputChannelChoices],
 				default: 'commandModeAudioNetwork',
 				id: 'interface',
 			},
 			{
 				type: 'dropdown',
+				label: 'Command Mode',
+				choices: [...audioOutputCommandContextChoices],
+				default: 'disabled',
+				id: 'context',
+				tooltip:
+					'Which routing setting to evaluate: when the Command Mode feature is disabled (On/Off) or enabled (On/Off/Mute/Talk).',
+			},
+			{
+				type: 'dropdown',
 				label: 'State',
-				choices: [
-					{ id: 'On', label: 'On' },
-					{ id: 'Off', label: 'Off' },
-				],
+				choices: [...audioOutputStateChoices],
 				default: 'On',
 				id: 'state',
+				tooltip: 'Mute/Talk only apply if the Command Mode is set to "Enabled".',
 			},
 		],
 		callback: async (feedback) => {
 			const outputId = feedback.options.outputId as number
-			const iface = feedback.options.interface as 'commandModeAudioNetwork' | 'commandModeMadi1' | 'commandModeMadi2'
-			const current = self.state.audioOutputs.get(outputId)?.[iface]
+			const iface = feedback.options.interface as AudioOutputInterfaceId
+			const context = (feedback.options.context as AudioOutputCommandContext) ?? 'disabled'
+			const prop = audioOutputInterfaceProps[iface][context]
+			const current = self.state.audioOutputs.get(outputId)?.[prop]
 			return current === feedback.options.state
 		},
 	}
@@ -1107,6 +1138,68 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		},
 	}
 
+	feedbacks['mobileDeviceCommandBehavior'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Command Behavior',
+		description: 'Indicates if the mobile device matches the selected command behavior mode',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'serial',
+				default: mobileDeviceChoices[0].id,
+				choices: mobileDeviceChoices,
+				allowCustom: true,
+			},
+			{
+				type: 'dropdown',
+				label: 'Command Behavior',
+				choices: getChoicesFromEnum(CommandBehavior),
+				default: CommandBehavior.Disabled,
+				id: 'commandBehavior',
+			},
+		],
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
+			return device?.commandBehavior === feedback.options.commandBehavior
+		},
+	}
+
+	feedbacks['mobileDeviceCommandState'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Command State',
+		description: 'Indicates if the mobile device matches the selected command state',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'serial',
+				default: mobileDeviceChoices[0].id,
+				choices: mobileDeviceChoices,
+				allowCustom: true,
+			},
+			{
+				type: 'dropdown',
+				label: 'Command State',
+				choices: getChoicesFromEnum(CommandState),
+				default: CommandState.Unknown,
+				id: 'commandState',
+			},
+		],
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
+			return device?.commandState === feedback.options.commandState
+		},
+	}
+
 	feedbacks['mobileDeviceBatteryLevel'] = {
 		type: 'boolean',
 		name: 'Mobile Device - Battery Level',
@@ -1171,10 +1264,10 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		},
 	}
 
-	feedbacks['mobileDeviceLedBrightness'] = {
+	feedbacks['mobileDeviceConnectedStateColor'] = {
 		type: 'boolean',
-		name: 'Mobile Device - LED Brightness',
-		description: 'Check LED Brightness',
+		name: 'Mobile Device - Connected State Color Match',
+		description: 'Check if the Connected State LED color matches the selected color',
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
 		},
@@ -1188,17 +1281,43 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				allowCustom: true,
 			},
 			{
-				type: 'dropdown',
-				label: 'Brightness',
-				id: 'brightness',
-				default: LedBrightness.Standard,
-				choices: getChoicesFromEnum(LedBrightness),
+				type: 'colorpicker',
+				label: 'Connected State Color',
+				id: 'connectedStateColor',
+				default: DEFAULT_CONNECTED_STATE_COLOR,
+				returnType: 'string',
+				presetColors: [...LED_COLOR_PRESETS],
 			},
 		],
 		callback: async (feedback, context) => {
 			const serial = await context.parseVariablesInString(feedback.options.serial as string)
 			const device = getDeviceBySerial(self.state, serial)
-			return device?.ledBrightness === feedback.options.brightness
+			return colorsMatch(device?.connectedStateColor, feedback.options.connectedStateColor)
+		},
+	}
+
+	feedbacks['mobileDeviceConnectedStateColorCurrent'] = {
+		type: 'advanced',
+		name: 'Mobile Device - Connected State Color',
+		description: 'Change the background color to the Connected State LED color.',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'serial',
+				default: mobileDeviceChoices[0].id,
+				choices: mobileDeviceChoices,
+				allowCustom: true,
+			},
+		],
+		callback: async (feedback, context) => {
+			const serial = await context.parseVariablesInString(feedback.options.serial as string)
+			const device = getDeviceBySerial(self.state, serial)
+			if (!device) return { bgcolor: undefined }
+
+			return {
+				bgcolor: toCompanionColor(device.connectedStateColor),
+			}
 		},
 	}
 
@@ -1659,13 +1778,12 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		],
 		callback: async (feedback) => {
 			const levels = self.state.audioLevels
-			const iface = feedback.options.interface as
-				| 'danteIn'
-				| 'danteOut'
-				| 'madi1In'
-				| 'madi1Out'
-				| 'madi2In'
-				| 'madi2Out'
+			// Option IDs keep the legacy `danteIn`/`danteOut` values for config stability; the AoIP
+			// metering fields are now named `aoIpIn`/`aoIpOut`, so map those two.
+			const optionIface = feedback.options.interface as
+				'danteIn' | 'danteOut' | 'madi1In' | 'madi1Out' | 'madi2In' | 'madi2Out'
+			const iface: keyof AudioLevels =
+				optionIface === 'danteIn' ? 'aoIpIn' : optionIface === 'danteOut' ? 'aoIpOut' : optionIface
 			const channel = Number(feedback.options.channel) - 1
 			const threshold = Number(feedback.options.threshold)
 
@@ -1806,13 +1924,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		],
 		callback: async (feedback) => {
 			const interfaceId = feedback.options.interface as
-				| 'audioNetwork'
-				| 'madi1In'
-				| 'madi1Out'
-				| 'madi2In'
-				| 'madi2Out'
-				| 'wordclockIn'
-				| 'wordclockOut'
+				'audioNetwork' | 'madi1In' | 'madi1Out' | 'madi2In' | 'madi2Out' | 'wordclockIn' | 'wordclockOut'
 			let status: InterfaceInputStatus | undefined
 
 			switch (interfaceId) {
@@ -1956,12 +2068,22 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			},
 			{
 				type: 'dropdown',
+				label: 'Command Mode',
+				id: 'setAudioOutputInterface_context',
+				choices: [...audioOutputCommandContextChoices],
+				default: 'disabled',
+				isVisibleExpression: '$(options:actionType) === "setAudioOutputInterface"',
+			},
+			{
+				type: 'dropdown',
 				label: 'Mode',
 				id: 'setAudioOutputInterface_mode',
 				choices: [
 					{ id: 'On', label: 'On' },
 					{ id: 'Off', label: 'Off' },
 					{ id: 'Toggle', label: 'Toggle' },
+					{ id: 'Mute', label: 'Mute' },
+					{ id: 'Talk', label: 'Talk' },
 				],
 				default: 'On',
 				isVisibleExpression: '$(options:actionType) === "setAudioOutputInterface"',
@@ -2016,6 +2138,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 				setAudioOutputInterface: {
 					outputId: 'setAudioOutputInterface_outputId',
 					interface: 'setAudioOutputInterface_interface',
+					context: 'setAudioOutputInterface_context',
 					mode: 'setAudioOutputInterface_mode',
 				},
 				copyAllMobileDeviceSettings: {

@@ -12,7 +12,7 @@ import type {
 	BaseStationState,
 	BaseStationSite,
 } from './types.js'
-import { MtType, RfState, RFChannels, RfStateStartup, MicLowCutHzSEK, MicLowCutHzSKM } from './types.js'
+import { MtType, RfState, RFChannels, RfStateStartup, MicLowCutHzSEK, MicLowCutHzSKM, MtState } from './types.js'
 import {
 	StateMap,
 	VariableValue,
@@ -25,7 +25,7 @@ import {
 	inputSourceLabels,
 	psuStatusLabels,
 } from './state_maps.js'
-import { formatBatteryRuntimeMinutes, getAntennaFrequency } from './utils.js'
+import { formatBatteryRuntimeMinutes, getAntennaFrequency, getPortableMobileDeviceSettings } from './utils.js'
 
 const rfStateStartupLabels: Record<RfStateStartup, string> = {
 	[RfStateStartup.Active]: 'Active',
@@ -269,8 +269,12 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 				name: `DAD ${label} - Identify`,
 			},
 			{
-				variableId: `dad_${port}_led_brightness`,
-				name: `DAD ${label} - LED Brightness`,
+				variableId: `dad_${port}_led_rf_active`,
+				name: `DAD ${label} - LED RF Active Color`,
+			},
+			{
+				variableId: `dad_${port}_led_rf_muted`,
+				name: `DAD ${label} - LED RF Muted Color`,
 			},
 			{
 				variableId: `dad_${port}_bindings`,
@@ -294,6 +298,10 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 			{
 				variableId: `${deviceVariableId}_name`,
 				name: `${deviceVariableLabel} - Name`,
+			},
+			{
+				variableId: `${deviceVariableId}_settings_json`,
+				name: `${deviceVariableLabel} - Settings (JSON)`,
 			},
 			{
 				variableId: `${deviceVariableId}_mt_uid`,
@@ -348,8 +356,8 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 				name: `${deviceVariableLabel} - Battery Low`,
 			},
 			{
-				variableId: `${deviceVariableId}_led_brightness`,
-				name: `${deviceVariableLabel} - LED Brightness`,
+				variableId: `${deviceVariableId}_connected_state_color`,
+				name: `${deviceVariableLabel} - Connected State Color`,
 			},
 			{
 				variableId: `${deviceVariableId}_mic_audiolink_id`,
@@ -366,6 +374,10 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 			{
 				variableId: `${deviceVariableId}_mic_test_tone_level`,
 				name: `${deviceVariableLabel} - Mic Test Tone Level`,
+			},
+			{
+				variableId: `${deviceVariableId}_command_behavior`,
+				name: `${deviceVariableLabel} - Command Behavior`,
 			},
 			{
 				variableId: `${deviceVariableId}_command_state`,
@@ -481,10 +493,6 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 					name: `${deviceVariableLabel} - Mic Lowcut Hz`,
 				},
 				{
-					variableId: `${deviceVariableId}_command_behavior`,
-					name: `${deviceVariableLabel} - Command Behavior`,
-				},
-				{
 					variableId: `${deviceVariableId}_mic_module`,
 					name: `${deviceVariableLabel} - Mic Module`,
 				},
@@ -508,7 +516,7 @@ export function getAudioInputVariables(
 ): Record<string, VariableValue> {
 	const displayId = input.inputId + 1
 	return {
-		[`audio_input_${displayId}_interface`]: inputSourceLabels[input.source] ?? input.source,
+		[`audio_input_${displayId}_interface`]: inputSourceLabels[input.inputSource] ?? input.inputSource,
 		//[`audio_input_${displayId}_name`]: input.name || 'None',
 		[`audio_input_${displayId}_iem_link_id`]: input.iemAudiolinkId,
 		[`audio_input_${displayId}_iem_link_devices`]: getAudioInputIemLinkDevices(input, mobileDevices),
@@ -541,9 +549,9 @@ export function getAudioOutputVariables(
  */
 export function getAudioOutputActiveChannels(output: AudioOutput): string {
 	const active: string[] = []
-	if (output.commandModeAudioNetwork === 'On') active.push('Dante')
-	if (output.commandModeMadi1 === 'On') active.push('MADI 1')
-	if (output.commandModeMadi2 === 'On') active.push('MADI 2')
+	if (output.aoIpEnableIfCommandIsDisabled === 'On') active.push('Dante')
+	if (output.madi1EnableIfCommandIsDisabled === 'On') active.push('MADI 1')
+	if (output.madi2EnableIfCommandIsDisabled === 'On') active.push('MADI 2')
 	return active.length ? active.join(', ') : 'None'
 }
 
@@ -589,7 +597,8 @@ export function getAntennaVariables(
 		[`dad_${port}_temp_fahrenheit`]:
 			antenna.temperature && antenna.temperature > -55 ? (antenna.temperature * 9) / 5 + 32 : 'Off',
 		[`dad_${port}_identify`]: antenna.identify,
-		[`dad_${port}_led_brightness`]: antenna.ledBrightness,
+		[`dad_${port}_led_rf_active`]: antenna.ledColors?.rfActive,
+		[`dad_${port}_led_rf_muted`]: antenna.ledColors?.rfMuted,
 		[`dad_${port}_bindings`]: bindingLabel ?? 'None',
 		[`dad_${port}_mismatch`]: antenna.bindings[0]?.mismatch,
 		//[`dad_${port}_version`]: antenna.version,
@@ -603,24 +612,26 @@ export function getMobileDeviceVariables(device: MobileDevice): Record<string, V
 
 	const variables: Record<string, VariableValue> = {
 		[`${deviceVariableId}_name`]: device.name,
+		[`${deviceVariableId}_settings_json`]: JSON.stringify(getPortableMobileDeviceSettings(device)),
 		[`${deviceVariableId}_mt_uid`]: device.mtUid,
 		[`${deviceVariableId}_mt_type`]: device.type,
 		[`${deviceVariableId}_frequency_range`]: device.frequencyRange,
 		[`${deviceVariableId}_rf_channel_id`]: device.rfChannelId,
 		[`${deviceVariableId}_identify`]: device.identify,
 		[`${deviceVariableId}_reverse_identify`]: device.reverseIdentify,
-		[`${deviceVariableId}_connected`]: device.connected,
+		[`${deviceVariableId}_connected`]: device.state === MtState.Connected,
 		[`${deviceVariableId}_last_connected`]: device.lastConnected === 'NotAvailable' ? 'Now' : device.lastConnected,
 		[`${deviceVariableId}_sleep`]: device.sleep,
 		[`${deviceVariableId}_state`]: device.state,
 		[`${deviceVariableId}_battery_level`]: device.batteryFillLevel === -1 ? 'Off' : device.batteryFillLevel,
 		[`${deviceVariableId}_battery_runtime`]: formatBatteryRuntimeMinutes(device.batteryRuntime),
 		[`${deviceVariableId}_battery_low`]: device.batteryLow,
-		[`${deviceVariableId}_led_brightness`]: device.ledBrightness,
+		[`${deviceVariableId}_connected_state_color`]: device.connectedStateColor,
 		[`${deviceVariableId}_mic_audiolink_id`]: device.micAudiolinkId,
 		[`${deviceVariableId}_mic_audiolink_active`]: device.micAudiolinkActive,
 		[`${deviceVariableId}_mic_test_tone_enabled`]: device.micTestToneEnabled,
 		[`${deviceVariableId}_mic_test_tone_level`]: device.micTestToneLevel,
+		[`${deviceVariableId}_command_behavior`]: device.commandBehavior,
 		[`${deviceVariableId}_command_state`]: device.commandState,
 		[`${deviceVariableId}_mic_lqi`]: device.micLqi,
 		[`${deviceVariableId}_interference`]: device.interference?.severity,
@@ -657,7 +668,6 @@ export function getMobileDeviceVariables(device: MobileDevice): Record<string, V
 		variables[`${deviceVariableId}_mic_preamp_gain`] = device.micPreampGain
 		variables[`${deviceVariableId}_mic_lowcut_hz`] =
 			device.micLowCutHz === MicLowCutHzSKM.Off ? 'Off' : device.micLowCutHz
-		variables[`${deviceVariableId}_command_behavior`] = device.commandBehavior
 		variables[`${deviceVariableId}_mic_module`] = device.micModule?.name
 	}
 

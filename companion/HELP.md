@@ -4,7 +4,7 @@ This connection controls and monitors a **Sennheiser Spectera** Base Station and
 
 ### Requirements
 
-- **Spectera firmware 1.3 or newer** is required.
+- **Spectera firmware 1.4.1 or newer** is required.
 
 _Please note, using many different link modes on the same RF channel and continually deleting and creating new link modes can in rare circumstances require Spectera to rearrange audio data causing a brief audio interruption in any connected device._
 
