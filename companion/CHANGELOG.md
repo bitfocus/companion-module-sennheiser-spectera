@@ -19,6 +19,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 - Mobile Devices and DADs now use configurable LED colors instead of LED brightness. All existing actions and feedbacks will migrate to the default color values.
 - DAD - LED Colors (previously LED brightness) can be customized separately for RF active and RF muted states
+- **Breaking:** LED brightness variable IDs have been renamed. Update any button text or expressions that reference the old IDs:
+  - Mobile Device: `*_led_brightness` → `*_connected_state_color`
+  - DAD: `dad_*_led_brightness` → `dad_*_led_rf_active` and `dad_*_led_rf_muted`
 - Audio Output - Interface actions and feedbacks now support Command Mode. All existing actions and feedbacks will be set to "Disabled" by default.
 
 ### Fixed
