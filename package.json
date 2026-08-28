@@ -28,7 +28,7 @@
 		"undici": "^7.29.0"
 	},
 	"devDependencies": {
-		"@companion-module/tools": "^2.7.2",
+		"@companion-module/tools": "^2.8.0",
 		"@types/node": "^22.20.1",
 		"eslint": "^9.39.5",
 		"husky": "^9.1.7",
