@@ -37,7 +37,7 @@ describe('action definitions', () => {
 		UpdateActions(instance as any)
 		const actions = registeredDefinitions(instance.setActionDefinitions)
 
-		expect(Object.keys(actions)).toHaveLength(32)
+		expect(Object.keys(actions)).toHaveLength(33)
 		await actions.rfFrequency.callback({
 			options: { rfChannel: 1, frequency: '475.125', requireConfirmation: false },
 		})
@@ -134,6 +134,19 @@ describe('mobile device actions', () => {
 
 		expect(setMobileDevice).toHaveBeenCalledWith(1, { micPreampGain: 42 })
 		expect(setMobileDevice).toHaveBeenCalledWith(2, { micPreampGain: -10 })
+	})
+
+	it('sets all four SKM command colors and ignores SEK devices', async () => {
+		const { actions, setMobileDevice } = setup()
+		const options = { released: '#000000', pressed: '#00a100', unlatched: 'rgb(255,0,0)', latched: '#ffd700' }
+
+		await actions.mobileDeviceCommandColors.callback({ options: { serial: 'SEK-001', ...options } })
+		await actions.mobileDeviceCommandColors.callback({ options: { serial: 'SKM-001', ...options } })
+
+		expect(setMobileDevice).toHaveBeenCalledTimes(1)
+		expect(setMobileDevice).toHaveBeenCalledWith(2, {
+			commandColors: { released: '#000000', pressed: '#00A100', unlatched: '#FF0000', latched: '#FFD700' },
+		})
 	})
 })
 

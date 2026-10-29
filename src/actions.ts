@@ -17,6 +17,7 @@ import {
 	IemAudiolinkMode,
 	MicAudiolinkMode,
 	CommandBehavior,
+	type CommandColors,
 } from './types.js'
 import {
 	audioOutputChannelChoices,
@@ -42,6 +43,8 @@ import {
 	DEFAULT_LED_COLORS,
 	LED_COLOR_PRESETS,
 	normalizeHexColor,
+	COMMAND_COLOR_STATES,
+	DEFAULT_COMMAND_COLORS,
 } from './utils.js'
 
 const REQUIRE_CONFIRMATION_OPTION = {
@@ -408,6 +411,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	//Mobile Device Actions
 	const mobileDeviceChoices = getMobileDeviceChoices(self.state)
 	const sekMobileDeviceChoices = getMobileDeviceChoices(self.state, MtType.SEK)
+	const skmMobileDeviceChoices = getMobileDeviceChoices(self.state, MtType.SKM)
 
 	actions['mobileDeviceRfChannelId'] = {
 		name: 'Mobile Device - RF Channel',
@@ -527,6 +531,38 @@ export function UpdateActions(self: SpecteraInstance): void {
 			await self.api.setMobileDevice(device.mtUid, {
 				commandBehavior: action.options.commandBehavior as CommandBehavior,
 			})
+		},
+	}
+
+	actions['mobileDeviceCommandColors'] = {
+		name: 'Mobile Device - Command Button Colors',
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'serial',
+				default: skmMobileDeviceChoices.length > 0 ? skmMobileDeviceChoices[0].id : '',
+				choices: skmMobileDeviceChoices,
+				allowCustom: true,
+			},
+			...COMMAND_COLOR_STATES.map((state): SomeCompanionActionInputField => ({
+				type: 'colorpicker',
+				label: `${state.label} Color`,
+				id: state.id,
+				default: DEFAULT_COMMAND_COLORS[state.id],
+				returnType: 'string',
+				presetColors: [...LED_COLOR_PRESETS],
+			})),
+		],
+		description: 'Set the Command button colors for each command state on an SKM (firmware 1.5.0+)',
+		callback: async (action) => {
+			const device = getDeviceFromOptions(self.state, action.options)
+			if (!self.api || !device || device.type !== MtType.SKM) return
+			const commandColors: CommandColors = {}
+			for (const state of COMMAND_COLOR_STATES) {
+				commandColors[state.id] = normalizeHexColor(action.options[state.id])
+			}
+			await self.api.setMobileDevice(device.mtUid, { commandColors })
 		},
 	}
 

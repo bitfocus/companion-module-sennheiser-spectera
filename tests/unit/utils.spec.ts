@@ -3,6 +3,7 @@ import {
 	colorsMatch,
 	formatBatteryRuntimeMinutes,
 	getAntennaFrequency,
+	getPortableMobileDeviceSettings,
 	normalizeHexColor,
 	parseMobileDeviceSettingsJson,
 	sanitizeMobileDeviceName,
@@ -72,6 +73,19 @@ describe('device setting utilities', () => {
 			micLowCutHz: 80,
 		})
 		expect(result.warnings).toContain('Ignoring unsupported keys: identity')
+	})
+
+	it('round-trips SKM command colors and drops invalid entries', () => {
+		const source = makeSkmDevice({ commandColors: { released: '#000000', pressed: '#00A100' } })
+		expect(getPortableMobileDeviceSettings(source).commandColors).toEqual(source.commandColors)
+
+		const result = parseMobileDeviceSettingsJson(
+			JSON.stringify({ type: MtType.SKM, commandColors: { pressed: '#00a100', latched: 42 } }),
+			makeSkmDevice(),
+		)
+
+		expect(result.payload).toEqual({ commandColors: { pressed: '#00A100' } })
+		expect(result.warnings).toContain('Ignoring commandColors.latched: invalid color value.')
 	})
 
 	it('applies only shared settings when source and target types differ', () => {

@@ -22,6 +22,7 @@ import type {
 	InterfaceStatusAudioNetwork,
 	InterfaceStatusMadi,
 	InterfaceStatusWordclock,
+	LinkedMt,
 } from './types.js'
 import { InputSource, MtType } from './types.js'
 import {
@@ -1197,7 +1198,7 @@ export class SpecteraApi extends EventEmitter {
 		return this.sendRequest<InterfaceStatusWordclock>('GET', '/audio/interface/wordclock/status')
 	}
 
-	async createAudioLink(config: { modeId: number; rfChannelId: number }): Promise<number> {
+	async createAudioLink(config: { modeId: number; rfChannelId: number; linkedMt: LinkedMt }): Promise<number> {
 		const result = await this.sendRequest<AudioLink>('POST', '/audio/links', config)
 		return result.audiolinkId
 	}
@@ -1350,6 +1351,7 @@ export class SpecteraApi extends EventEmitter {
 				audiolinkId = await this.createAudioLink({
 					modeId: modeId,
 					rfChannelId: mobileDevice.rfChannelId,
+					linkedMt: { type: 'iem', mtUid },
 				})
 				createdAudioLink = true
 				this.instance.log('debug', `Created new Audio Link ${audiolinkId}`)
@@ -1423,6 +1425,7 @@ export class SpecteraApi extends EventEmitter {
 				audiolinkId = await this.createAudioLink({
 					modeId: modeId,
 					rfChannelId: mobileDevice.rfChannelId,
+					linkedMt: { type: 'mic', mtUid },
 				})
 				createdAudioLink = true
 				this.instance.log('debug', `Created new Audio Link ${audiolinkId}`)

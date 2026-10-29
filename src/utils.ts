@@ -20,13 +20,28 @@ import {
 	type RfChannel,
 	RFChannels,
 } from './types.js'
-import type { LedColors } from './types.js'
+import type { CommandColors, LedColors } from './types.js'
 
 export const DEFAULT_CONNECTED_STATE_COLOR = '#00A100'
 export const DEFAULT_LED_COLORS: LedColors = {
 	rfActive: '#00A100',
 	rfMuted: '#A18700',
 }
+
+/** Factory-reset SKM command button colors (API 18.3). */
+export const DEFAULT_COMMAND_COLORS: Required<CommandColors> = {
+	released: '#000000',
+	pressed: '#00A100',
+	unlatched: '#000000',
+	latched: '#00A100',
+}
+
+export const COMMAND_COLOR_STATES = [
+	{ id: 'released', label: 'Released' },
+	{ id: 'pressed', label: 'Pressed' },
+	{ id: 'unlatched', label: 'Unlatched' },
+	{ id: 'latched', label: 'Latched' },
+] as const satisfies readonly { id: keyof CommandColors; label: string }[]
 
 export const LED_COLOR_PRESETS = ['#000000', '#008700', '#00A100', '#00FF00', '#877200', '#A18700', '#FFD700'] as const
 
@@ -262,6 +277,8 @@ export interface PortableMobileDeviceSettings {
 	// SEK + SKM (different valid value sets per type)
 	micLowCutHz?: number
 	commandBehavior?: CommandBehavior
+	// SKM-only
+	commandColors?: CommandColors
 }
 
 const PORTABLE_SHARED_KEYS = [
@@ -283,7 +300,7 @@ const PORTABLE_SEK_KEYS = [
 	'commandBehavior',
 ] as const
 
-const PORTABLE_SKM_KEYS = ['micLowCutHz', 'commandBehavior'] as const
+const PORTABLE_SKM_KEYS = ['micLowCutHz', 'commandBehavior', 'commandColors'] as const
 
 //Every available key plus the `type`. Anything else is dropped.
 const PORTABLE_ALLOWED_KEYS = new Set<string>([
@@ -316,6 +333,7 @@ export function getPortableMobileDeviceSettings(device: MobileDevice): PortableM
 	} else if (device.type === MtType.SKM) {
 		settings.micLowCutHz = device.micLowCutHz
 		settings.commandBehavior = device.commandBehavior
+		settings.commandColors = device.commandColors
 	}
 
 	for (const key of Object.keys(settings) as (keyof PortableMobileDeviceSettings)[]) {
@@ -451,9 +469,29 @@ export function parseMobileDeviceSettingsJson(raw: string, target: MobileDevice)
 			if (isEnumValue(CommandBehavior, obj.commandBehavior)) p.commandBehavior = obj.commandBehavior
 			else warnings.push('Ignoring commandBehavior: invalid value.')
 		}
+		if (obj.commandColors !== undefined) {
+			const commandColors = parseCommandColors(obj.commandColors, warnings)
+			if (commandColors) p.commandColors = commandColors
+		}
 	}
 
 	return { payload, warnings }
+}
+
+function parseCommandColors(raw: unknown, warnings: string[]): CommandColors | undefined {
+	if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+		warnings.push('Ignoring commandColors: not an object.')
+		return undefined
+	}
+	const src = raw as Record<string, unknown>
+	const colors: CommandColors = {}
+	for (const { id } of COMMAND_COLOR_STATES) {
+		if (src[id] === undefined) continue
+		const color = typeof src[id] === 'string' ? normalizeHexColor(src[id]) : ''
+		if (color.startsWith('#') && color.length === 7) colors[id] = color
+		else warnings.push(`Ignoring commandColors.${id}: invalid color value.`)
+	}
+	return Object.keys(colors).length > 0 ? colors : undefined
 }
 
 //Mic link `modeId` from module state for this device only (not the selected output).

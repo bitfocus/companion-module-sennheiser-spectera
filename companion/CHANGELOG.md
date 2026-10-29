@@ -13,10 +13,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Composite graphics: **Audio Meter**, **RSSI Meter**, and **LQI Signal Bars**
 - Per-device MIC and IEM level variables (`*_mic_level_rms` / `*_peak`, `*_iem_level_rms` / `*_peak`, stereo `*_iem_level_2_*`, and `*_iem_stereo`)
 - **Blink battery** presets for mobile devices
+- **Mobile Device - Command Button Colors** action and **Command Button Color Match** feedback for SKM (Requires firmware v1.5.0)
+- SKM `commandColors` included in the mobile device settings JSON export/import
 
 ### Changed
 
 - Audio meter variables and **Audio Level Threshold** feedback now update every 50 ms
+- New audio links are created with the `linkedMt` hint so the base station can clean up abandoned links
 
 ### Fixed
 

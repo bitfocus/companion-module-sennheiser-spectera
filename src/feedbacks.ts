@@ -23,6 +23,7 @@ import {
 	InputSource,
 	CommandBehavior,
 	CommandState,
+	type CommandColors,
 } from './types.js'
 import {
 	audioOutputChannelChoices,
@@ -51,6 +52,8 @@ import {
 	DEFAULT_CONNECTED_STATE_COLOR,
 	DEFAULT_LED_COLORS,
 	LED_COLOR_PRESETS,
+	COMMAND_COLOR_STATES,
+	DEFAULT_COMMAND_COLORS,
 	toCompanionColor,
 } from './utils.js'
 
@@ -438,6 +441,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 	//Mobile Device Feedbacks
 	const mobileDeviceChoices = getMobileDeviceChoices(self.state)
 	const sekMobileDeviceChoices = getMobileDeviceChoices(self.state, MtType.SEK)
+	const skmMobileDeviceChoices = getMobileDeviceChoices(self.state, MtType.SKM)
 
 	feedbacks['mobileDeviceIdentify'] = {
 		type: 'boolean',
@@ -1148,6 +1152,47 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			const device = getDeviceFromOptions(self.state, feedback.options)
 			const runtime = device?.batteryRuntime
 			return runtime !== undefined && runtime <= Number(feedback.options.threshold)
+		},
+	}
+
+	feedbacks['mobileDeviceCommandColor'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Command Button Color Match',
+		description:
+			'Check if the Command button color for a command state matches the selected color (SKM, firmware 1.5.0+)',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			{
+				type: 'dropdown',
+				label: 'Mobile Device',
+				id: 'serial',
+				default: skmMobileDeviceChoices.length > 0 ? skmMobileDeviceChoices[0].id : '',
+				choices: skmMobileDeviceChoices,
+				allowCustom: true,
+			},
+			{
+				type: 'dropdown',
+				label: 'Command State',
+				id: 'commandState',
+				default: COMMAND_COLOR_STATES[0].id,
+				choices: [...COMMAND_COLOR_STATES],
+			},
+			{
+				type: 'colorpicker',
+				label: 'Color',
+				id: 'color',
+				default: DEFAULT_COMMAND_COLORS.released,
+				returnType: 'string',
+				presetColors: [...LED_COLOR_PRESETS],
+			},
+		],
+		callback: async (feedback) => {
+			const device = getDeviceFromOptions(self.state, feedback.options)
+			if (device?.type !== MtType.SKM) return false
+			const state = feedback.options.commandState as keyof CommandColors
+			return colorsMatch(device.commandColors?.[state], feedback.options.color)
 		},
 	}
 

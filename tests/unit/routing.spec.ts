@@ -62,7 +62,11 @@ describe('IEM input routing', () => {
 
 		await api.routeAudioInputToMobileDevice(3, 8, AudiolinkModeId['LIVE (Stereo)'])
 
-		expect(createLink).toHaveBeenCalledWith({ modeId: AudiolinkModeId['LIVE (Stereo)'], rfChannelId: 1 })
+		expect(createLink).toHaveBeenCalledWith({
+			modeId: AudiolinkModeId['LIVE (Stereo)'],
+			rfChannelId: 1,
+			linkedMt: { type: 'iem', mtUid: 8 },
+		})
 		expect(setInput).toHaveBeenCalledWith(3, { iemAudiolinkId: 30 })
 		expect(setDevice).toHaveBeenCalledWith(8, { iemAudiolinkId: 30 })
 		expect(createLink.mock.invocationCallOrder[0]).toBeLessThan(setInput.mock.invocationCallOrder[0])
@@ -156,7 +160,11 @@ describe('microphone output routing', () => {
 
 		await api.routeMobileDeviceToAudioOutput(4, 2, AudiolinkModeId['RAW (Mono)'])
 
-		expect(createLink).toHaveBeenCalledWith({ modeId: AudiolinkModeId['RAW (Mono)'], rfChannelId: 0 })
+		expect(createLink).toHaveBeenCalledWith({
+			modeId: AudiolinkModeId['RAW (Mono)'],
+			rfChannelId: 0,
+			linkedMt: { type: 'mic', mtUid: 4 },
+		})
 		expect(setDevice).toHaveBeenCalledWith(4, { micAudiolinkId: 41 })
 		expect(setOutput).toHaveBeenCalledWith(2, { micAudiolinkId: 41 })
 		expect(device.micAudiolinkId).toBe(41)
@@ -415,7 +423,11 @@ describe('unrouting and instrument switch', () => {
 
 		await api.instrumentSwitchMobileDeviceToOutput(4, 2, 'on', AudiolinkModeId['LIVE (Mono)'], true)
 
-		expect(createLink).toHaveBeenCalledWith({ modeId: AudiolinkModeId['RAW Low Latency (Mono)'], rfChannelId: 0 })
+		expect(createLink).toHaveBeenCalledWith({
+			modeId: AudiolinkModeId['RAW Low Latency (Mono)'],
+			rfChannelId: 0,
+			linkedMt: { type: 'mic', mtUid: 4 },
+		})
 		expect(instance.log).toHaveBeenCalledWith(
 			'debug',
 			'Instrument Switch: Guitar routed to output 3 (mode 11 from output link 40)',

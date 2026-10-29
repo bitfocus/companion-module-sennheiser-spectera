@@ -83,7 +83,14 @@ function makeFeedbacks() {
 		}),
 	)
 	state.updateMobileDevice(makeSekDevice({ mtUid: 2, serial: 'SEK-002', iemAudiolinkId: 20 }))
-	state.updateMobileDevice(makeSkmDevice({ mtUid: 3, serial: 'SKM-003', micLowCutHz: 60 }))
+	state.updateMobileDevice(
+		makeSkmDevice({
+			mtUid: 3,
+			serial: 'SKM-003',
+			micLowCutHz: 60,
+			commandColors: { released: '#000000', pressed: '#00A100', latched: '#FFD700' },
+		}),
+	)
 	state.health.psu = { psu1: PsuStatus.Connected, psu2: PsuStatus.Unconnected }
 	state.basestation.state = { state: 'Normal' as any, warnings: ['temperature'] }
 
@@ -186,6 +193,17 @@ describe('mobile-device feedback callbacks', () => {
 		await expect(result(feedbacks, 'mobileDeviceConnectedStateColorCurrent', { serial })).resolves.toEqual({
 			bgcolor: 0x00a100,
 		})
+	})
+
+	it('matches SKM command colors per state and never matches a SEK', async () => {
+		const { feedbacks } = makeFeedbacks()
+		const match = async (serial: string, commandState: string, color: string) =>
+			result(feedbacks, 'mobileDeviceCommandColor', { serial, commandState, color })
+
+		await expect(match('SKM-003', 'latched', '#ffd700')).resolves.toBe(true)
+		await expect(match('SKM-003', 'pressed', '#ffd700')).resolves.toBe(false)
+		await expect(match('SKM-003', 'unlatched', '#000000')).resolves.toBe(false)
+		await expect(match('SEK-001', 'released', '#000000')).resolves.toBe(false)
 	})
 
 	it('handles SKM low-cut aliases and rejects SEK-only feedbacks for an SKM', async () => {
