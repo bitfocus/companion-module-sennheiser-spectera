@@ -4,7 +4,6 @@ import {
 	formatBatteryRuntimeMinutes,
 	getAntennaFrequency,
 	getPortableMobileDeviceSettings,
-	parseNumber,
 	snapToStep,
 	normalizeHexColor,
 	parseMobileDeviceSettingsJson,
@@ -43,18 +42,6 @@ describe('color utilities', () => {
 })
 
 describe('numeric option utilities', () => {
-	it.each([
-		[' -20.5 ', -20.5],
-		[3, 3],
-		['', undefined],
-		['  ', undefined],
-		['abc', undefined],
-		[Number.NaN, undefined],
-		[undefined, undefined],
-	])('parses %j as %j', (raw, expected) => {
-		expect(parseNumber(raw)).toBe(expected)
-	})
-
 	it.each([
 		[-20.3, 0.5, -20.5],
 		[-20.2, 0.5, -20],

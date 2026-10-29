@@ -379,6 +379,9 @@ export function UpdatePresets(self: SpecteraInstance): void {
 			feedbacks: [],
 		}
 
+		// Start from the channel's current frequency so pressing the preset before editing it is a no-op
+		const backupFrequency = (self.state.rfChannels.get(channelIndex)?.frequency ?? 474000) / 1000
+
 		presets[`rf${channelIndex}BackupFrequency`] = {
 			type: 'simple',
 			category: 'RF Configuration',
@@ -397,7 +400,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							actionId: 'rfFrequency',
 							options: {
 								rfChannel: channelIndex,
-								frequency: '',
+								frequency: backupFrequency,
 								requireConfirmation: true,
 							},
 						},
@@ -411,7 +414,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 					options: {
 						actionType: 'rfFrequency',
 						rfFrequency_rfChannel: channelIndex,
-						rfFrequency_frequency: '',
+						rfFrequency_frequency: backupFrequency,
 					},
 					style: {
 						bgcolor: Color.SpecteraRed,
@@ -2196,8 +2199,8 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								options: {
 									serial: device.serial,
 									action: 'adjust',
-									volume: '-20',
-									adjustment: '0.5',
+									volume: -20,
+									adjustment: 0.5,
 								},
 							},
 						],
@@ -2257,8 +2260,8 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								options: {
 									serial: device.serial,
 									action: 'adjust',
-									volume: '-20',
-									adjustment: '-0.5',
+									volume: -20,
+									adjustment: -0.5,
 								},
 							},
 						],
@@ -2318,7 +2321,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								options: {
 									serial: device.serial,
 									action: 'set',
-									volume: '-20',
+									volume: -20,
 								},
 							},
 						],
@@ -2391,8 +2394,8 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								options: {
 									serial: device.serial,
 									action: 'adjust',
-									volume: '-20',
-									adjustment: '-0.5',
+									volume: -20,
+									adjustment: -0.5,
 								},
 							},
 						],
@@ -2402,8 +2405,8 @@ export function UpdatePresets(self: SpecteraInstance): void {
 								options: {
 									serial: device.serial,
 									action: 'adjust',
-									volume: '-20',
-									adjustment: '0.5',
+									volume: -20,
+									adjustment: 0.5,
 								},
 							},
 						],
@@ -2564,7 +2567,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							options: {
 								serial: device.serial,
 								action: 'adjust',
-								adjustment: '1',
+								adjustment: 1,
 							},
 						},
 					],
@@ -2604,7 +2607,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							options: {
 								serial: device.serial,
 								action: 'adjust',
-								adjustment: '-1',
+								adjustment: -1,
 							},
 						},
 					],
@@ -2644,7 +2647,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							options: {
 								serial: device.serial,
 								action: 'set',
-								gain: '12',
+								gain: 12,
 							},
 						},
 					],
@@ -2689,7 +2692,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							options: {
 								serial: device.serial,
 								action: 'adjust',
-								adjustment: '-1',
+								adjustment: -1,
 							},
 						},
 					],
@@ -2699,7 +2702,7 @@ export function UpdatePresets(self: SpecteraInstance): void {
 							options: {
 								serial: device.serial,
 								action: 'adjust',
-								adjustment: '1',
+								adjustment: 1,
 							},
 						},
 					],

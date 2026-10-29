@@ -43,7 +43,6 @@ import {
 	DEFAULT_LED_COLORS,
 	LED_COLOR_PRESETS,
 	normalizeHexColor,
-	parseNumber,
 	snapToStep,
 	COMMAND_COLOR_STATES,
 	DEFAULT_COMMAND_COLORS,
@@ -60,13 +59,6 @@ const REQUIRE_CONFIRMATION_OPTION = {
 
 export function UpdateActions(self: SpecteraInstance): void {
 	const actions: CompanionActionDefinitions = {}
-
-	// Option values may come from variables, so anything blank or non-numeric is reported instead of sent as 0/null
-	const readNumber = (label: string, raw: unknown): number | undefined => {
-		const value = parseNumber(raw)
-		if (value === undefined) self.log('warn', `${label}: "${String(raw)}" is not a number`)
-		return value
-	}
 
 	//RF Actions
 	actions['setRfChannelState'] = {
@@ -200,11 +192,15 @@ export function UpdateActions(self: SpecteraInstance): void {
 				id: 'rfChannel',
 			},
 			{
-				type: 'textinput',
+				type: 'number',
 				label: 'Frequency (MHz)',
-				default: '474',
+				default: 474,
+				min: 10,
+				max: 10000,
+				step: 1,
+				asInteger: true,
+				clampValues: true,
 				id: 'frequency',
-				useVariables: true,
 			},
 			REQUIRE_CONFIRMATION_OPTION,
 		],
@@ -218,8 +214,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 				})
 				if (!self.confirmAction(key)) return
 			}
-			const mhz = readNumber('RF Frequency', action.options.frequency)
-			if (mhz === undefined) return
+			const mhz = action.options.frequency as number
 			await self.api.setRfChannel(action.options.rfChannel as string, {
 				rfChannelId: action.options.rfChannel as number,
 				frequency: snapToStep(mhz * 1000, 1000, 10000, 10000000),
@@ -630,19 +625,25 @@ export function UpdateActions(self: SpecteraInstance): void {
 				disableAutoExpression: true,
 			},
 			{
-				type: 'textinput',
+				type: 'number',
 				label: 'Set Volume (-100 to 27.5)',
-				default: '-20',
+				default: -20,
+				min: -100,
+				max: 27.5,
+				step: 0.5,
+				clampValues: true,
 				id: 'volume',
-				useVariables: true,
 				isVisibleExpression: '$(options:action) === "set"',
 			},
 			{
-				type: 'textinput',
+				type: 'number',
 				label: 'Adjustment Amount',
-				default: '0.5',
+				default: 0.5,
+				min: -127.5,
+				max: 127.5,
+				step: 0.5,
+				clampValues: true,
 				id: 'adjustment',
-				useVariables: true,
 				isVisibleExpression: '$(options:action) === "adjust"',
 			},
 		],
@@ -651,8 +652,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			const device = getDeviceFromOptions(self.state, action.options)
 			if (!self.api || device?.type !== MtType.SEK) return
 			const adjust = action.options.action === 'adjust'
-			const input = readNumber('Headphone Volume', adjust ? action.options.adjustment : action.options.volume)
-			if (input === undefined) return
+			const input = (adjust ? action.options.adjustment : action.options.volume) as number
 			let volume = snapToStep(adjust ? (device.headphoneVolume ?? 0) + input : input, 0.5, -100, 27.5)
 			if (device.headphoneVolumeMax !== undefined && volume > device.headphoneVolumeMax) {
 				volume = device.headphoneVolumeMax
@@ -687,19 +687,27 @@ export function UpdateActions(self: SpecteraInstance): void {
 				disableAutoExpression: true,
 			},
 			{
-				type: 'textinput',
+				type: 'number',
 				label: 'Set Balance (-100 to 100)',
-				default: '0',
+				default: 0,
+				min: -100,
+				max: 100,
+				step: 1,
+				asInteger: true,
+				clampValues: true,
 				id: 'balance',
-				useVariables: true,
 				isVisibleExpression: '$(options:action) === "set"',
 			},
 			{
-				type: 'textinput',
+				type: 'number',
 				label: 'Adjustment Amount',
-				default: '1',
+				default: 1,
+				min: -200,
+				max: 200,
+				step: 1,
+				asInteger: true,
+				clampValues: true,
 				id: 'adjustment',
-				useVariables: true,
 				isVisibleExpression: '$(options:action) === "adjust"',
 			},
 		],
@@ -708,8 +716,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			const device = getDeviceFromOptions(self.state, action.options)
 			if (!self.api || device?.type !== MtType.SEK) return
 			const adjust = action.options.action === 'adjust'
-			const input = readNumber('Headphone Balance', adjust ? action.options.adjustment : action.options.balance)
-			if (input === undefined) return
+			const input = (adjust ? action.options.adjustment : action.options.balance) as number
 			const balance = snapToStep(adjust ? (device.headphoneBalance ?? 0) + input : input, 1, -100, 100)
 			await self.api.setMobileDevice(device.mtUid, { headphoneBalance: balance })
 		},
@@ -738,19 +745,27 @@ export function UpdateActions(self: SpecteraInstance): void {
 				disableAutoExpression: true,
 			},
 			{
-				type: 'textinput',
+				type: 'number',
 				label: 'Set Gain (dB)',
-				default: '12',
+				default: 12,
+				min: -10,
+				max: 42,
+				step: 1,
+				asInteger: true,
+				clampValues: true,
 				id: 'gain',
-				useVariables: true,
 				isVisibleExpression: '$(options:action) === "set"',
 			},
 			{
-				type: 'textinput',
+				type: 'number',
 				label: 'Adjustment Amount (dB)',
-				default: '1',
+				default: 1,
+				min: -52,
+				max: 52,
+				step: 1,
+				asInteger: true,
+				clampValues: true,
 				id: 'adjustment',
-				useVariables: true,
 				isVisibleExpression: '$(options:action) === "adjust"',
 			},
 		],
@@ -759,8 +774,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			const device = getDeviceFromOptions(self.state, action.options)
 			if (!self.api || !device) return
 			const adjust = action.options.action === 'adjust'
-			const input = readNumber('Mic Preamp Gain', adjust ? action.options.adjustment : action.options.gain)
-			if (input === undefined) return
+			const input = (adjust ? action.options.adjustment : action.options.gain) as number
 			const gain = snapToStep(
 				adjust ? (device.micPreampGain ?? 0) + input : input,
 				1,
@@ -882,20 +896,22 @@ export function UpdateActions(self: SpecteraInstance): void {
 				id: 'enable',
 			},
 			{
-				type: 'textinput',
+				type: 'number',
 				label: 'Level (dB)',
-				default: '-20',
+				default: -20,
+				min: -60,
+				max: 0,
+				step: 1,
+				asInteger: true,
+				clampValues: true,
 				id: 'level',
-				useVariables: true,
 			},
 		],
 		description: 'Set Mic Test Tone for a Mobile Device',
 		callback: async (action) => {
 			const device = getDeviceFromOptions(self.state, action.options)
 			if (!self.api || !device) return
-			const input = readNumber('Mic Test Tone', action.options.level)
-			if (input === undefined) return
-			const level = snapToStep(input, 1, -60, 0)
+			const level = snapToStep(action.options.level as number, 1, -60, 0)
 			await self.api.setMobileDevice(device.mtUid, {
 				micTestToneEnabled: action.options.enable as boolean,
 				micTestToneLevel: level,

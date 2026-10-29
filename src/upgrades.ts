@@ -9,6 +9,7 @@ import type {
 	ExpressionOrValue,
 	JsonValue,
 } from '@companion-module/base'
+import { FixupNumericOrVariablesValueToExpressions } from '@companion-module/base'
 import type { ModuleConfig, ModuleSecrets } from './config.js'
 import { AntennaPortId, InputSource, RFChannels, RfState } from './types.js'
 
@@ -285,10 +286,73 @@ function upgradeSerialVariablesToExpressions(
 	}
 }
 
+// Numeric options that used to be text inputs (so users could type variables), keyed by action/feedback id,
+// with the number field's default for values that were left blank
+const NUMERIC_ACTION_OPTIONS: Record<string, Record<string, number>> = {
+	rfFrequency: { frequency: 474 },
+	mobileDeviceHeadphoneVolume: { volume: -20, adjustment: 0.5 },
+	mobileDeviceHeadphoneBalance: { balance: 0, adjustment: 1 },
+	mobileDeviceMicPreampGain: { gain: 12, adjustment: 1 },
+	mobileDeviceMicTestTone: { level: -20 },
+}
+
+const NUMERIC_FEEDBACK_OPTIONS: Record<string, Record<string, number>> = {
+	rfFrequency: { frequency: 446 },
+	dadInterferencePower: { interferencePower: -80 },
+	dadTemperature: { temperature: 25 },
+	mobileDeviceBatteryLevel: { threshold: 10 },
+	mobileDeviceBatteryRuntime: { threshold: 30 },
+	mobileDeviceMicTestToneLevel: { level: -20 },
+	mobileDeviceHeadphoneVolume: { volume: -20 },
+	mobileDeviceHeadphoneBalance: { balance: 0 },
+	mobileDeviceMicPreampGain: { gain: 12 },
+	mobileDeviceHeadphoneVolumeLimit: { limit: 0 },
+	mobileDeviceHeadphoneVolumeMax: { max: 0 },
+	mobileDeviceHeadphoneVolumeMin: { min: 0 },
+	audioLevelThreshold: { channel: 1, threshold: -20 },
+	mobileDeviceMicLqi: { micLqiThreshold: 4 },
+	mobileDeviceIemLqi: { iemLqiThreshold: 4 },
+	mobileDeviceRSSI: { rssiThreshold: -20 },
+	confirmPending: { rfFrequency_frequency: 474 },
+}
+
+// Text inputs → number fields: plain numbers stay numbers, variables become expressions
+function upgradeNumericTextInputs(
+	_context: CompanionUpgradeContext<ModuleConfig>,
+	props: CompanionStaticUpgradeProps<ModuleConfig, ModuleSecrets>,
+): CompanionStaticUpgradeResult<ModuleConfig, ModuleSecrets> {
+	const upgradeOptions = (options: CompanionMigrationOptionValues, defaults: Record<string, number> | undefined) => {
+		if (!defaults) return false
+		let changed = false
+		for (const [id, fallback] of Object.entries(defaults)) {
+			const current = options[id]
+			if (!current || current.isExpression || typeof current.value === 'number') continue
+			const blank =
+				current.value === undefined ||
+				current.value === null ||
+				(typeof current.value === 'string' && current.value.trim() === '')
+			options[id] = blank ? plainOpt(fallback) : FixupNumericOrVariablesValueToExpressions(current)
+			changed = true
+		}
+		return changed
+	}
+
+	return {
+		updatedConfig: null,
+		updatedActions: props.actions.filter((action) =>
+			upgradeOptions(action.options, NUMERIC_ACTION_OPTIONS[action.actionId]),
+		),
+		updatedFeedbacks: props.feedbacks.filter((feedback) =>
+			upgradeOptions(feedback.options, NUMERIC_FEEDBACK_OPTIONS[feedback.feedbackId]),
+		),
+	}
+}
+
 export const UpgradeScripts: CompanionStaticUpgradeScript<ModuleConfig, ModuleSecrets>[] = [
 	upgradeLedColors,
 	upgradeAudioOutputCommandContext,
 	upgradeAudioInputSourceValues,
 	upgradeConfirmPendingDefaults,
 	upgradeSerialVariablesToExpressions,
+	upgradeNumericTextInputs,
 ]

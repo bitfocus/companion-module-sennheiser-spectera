@@ -350,14 +350,6 @@ function clamp(value: number, min: number, max: number): number {
 	return Math.max(min, Math.min(max, value))
 }
 
-/** Parse a number from an option value; blank or non-numeric input gives `undefined` rather than 0 or NaN. */
-export function parseNumber(raw: unknown): number | undefined {
-	if (typeof raw === 'number') return Number.isFinite(raw) ? raw : undefined
-	if (typeof raw !== 'string' || raw.trim() === '') return undefined
-	const value = Number(raw)
-	return Number.isFinite(value) ? value : undefined
-}
-
 /** Round to the nearest multiple of `step` and clamp; the base station rejects off-step values with HTTP 400. */
 export function snapToStep(value: number, step: number, min: number, max: number): number {
 	return clamp(Math.round(value / step) * step, min, max)

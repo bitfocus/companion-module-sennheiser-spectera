@@ -174,3 +174,49 @@ describe('serial variables upgrade', () => {
 		expect(other.options.name).toEqual(option('$(internal:name)'))
 	})
 })
+
+describe('numeric text input upgrade', () => {
+	const expression = (value: string): ExpressionOrValue<JsonValue> => ({ isExpression: true, value })
+
+	it('stores numbers as numbers and variables as expressions', () => {
+		const volume = action('mobileDeviceHeadphoneVolume', {
+			serial: option('SEK-001'),
+			action: option('adjust'),
+			volume: option('-20'),
+			adjustment: option('$(internal:custom_step)'),
+		})
+		const frequency = action('rfFrequency', { rfChannel: option(0), frequency: option('$(internal:a)$(internal:b)') })
+		const threshold = feedback('audioLevelThreshold', { channel: option(' 7 '), threshold: option(-12) })
+
+		const result = UpgradeScripts[5](context, props([volume, frequency], [threshold]))
+
+		expect(volume.options).toEqual({
+			serial: option('SEK-001'),
+			action: option('adjust'),
+			volume: option(-20),
+			adjustment: expression('$(internal:custom_step)'),
+		})
+		expect(frequency.options.frequency).toEqual(expression('parseVariables("$(internal:a)$(internal:b)")'))
+		expect(threshold.options).toEqual({ channel: option(7), threshold: option(-12) })
+		expect(result.updatedActions).toEqual([volume, frequency])
+		expect(result.updatedFeedbacks).toEqual([threshold])
+	})
+
+	it('replaces blank values with the field default', () => {
+		const confirm = feedback('confirmPending', { actionType: option('dadIdentify'), rfFrequency_frequency: option('') })
+
+		UpgradeScripts[5](context, props([], [confirm]))
+
+		expect(confirm.options.rfFrequency_frequency).toEqual(option(474))
+	})
+
+	it('leaves numbers, expressions and unrelated actions untouched', () => {
+		const gain = action('mobileDeviceMicPreampGain', { gain: option(12), adjustment: expression('$(internal:a)') })
+		const rename = action('mobileDeviceRename', { name: option('42') })
+
+		const result = UpgradeScripts[5](context, props([gain, rename]))
+
+		expect(result.updatedActions).toEqual([])
+		expect(rename.options.name).toEqual(option('42'))
+	})
+})
