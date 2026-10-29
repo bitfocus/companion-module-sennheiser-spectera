@@ -1,5 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
-import { InputSource, RfState, RfStateStartup, BandwidthMode, TxPower } from '../../src/types.js'
+import { InputSource, Interference, RfState, RfStateStartup, BandwidthMode, TxPower } from '../../src/types.js'
 import { makeAudioOutput, makeSkmDevice } from '../fixtures/devices.js'
 import { makeApi } from '../helpers/mock-api.js'
 
@@ -129,6 +129,23 @@ describe('SSE event processing', () => {
 		expect(instance.checkFeedbacks).toHaveBeenCalledWith('rfFrequency', 'rfState')
 		vi.advanceTimersByTime(250)
 		expect(rebuildMocks.variables).not.toHaveBeenCalled()
+	})
+
+	it('rechecks object-valued feedbacks only when their content changes', () => {
+		const { api, state, instance } = makeApi()
+		const device = makeSkmDevice({ mtUid: 7, interference: { severity: Interference.Low } })
+		state.updateMobileDevice(device)
+		const checked = () => instance.checkFeedbacks.mock.calls.flat()
+
+		asSseTestApi(api).handleSSEEvent(
+			event({ '/api/mts/paired/all/7': { ...device, interference: { severity: Interference.Low } } }),
+		)
+		expect(checked()).not.toContain('mobileDeviceInterference')
+
+		asSseTestApi(api).handleSSEEvent(
+			event({ '/api/mts/paired/all/7': { ...device, interference: { severity: Interference.High } } }),
+		)
+		expect(checked()).toContain('mobileDeviceInterference')
 	})
 
 	it('ignores the empty placeholder sent before a new audio link payload', () => {

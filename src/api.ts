@@ -1,4 +1,5 @@
 import EventEmitter from 'events'
+import { isDeepStrictEqual } from 'util'
 import PQueue from 'p-queue'
 import { InstanceStatus } from '@companion-module/base'
 import type { SpecteraInstance } from './main.js'
@@ -671,7 +672,8 @@ export class SpecteraApi extends EventEmitter {
 
 			const newValue = newState[key]
 
-			if (!oldState || oldState[key] !== newValue) {
+			// Deep compare: object fields (interference, ledColors, bindings…) arrive as new instances on every event
+			if (!oldState || !isDeepStrictEqual(oldState[key], newValue)) {
 				if (entry.feedback) {
 					const ids = Array.isArray(entry.feedback) ? entry.feedback : [entry.feedback]
 					for (const id of ids) feedbacksToCheck.add(id)
