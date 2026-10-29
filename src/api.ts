@@ -1304,6 +1304,18 @@ export class SpecteraApi extends EventEmitter {
 	}
 
 	async routeAudioInputToMobileDevice(inputId: number, mtUid: number, modeId: number): Promise<void> {
+		return this.routingQueue.add(async () => {
+			await this._routeAudioInputToMobileDevice(inputId, mtUid, modeId)
+		})
+	}
+
+	// Apply a write the base station just accepted through the SSE path, so the next queued routing step sees it
+	// (and variables/feedbacks update) even if the matching SSE event hasn't arrived yet.
+	private applyAcceptedUpdate(path: string, value: object): void {
+		this.processInternalUpdate({ [path]: value })
+	}
+
+	private async _routeAudioInputToMobileDevice(inputId: number, mtUid: number, modeId: number): Promise<void> {
 		const audioInput = this.state.audioInputs.get(inputId)
 		const mobileDevice = this.state.mobileDevices.get(mtUid)
 
@@ -1327,6 +1339,18 @@ export class SpecteraApi extends EventEmitter {
 			// Cleanup before creating new link, in case base station is at 100% utilization
 			if (isActiveAudioLinkId(prevDeviceIemLinkId) && prevDeviceIemLinkId !== audiolinkId) {
 				await this.cleanupAudioLink(prevDeviceIemLinkId, { mobileDeviceUids: new Set([mtUid]) }, 'Audio Routing')
+				// A shared link survives cleanup, but the base station rejects (409) a linkedMt create for a device
+				// that still holds an IEM link, so detach this device from it first
+				const current = this.state.mobileDevices.get(mtUid)
+				if (current?.type === MtType.SEK && current.iemAudiolinkId === prevDeviceIemLinkId) {
+					try {
+						await this.setMobileDevice(mtUid, { iemAudiolinkId: -1 })
+						this.applyAcceptedUpdate(`/api/mts/paired/all/${mtUid}`, { ...current, iemAudiolinkId: -1 })
+					} catch (error) {
+						this.instance.log('warn', `Audio Routing: Failed to detach device from shared Audio Link: ${error}`)
+						return
+					}
+				}
 			}
 
 			try {
@@ -1342,6 +1366,7 @@ export class SpecteraApi extends EventEmitter {
 				await this.setAudioInput(inputId, {
 					iemAudiolinkId: audiolinkId,
 				})
+				this.applyAcceptedUpdate(`/api/audio/inputs/${inputId}`, { ...audioInput, iemAudiolinkId: audiolinkId })
 			} catch (error) {
 				this.instance.log('error', `Audio Routing: Failed to create Audio Link: ${error}`)
 				if (createdAudioLink) await this.cleanupAudioLink(audiolinkId, {}, 'Audio Routing rollback')
@@ -1359,6 +1384,7 @@ export class SpecteraApi extends EventEmitter {
 			await this.setMobileDevice(mtUid, {
 				iemAudiolinkId: audiolinkId,
 			})
+			this.applyAcceptedUpdate(`/api/mts/paired/all/${mtUid}`, { ...mobileDevice, iemAudiolinkId: audiolinkId })
 			this.instance.log(
 				'debug',
 				`Routed Audio Input ${inputId} to Mobile Device ${mtUid} via Audio Link ${audiolinkId}`,
@@ -1710,6 +1736,12 @@ export class SpecteraApi extends EventEmitter {
 	}
 
 	async copyIemAudioLink(sourceMtUid: number, targetMtUid: number): Promise<void> {
+		return this.routingQueue.add(async () => {
+			await this._copyIemAudioLink(sourceMtUid, targetMtUid)
+		})
+	}
+
+	private async _copyIemAudioLink(sourceMtUid: number, targetMtUid: number): Promise<void> {
 		const sourceDevice = this.state.mobileDevices.get(sourceMtUid)
 		const targetDevice = this.state.mobileDevices.get(targetMtUid)
 
@@ -1729,6 +1761,7 @@ export class SpecteraApi extends EventEmitter {
 			await this.setMobileDevice(targetMtUid, {
 				iemAudiolinkId: iemAudiolinkId,
 			})
+			this.applyAcceptedUpdate(`/api/mts/paired/all/${targetMtUid}`, { ...targetDevice, iemAudiolinkId })
 			this.instance.log('debug', `Copied IEM Mix from ${sourceMtUid} to ${targetMtUid}`)
 		} catch (error) {
 			this.instance.log('warn', `Copy IEM Mix: Failed to assign Audio Link: ${error}`)

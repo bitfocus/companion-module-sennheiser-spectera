@@ -117,6 +117,63 @@ describe('IEM input routing', () => {
 		expect(setDevice).toHaveBeenCalledWith(8, { iemAudiolinkId: 30 })
 		expect(cleanup.mock.invocationCallOrder[0]).toBeLessThan(setDevice.mock.invocationCallOrder[0])
 	})
+
+	it('detaches the device from a shared IEM link before creating a new one', async () => {
+		const { api, state } = makeApi()
+		state.updateAudioInput(makeAudioInput({ inputId: 3 }))
+		state.updateMobileDevice(makeSekDevice({ mtUid: 8, serial: 'SEK-008', rfChannelId: 1, iemAudiolinkId: 20 }))
+		state.updateMobileDevice(makeSekDevice({ mtUid: 9, serial: 'SEK-009', rfChannelId: 1, iemAudiolinkId: 20 }))
+		const deleteLink = vi.spyOn(api, 'deleteAudioLink').mockResolvedValue()
+		const createLink = vi.spyOn(api, 'createAudioLink').mockResolvedValue(30)
+		vi.spyOn(api, 'setAudioInput').mockResolvedValue()
+		const setDevice = vi.spyOn(api, 'setMobileDevice').mockResolvedValue()
+
+		await api.routeAudioInputToMobileDevice(3, 8, AudiolinkModeId['LIVE (Mono)'])
+
+		expect(deleteLink).not.toHaveBeenCalled()
+		expect(setDevice).toHaveBeenNthCalledWith(1, 8, { iemAudiolinkId: -1 })
+		expect(setDevice.mock.invocationCallOrder[0]).toBeLessThan(createLink.mock.invocationCallOrder[0])
+		expect(setDevice).toHaveBeenLastCalledWith(8, { iemAudiolinkId: 30 })
+		expect(state.mobileDevices.get(9)?.type === MtType.SEK && state.mobileDevices.get(9)?.iemAudiolinkId).toBe(20)
+	})
+
+	it('serializes a double press so the second route reuses the first link', async () => {
+		const { api, state, instance } = makeApi()
+		state.updateAudioInput(makeAudioInput({ inputId: 3 }))
+		state.updateMobileDevice(makeSekDevice({ mtUid: 8, rfChannelId: 1, iemAudiolinkId: 20 }))
+		const createLink = vi.spyOn(api, 'createAudioLink').mockResolvedValue(30)
+		vi.spyOn(api, 'setAudioInput').mockResolvedValue()
+		const setDevice = vi.spyOn(api, 'setMobileDevice').mockResolvedValue()
+		const cleanup = vi.spyOn(api, 'cleanupAudioLink').mockResolvedValue()
+
+		await Promise.all([
+			api.routeAudioInputToMobileDevice(3, 8, AudiolinkModeId['LIVE (Mono)']),
+			api.routeAudioInputToMobileDevice(3, 8, AudiolinkModeId['LIVE (Mono)']),
+		])
+
+		expect(createLink).toHaveBeenCalledTimes(1)
+		expect(cleanup).toHaveBeenCalledTimes(1)
+		expect(setDevice).toHaveBeenLastCalledWith(8, { iemAudiolinkId: 30 })
+		expect(state.audioInputs.get(3)?.iemAudiolinkId).toBe(30)
+		expect(instance.setVariableValues).toHaveBeenCalledWith(expect.objectContaining({ audio_input_4_iem_link_id: 30 }))
+	})
+
+	it('serializes Copy IEM Mix with routing so the copy sees the routed link', async () => {
+		const { api, state } = makeApi()
+		state.updateAudioInput(makeAudioInput({ inputId: 3 }))
+		state.updateMobileDevice(makeSekDevice({ mtUid: 8, serial: 'SEK-008', rfChannelId: 1 }))
+		state.updateMobileDevice(makeSekDevice({ mtUid: 9, serial: 'SEK-009', rfChannelId: 1 }))
+		vi.spyOn(api, 'createAudioLink').mockResolvedValue(30)
+		vi.spyOn(api, 'setAudioInput').mockResolvedValue()
+		const setDevice = vi.spyOn(api, 'setMobileDevice').mockResolvedValue()
+
+		await Promise.all([
+			api.routeAudioInputToMobileDevice(3, 8, AudiolinkModeId['LIVE (Mono)']),
+			api.copyIemAudioLink(8, 9),
+		])
+
+		expect(setDevice).toHaveBeenLastCalledWith(9, { iemAudiolinkId: 30 })
+	})
 })
 
 describe('microphone output routing', () => {
