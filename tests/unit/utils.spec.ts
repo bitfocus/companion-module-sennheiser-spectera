@@ -4,6 +4,8 @@ import {
 	formatBatteryRuntimeMinutes,
 	getAntennaFrequency,
 	getPortableMobileDeviceSettings,
+	parseNumber,
+	snapToStep,
 	normalizeHexColor,
 	parseMobileDeviceSettingsJson,
 	sanitizeMobileDeviceName,
@@ -37,6 +39,30 @@ describe('color utilities', () => {
 	it('compares colors after normalization', () => {
 		expect(colorsMatch('#aabbcc', '#ABC')).toBe(true)
 		expect(colorsMatch('#aabbcc', '#AABB00')).toBe(false)
+	})
+})
+
+describe('numeric option utilities', () => {
+	it.each([
+		[' -20.5 ', -20.5],
+		[3, 3],
+		['', undefined],
+		['  ', undefined],
+		['abc', undefined],
+		[Number.NaN, undefined],
+		[undefined, undefined],
+	])('parses %j as %j', (raw, expected) => {
+		expect(parseNumber(raw)).toBe(expected)
+	})
+
+	it.each([
+		[-20.3, 0.5, -20.5],
+		[-20.2, 0.5, -20],
+		[520500, 1000, 521000],
+		[30, 0.5, 27.5],
+		[-130, 1, -100],
+	])('snaps %d to step %d as %d', (value, step, expected) => {
+		expect(snapToStep(value, step, -100, step === 1000 ? 10000000 : 27.5)).toBe(expected)
 	})
 })
 
@@ -86,6 +112,28 @@ describe('device setting utilities', () => {
 
 		expect(result.payload).toEqual({ commandColors: { pressed: '#00A100' } })
 		expect(result.warnings).toContain('Ignoring commandColors.latched: invalid color value.')
+	})
+
+	it('snaps imported SEK values to the device step sizes', () => {
+		const result = parseMobileDeviceSettingsJson(
+			JSON.stringify({
+				type: MtType.SEK,
+				headphoneVolume: -20.3,
+				headphoneVolumeLimit: 3.2,
+				headphoneBalance: 4.6,
+				micPreampGain: 12.4,
+				micTestToneLevel: -24.5,
+			}),
+			makeSekDevice(),
+		)
+
+		expect(result.payload).toEqual({
+			headphoneVolume: -20.5,
+			headphoneVolumeLimit: 3,
+			headphoneBalance: 5,
+			micPreampGain: 12,
+			micTestToneLevel: -24,
+		})
 	})
 
 	it('applies only shared settings when source and target types differ', () => {

@@ -350,6 +350,19 @@ function clamp(value: number, min: number, max: number): number {
 	return Math.max(min, Math.min(max, value))
 }
 
+/** Parse a number from an option value; blank or non-numeric input gives `undefined` rather than 0 or NaN. */
+export function parseNumber(raw: unknown): number | undefined {
+	if (typeof raw === 'number') return Number.isFinite(raw) ? raw : undefined
+	if (typeof raw !== 'string' || raw.trim() === '') return undefined
+	const value = Number(raw)
+	return Number.isFinite(value) ? value : undefined
+}
+
+/** Round to the nearest multiple of `step` and clamp; the base station rejects off-step values with HTTP 400. */
+export function snapToStep(value: number, step: number, min: number, max: number): number {
+	return clamp(Math.round(value / step) * step, min, max)
+}
+
 //True when `value` is one of the enum's defined values (ignores numeric-enum reverse-map keys).
 function isEnumValue(enumObj: Record<string, string | number>, value: unknown): boolean {
 	return getChoicesFromEnum(enumObj).some((choice) => choice.id === value)
@@ -414,7 +427,7 @@ export function parseMobileDeviceSettingsJson(raw: string, target: MobileDevice)
 	}
 	if (obj.micPreampGain !== undefined) {
 		if (isFiniteNumber(obj.micPreampGain))
-			p.micPreampGain = clamp(obj.micPreampGain, target.type === MtType.SEK ? -6 : -10, 42)
+			p.micPreampGain = snapToStep(obj.micPreampGain, 1, target.type === MtType.SEK ? -6 : -10, 42)
 		else warnings.push('Ignoring micPreampGain: not a number.')
 	}
 	if (obj.rfChannelId !== undefined) {
@@ -426,22 +439,23 @@ export function parseMobileDeviceSettingsJson(raw: string, target: MobileDevice)
 		else warnings.push('Ignoring micTestToneEnabled: not a boolean.')
 	}
 	if (obj.micTestToneLevel !== undefined) {
-		if (isFiniteNumber(obj.micTestToneLevel)) p.micTestToneLevel = obj.micTestToneLevel
+		if (isFiniteNumber(obj.micTestToneLevel)) p.micTestToneLevel = snapToStep(obj.micTestToneLevel, 1, -60, 0)
 		else warnings.push('Ignoring micTestToneLevel: not a number.')
 	}
 
 	// ---- Type-specific settings ----
 	if (applyTypeSpecific && target.type === MtType.SEK) {
 		if (obj.headphoneVolume !== undefined) {
-			if (isFiniteNumber(obj.headphoneVolume)) p.headphoneVolume = clamp(obj.headphoneVolume, -100, 27.5)
+			if (isFiniteNumber(obj.headphoneVolume)) p.headphoneVolume = snapToStep(obj.headphoneVolume, 0.5, -100, 27.5)
 			else warnings.push('Ignoring headphoneVolume: not a number.')
 		}
 		if (obj.headphoneBalance !== undefined) {
-			if (isFiniteNumber(obj.headphoneBalance)) p.headphoneBalance = clamp(obj.headphoneBalance, -100, 100)
+			if (isFiniteNumber(obj.headphoneBalance)) p.headphoneBalance = snapToStep(obj.headphoneBalance, 1, -100, 100)
 			else warnings.push('Ignoring headphoneBalance: not a number.')
 		}
 		if (obj.headphoneVolumeLimit !== undefined) {
-			if (isFiniteNumber(obj.headphoneVolumeLimit)) p.headphoneVolumeLimit = clamp(obj.headphoneVolumeLimit, -100, 27.5)
+			if (isFiniteNumber(obj.headphoneVolumeLimit))
+				p.headphoneVolumeLimit = snapToStep(obj.headphoneVolumeLimit, 0.5, -100, 27.5)
 			else warnings.push('Ignoring headphoneVolumeLimit: not a number.')
 		}
 		if (obj.micLineSelection !== undefined) {

@@ -43,6 +43,8 @@ import {
 	DEFAULT_LED_COLORS,
 	LED_COLOR_PRESETS,
 	normalizeHexColor,
+	parseNumber,
+	snapToStep,
 	COMMAND_COLOR_STATES,
 	DEFAULT_COMMAND_COLORS,
 } from './utils.js'
@@ -58,6 +60,13 @@ const REQUIRE_CONFIRMATION_OPTION = {
 
 export function UpdateActions(self: SpecteraInstance): void {
 	const actions: CompanionActionDefinitions = {}
+
+	// Option values may come from variables, so anything blank or non-numeric is reported instead of sent as 0/null
+	const readNumber = (label: string, raw: unknown): number | undefined => {
+		const value = parseNumber(raw)
+		if (value === undefined) self.log('warn', `${label}: "${String(raw)}" is not a number`)
+		return value
+	}
 
 	//RF Actions
 	actions['setRfChannelState'] = {
@@ -209,9 +218,11 @@ export function UpdateActions(self: SpecteraInstance): void {
 				})
 				if (!self.confirmAction(key)) return
 			}
+			const mhz = readNumber('RF Frequency', action.options.frequency)
+			if (mhz === undefined) return
 			await self.api.setRfChannel(action.options.rfChannel as string, {
 				rfChannelId: action.options.rfChannel as number,
-				frequency: Number(action.options.frequency) * 1000,
+				frequency: snapToStep(mhz * 1000, 1000, 10000, 10000000),
 			})
 		},
 	}
@@ -639,13 +650,10 @@ export function UpdateActions(self: SpecteraInstance): void {
 		callback: async (action) => {
 			const device = getDeviceFromOptions(self.state, action.options)
 			if (!self.api || device?.type !== MtType.SEK) return
-			let volume =
-				action.options.action === 'adjust'
-					? (device.headphoneVolume ?? 0) + Number(action.options.adjustment)
-					: Number(action.options.volume)
-
-			if (volume < -100) volume = -100
-			if (volume > 27.5) volume = 27.5
+			const adjust = action.options.action === 'adjust'
+			const input = readNumber('Headphone Volume', adjust ? action.options.adjustment : action.options.volume)
+			if (input === undefined) return
+			let volume = snapToStep(adjust ? (device.headphoneVolume ?? 0) + input : input, 0.5, -100, 27.5)
 			if (device.headphoneVolumeMax !== undefined && volume > device.headphoneVolumeMax) {
 				volume = device.headphoneVolumeMax
 			}
@@ -699,12 +707,10 @@ export function UpdateActions(self: SpecteraInstance): void {
 		callback: async (action) => {
 			const device = getDeviceFromOptions(self.state, action.options)
 			if (!self.api || device?.type !== MtType.SEK) return
-			let balance =
-				action.options.action === 'adjust'
-					? (device.headphoneBalance ?? 0) + Number(action.options.adjustment)
-					: Number(action.options.balance)
-			if (balance < -100) balance = -100
-			if (balance > 100) balance = 100
+			const adjust = action.options.action === 'adjust'
+			const input = readNumber('Headphone Balance', adjust ? action.options.adjustment : action.options.balance)
+			if (input === undefined) return
+			const balance = snapToStep(adjust ? (device.headphoneBalance ?? 0) + input : input, 1, -100, 100)
 			await self.api.setMobileDevice(device.mtUid, { headphoneBalance: balance })
 		},
 	}
@@ -752,19 +758,15 @@ export function UpdateActions(self: SpecteraInstance): void {
 		callback: async (action) => {
 			const device = getDeviceFromOptions(self.state, action.options)
 			if (!self.api || !device) return
-			let gain =
-				action.options.action === 'adjust'
-					? (device.micPreampGain ?? 0) + Number(action.options.adjustment)
-					: Number(action.options.gain)
-			if (device.type === MtType.SEK) {
-				// SEK: Min -6, Max 42
-				if (gain < -6) gain = -6
-				if (gain > 42) gain = 42
-			} else if (device.type === MtType.SKM) {
-				// SKM: Min -10, Max 42
-				if (gain < -10) gain = -10
-				if (gain > 42) gain = 42
-			}
+			const adjust = action.options.action === 'adjust'
+			const input = readNumber('Mic Preamp Gain', adjust ? action.options.adjustment : action.options.gain)
+			if (input === undefined) return
+			const gain = snapToStep(
+				adjust ? (device.micPreampGain ?? 0) + input : input,
+				1,
+				device.type === MtType.SEK ? -6 : -10,
+				42,
+			)
 			await self.api.setMobileDevice(device.mtUid, { micPreampGain: gain })
 		},
 	}
@@ -891,7 +893,9 @@ export function UpdateActions(self: SpecteraInstance): void {
 		callback: async (action) => {
 			const device = getDeviceFromOptions(self.state, action.options)
 			if (!self.api || !device) return
-			const level = Number(action.options.level)
+			const input = readNumber('Mic Test Tone', action.options.level)
+			if (input === undefined) return
+			const level = snapToStep(input, 1, -60, 0)
 			await self.api.setMobileDevice(device.mtUid, {
 				micTestToneEnabled: action.options.enable as boolean,
 				micTestToneLevel: level,

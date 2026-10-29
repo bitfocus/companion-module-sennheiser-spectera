@@ -39,9 +39,22 @@ describe('action definitions', () => {
 
 		expect(Object.keys(actions)).toHaveLength(33)
 		await actions.rfFrequency.callback({
-			options: { rfChannel: 1, frequency: '475.125', requireConfirmation: false },
+			options: { rfChannel: 1, frequency: '475', requireConfirmation: false },
 		})
-		expect(instance.api.setRfChannel).toHaveBeenCalledWith(1, { rfChannelId: 1, frequency: 475125 })
+		expect(instance.api.setRfChannel).toHaveBeenCalledWith(1, { rfChannelId: 1, frequency: 475000 })
+	})
+
+	it('snaps RF frequency to whole MHz and skips non-numeric input', async () => {
+		const instance = makeInstance()
+		UpdateActions(instance as any)
+		const actions = registeredDefinitions(instance.setActionDefinitions)
+
+		await actions.rfFrequency.callback({ options: { rfChannel: 1, frequency: '520.5', requireConfirmation: false } })
+		await actions.rfFrequency.callback({ options: { rfChannel: 1, frequency: 'abc', requireConfirmation: false } })
+
+		expect(instance.api.setRfChannel).toHaveBeenCalledTimes(1)
+		expect(instance.api.setRfChannel).toHaveBeenCalledWith(1, { rfChannelId: 1, frequency: 521000 })
+		expect(instance.log).toHaveBeenCalledWith('warn', 'RF Frequency: "abc" is not a number')
 	})
 
 	it('does not execute a confirmable action until confirmation succeeds', async () => {
@@ -134,6 +147,39 @@ describe('mobile device actions', () => {
 
 		expect(setMobileDevice).toHaveBeenCalledWith(1, { micPreampGain: 42 })
 		expect(setMobileDevice).toHaveBeenCalledWith(2, { micPreampGain: -10 })
+	})
+
+	it('snaps volume, balance, gain and test tone to the steps the base station accepts', async () => {
+		const { actions, setMobileDevice } = setup()
+
+		await actions.mobileDeviceHeadphoneVolume.callback({
+			options: { serial: 'SEK-001', action: 'set', volume: '-20.3' },
+		})
+		await actions.mobileDeviceHeadphoneBalance.callback({
+			options: { serial: 'SEK-001', action: 'set', balance: '10.4' },
+		})
+		await actions.mobileDeviceMicPreampGain.callback({
+			options: { serial: 'SKM-001', action: 'adjust', adjustment: '0.6' },
+		})
+		await actions.mobileDeviceMicTestTone.callback({ options: { serial: 'SKM-001', enable: true, level: '-75' } })
+
+		expect(setMobileDevice).toHaveBeenCalledWith(1, { headphoneVolume: -20.5 })
+		expect(setMobileDevice).toHaveBeenCalledWith(1, { headphoneBalance: 10 })
+		expect(setMobileDevice).toHaveBeenCalledWith(2, { micPreampGain: -7 })
+		expect(setMobileDevice).toHaveBeenCalledWith(2, { micTestToneEnabled: true, micTestToneLevel: -60 })
+	})
+
+	it('warns and skips the request when a numeric option is blank or not a number', async () => {
+		const { instance, actions, setMobileDevice } = setup()
+
+		await actions.mobileDeviceHeadphoneVolume.callback({ options: { serial: 'SEK-001', action: 'set', volume: '' } })
+		await actions.mobileDeviceMicPreampGain.callback({
+			options: { serial: 'SKM-001', action: 'adjust', adjustment: 'up' },
+		})
+
+		expect(setMobileDevice).not.toHaveBeenCalled()
+		expect(instance.log).toHaveBeenCalledWith('warn', 'Headphone Volume: "" is not a number')
+		expect(instance.log).toHaveBeenCalledWith('warn', 'Mic Preamp Gain: "up" is not a number')
 	})
 
 	it('sets all four SKM command colors and ignores SEK devices', async () => {
