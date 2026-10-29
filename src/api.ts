@@ -114,6 +114,9 @@ export class SpecteraApi extends EventEmitter {
 	private variableCache: Record<string, VariableValue> = {}
 	private lastLevelUpdateTime = 0
 	private static readonly LEVEL_UPDATE_INTERVAL_MS = 50
+	private static readonly HEARTBEAT_CHECK_INTERVAL_MS = 2000
+	// /api/device/time pushes every second, so a quiet stream this long is dead
+	private static readonly SSE_STALE_TIMEOUT_MS = 10000
 	private isInitializing = false
 	private readonly requestQueue: { add: <T>(fn: () => Promise<T>) => Promise<T> }
 	private readonly routingQueue: { add: <T>(fn: () => Promise<T>) => Promise<T> }
@@ -141,6 +144,7 @@ export class SpecteraApi extends EventEmitter {
 		'/api/device/identity',
 		'/api/device/state',
 		'/api/device/site',
+		'/api/device/time',
 		'/api/audio/metering',
 		'/api/audio/interface/aoip/status',
 		'/api/audio/interface/madi1/status',
@@ -176,10 +180,10 @@ export class SpecteraApi extends EventEmitter {
 		return `Basic ${Buffer.from(credentials).toString('base64')}`
 	}
 
-	async sendRequest<T>(method: string, path: string, body?: unknown, options?: { quiet?: boolean }): Promise<T> {
+	async sendRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
 		return this.requestQueue.add(async () => {
 			try {
-				return await this.executeRequest<T>(method, path, body, options)
+				return await this.executeRequest<T>(method, path, body)
 			} catch (err) {
 				this.instance.log(
 					'debug',
@@ -190,12 +194,7 @@ export class SpecteraApi extends EventEmitter {
 		})
 	}
 
-	private async executeRequest<T>(
-		method: string,
-		path: string,
-		body?: unknown,
-		requestOptions?: { quiet?: boolean },
-	): Promise<T> {
+	private async executeRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
 		const url = `https://${this.host}:443/api${path}`
 		const options: RequestInit = {
 			method,
@@ -211,9 +210,7 @@ export class SpecteraApi extends EventEmitter {
 			options.body = JSON.stringify(body)
 		}
 
-		if (!requestOptions?.quiet) {
-			this.instance.log('debug', `API Request: ${method} ${path} ${body ? JSON.stringify(body) : ''}`)
-		}
+		this.instance.log('debug', `API Request: ${method} ${path} ${body ? JSON.stringify(body) : ''}`)
 
 		const response = await fetch(url, { ...options, dispatcher: this.dispatcher })
 
@@ -447,29 +444,15 @@ export class SpecteraApi extends EventEmitter {
 
 	private startHeartbeat(): void {
 		this.stopHeartbeat()
-		this.heartbeatInterval = setInterval(() => void this.runHeartbeat(), 5000)
+		this.heartbeatInterval = setInterval(() => this.runHeartbeat(), SpecteraApi.HEARTBEAT_CHECK_INTERVAL_MS)
 	}
 
-	private async runHeartbeat(): Promise<void> {
-		if (this.destroyed) return
-		try {
-			// Quiet: this polls every 5s and would otherwise flood the debug log
-			await this.sendRequest('GET', '/device/state', undefined, { quiet: true })
-			// Detect silent SSE stream death — use subscribe start time as fallback
-			// when no SSE events have ever been received (lastSSEEventTime === 0)
-			const timeSinceActivity =
-				this.lastSSEEventTime > 0 ? Date.now() - this.lastSSEEventTime : Date.now() - this.subscribeStartTime
-			if (this.subscribeStartTime > 0 && timeSinceActivity > 60000) {
-				this.instance.log('debug', 'No SSE events received in 60s, reconnecting')
-				this.stopHeartbeat()
-				if (this.abortController) {
-					this.abortController.abort()
-					this.abortController = null
-				}
-				this.scheduleReconnect()
-				return
-			}
-		} catch (_err) {
+	private runHeartbeat(): void {
+		if (this.destroyed || this.subscribeStartTime === 0) return
+		// Fall back to the subscribe start time when no SSE events have ever been received
+		const timeSinceActivity =
+			this.lastSSEEventTime > 0 ? Date.now() - this.lastSSEEventTime : Date.now() - this.subscribeStartTime
+		if (timeSinceActivity > SpecteraApi.SSE_STALE_TIMEOUT_MS) {
 			this.instance.log('warn', 'Connection lost to Spectera, attempting to reconnect...')
 			this.stopHeartbeat()
 			if (this.abortController) {

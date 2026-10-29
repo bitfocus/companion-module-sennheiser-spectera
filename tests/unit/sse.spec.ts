@@ -35,6 +35,8 @@ vi.mock('../../src/actions.js', async (importOriginal) => ({
 interface SseTestApi {
 	handleSSEEvent(event: string): void
 	processStream(reader: ReadableStreamDefaultReader<Uint8Array>): Promise<void>
+	startHeartbeat(): void
+	subscribeStartTime: number
 }
 
 function asSseTestApi(api: object): SseTestApi {
@@ -216,5 +218,48 @@ describe('SSE event processing', () => {
 		await asSseTestApi(api).processStream(stream.getReader())
 
 		expect(state.audioInputs.get(0)?.name).toBe('Streamed input')
+	})
+})
+
+describe('SSE heartbeat', () => {
+	beforeEach(() => {
+		vi.useFakeTimers()
+	})
+
+	afterEach(() => {
+		vi.clearAllTimers()
+		vi.useRealTimers()
+	})
+
+	function startHeartbeat() {
+		const { api, instance } = makeApi()
+		const reconnect = vi.spyOn(api, 'scheduleReconnect').mockImplementation(() => undefined)
+		const sse = asSseTestApi(api)
+		sse.subscribeStartTime = Date.now()
+		sse.startHeartbeat()
+		return { sse, instance, reconnect }
+	}
+
+	it('stays connected while device-time ticks keep arriving', () => {
+		const { sse, reconnect } = startHeartbeat()
+
+		for (let i = 0; i < 30; i++) {
+			vi.advanceTimersByTime(1000)
+			sse.handleSSEEvent(event({ '/api/device/time': { time: i, timezone: 'UTC', valid: true } }))
+		}
+
+		expect(reconnect).not.toHaveBeenCalled()
+	})
+
+	it('reconnects once the stream has been silent past the stale timeout', () => {
+		const { sse, instance, reconnect } = startHeartbeat()
+		sse.handleSSEEvent(event({ '/api/device/time': { time: 0, timezone: 'UTC', valid: true } }))
+
+		vi.advanceTimersByTime(10000)
+		expect(reconnect).not.toHaveBeenCalled()
+
+		vi.advanceTimersByTime(2000)
+		expect(reconnect).toHaveBeenCalledTimes(1)
+		expect(instance.log).toHaveBeenCalledWith('warn', 'Connection lost to Spectera, attempting to reconnect...')
 	})
 })
