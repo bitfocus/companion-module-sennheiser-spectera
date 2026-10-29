@@ -69,7 +69,7 @@ import {
 const REQUEST_INTERVAL_MS = 20
 
 /** API schema version this module targets */
-const EXPECTED_API_SCHEMA = '18.1'
+const EXPECTED_API_SCHEMA = '18.3'
 
 function parseSchemaVersion(schema: string): { major: number; minor: number } | null {
 	const match = /^(\d+)\.(\d+)/.exec(schema)
