@@ -87,7 +87,7 @@ export default class SpecteraInstance extends InstanceBase<SpecteraInstanceTypes
 				this.updateStatus(InstanceStatus.Ok)
 				this.log('info', `Successfully connected to Spectera`)
 			} catch (err) {
-				this.updateStatus(InstanceStatus.ConnectionFailure)
+				this.updateStatus(InstanceStatus.AuthenticationFailure)
 				this.log('error', `Login failed: ${err instanceof Error ? err.message : String(err)} `)
 				this.api.scheduleReconnect()
 			}
