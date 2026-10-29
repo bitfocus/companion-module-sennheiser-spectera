@@ -792,16 +792,15 @@ export class SpecteraApi extends EventEmitter {
 				changedVariables[`audio_output_${displayId}_interfaces`] = getAudioOutputActiveChannels(value)
 				structureChanged = !oldState
 			} else if (key.startsWith('/api/audio/links/')) {
+				const match = key.match(/\/api\/audio\/links\/(\d+)/)
+				if (!match) continue
+				const linkId = parseInt(match[1], 10)
 				if (value === null) {
-					// Deletion
-					const match = key.match(/\/api\/audio\/links\/(\d+)/)
-					if (match && match[1]) {
-						const linkId = parseInt(match[1], 10)
-						this.state.removeAudioLink(linkId)
-						structureChanged = true
-					}
-				} else {
-					const oldState = this.state.audioLinks.get(value.audiolinkId)
+					this.state.removeAudioLink(linkId)
+					structureChanged = true
+				} else if (value.audiolinkId === linkId) {
+					// A new link is first announced with an empty `{}` before its full payload; skip that
+					const oldState = this.state.audioLinks.get(linkId)
 					this.state.updateAudioLink(value)
 					structureChanged = !oldState
 				}

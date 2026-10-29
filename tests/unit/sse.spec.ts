@@ -131,6 +131,15 @@ describe('SSE event processing', () => {
 		expect(rebuildMocks.variables).not.toHaveBeenCalled()
 	})
 
+	it('ignores the empty placeholder sent before a new audio link payload', () => {
+		const { api, state } = makeApi()
+
+		asSseTestApi(api).handleSSEEvent(event({ '/api/audio/links/0': {} }))
+		asSseTestApi(api).handleSSEEvent(event({ '/api/audio/links/0': { audiolinkId: 0, rfChannelId: 0, modeId: 4 } }))
+
+		expect([...state.audioLinks.entries()]).toEqual([[0, { audiolinkId: 0, rfChannelId: 0, modeId: 4 }]])
+	})
+
 	it('removes deleted resources and coalesces structural rebuilds', () => {
 		const { api, state } = makeApi()
 		state.updateAudioLink({ audiolinkId: 10, rfChannelId: 0, modeId: 4 })
