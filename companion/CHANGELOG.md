@@ -18,14 +18,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- **Requires Bitfocus Buttons 1.8 or newer, or Companion 4.3 or newer**
+- **Requires Spectera firmware v1.5.0 or newer**
 - Audio meter variables and **Audio Level Threshold** feedback now update every 50 ms
-- New audio links are created with the `linkedMt` hint so the base station can clean up abandoned links
+- Headphone volume, balance, mic preamp gain, test tone level and RF frequency are rounded to the nearest value the base station accepts (0.5 dB, 1 dB or 1 MHz steps). Blank or non-numeric values are skipped with a warning in the log instead of being sent
+- Interference, antenna LED color and RF binding feedbacks are only re-evaluated when their values actually change
 
 ### Fixed
 
 - Antenna temperature feedback treating 0°C as missing, and Fahrenheit threshold comparison
 - Cleanup newly created audio links if routing assignment fails
 - Map legacy audio input `source` values to current interface names
+- Interference presets using an invalid severity value ("Medium" instead of "Mid")
+- Pressing **Audio I/O - Route Input to Mobile Device** or **Audio I/O - Copy IEM Channels** repeatedly in quick succession logging errors or leaving the pack on the wrong inputs
 
 ## [1.1.0] - 2026-07-14
 
