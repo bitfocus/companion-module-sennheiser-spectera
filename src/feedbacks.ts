@@ -45,6 +45,7 @@ import {
 	METERING_INTERFACES,
 	dadRfBindingChoices,
 	STEREO_INPUT_OFFSET,
+	mobileDeviceOption,
 } from './utils.js'
 import {
 	Color,
@@ -463,16 +464,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
 		},
-		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices[0].id,
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
-		],
+		options: [mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices)],
 		callback: async (feedback) => {
 			const device = getDeviceFromOptions(self.state, feedback.options)
 			return device?.identify === true
@@ -486,16 +478,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
 		},
-		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices[0].id,
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
-		],
+		options: [mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices)],
 		callback: async (feedback) => {
 			const device = getDeviceFromOptions(self.state, feedback.options)
 			return device?.reverseIdentify === true
@@ -509,16 +492,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		defaultStyle: {
 			bgcolor: Color.LightGray,
 		},
-		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices[0].id,
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
-		],
+		options: [mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices)],
 		callback: async (feedback) => {
 			const device = getDeviceFromOptions(self.state, feedback.options)
 			return device?.state === MtState.Connected
@@ -533,14 +507,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraBlue,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices[0].id,
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'State',
@@ -562,16 +529,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		defaultStyle: {
 			bgcolor: Color.SpecteraRed,
 		},
-		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices[0].id,
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
-		],
+		options: [mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices)],
 		callback: async (feedback) => {
 			const device = getDeviceFromOptions(self.state, feedback.options)
 			return device?.batteryLow === true
@@ -586,14 +544,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraRed,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices[0].id,
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Severity',
@@ -616,14 +567,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices[0].id,
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Antenna',
@@ -645,16 +589,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
 		},
-		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
-		],
+		options: [mobileDeviceOption('serial', 'Mobile Device', sekMobileDeviceChoices)],
 		callback: async (feedback) => {
 			const device = getDeviceFromOptions(self.state, feedback.options)
 			if (device?.type === MtType.SEK) {
@@ -672,22 +607,8 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'SEK 1',
-				id: 'serial1',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
-			{
-				type: 'dropdown',
-				label: 'SEK 2',
-				id: 'serial2',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial1', 'SEK 1', sekMobileDeviceChoices),
+			mobileDeviceOption('serial2', 'SEK 2', sekMobileDeviceChoices),
 		],
 		callback: async (feedback) => {
 			const serial1 = feedback.options.serial1 as string
@@ -710,16 +631,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
 		},
-		options: [
-			{
-				type: 'dropdown',
-				label: 'SEK',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
-		],
+		options: [mobileDeviceOption('serial', 'SEK', sekMobileDeviceChoices)],
 		callback: async (feedback) => {
 			const device = getDeviceFromOptions(self.state, feedback.options)
 			if (device?.type === MtType.SEK) {
@@ -737,14 +649,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'SEK',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'SEK', sekMobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Audio Input',
@@ -771,16 +676,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
 		},
-		options: [
-			{
-				type: 'dropdown',
-				label: 'SEK',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
-		],
+		options: [mobileDeviceOption('serial', 'SEK', sekMobileDeviceChoices)],
 		callback: async (feedback) => {
 			const device = getDeviceFromOptions(self.state, feedback.options)
 			if (device?.type === MtType.SEK && device.iemAudiolinkId === -1) {
@@ -878,14 +774,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraBlue,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Audio Output',
@@ -971,14 +860,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices[0].id,
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'textinput',
 				label: 'Frequency Range',
@@ -1000,14 +882,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices[0].id,
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'RF Channel',
@@ -1030,16 +905,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		defaultStyle: {
 			bgcolor: Color.SpecteraBlue,
 		},
-		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices[0].id,
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
-		],
+		options: [mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices)],
 		callback: async (feedback) => {
 			const device = getDeviceFromOptions(self.state, feedback.options)
 			return device?.sleep === true
@@ -1054,14 +920,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices[0].id,
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Command Behavior',
@@ -1084,14 +943,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices[0].id,
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Command State',
@@ -1114,14 +966,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraRed,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices[0].id,
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'number',
 				label: 'Threshold (%)',
@@ -1149,14 +994,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraRed,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices[0].id,
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'number',
 				label: 'Threshold (minutes)',
@@ -1185,14 +1023,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: skmMobileDeviceChoices.length > 0 ? skmMobileDeviceChoices[0].id : '',
-				choices: skmMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', skmMobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Command State',
@@ -1225,14 +1056,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices[0].id,
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'colorpicker',
 				label: 'Connected State Color',
@@ -1253,16 +1077,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		name: 'Mobile Device - Connected State Color',
 		description: 'Change the background color to the Connected State LED color.',
 		affectedProperties: ['bgcolor'],
-		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices[0].id,
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
-		],
+		options: [mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices)],
 		callback: async (feedback) => {
 			const device = getDeviceFromOptions(self.state, feedback.options)
 			if (!device) return { bgcolor: undefined }
@@ -1280,16 +1095,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		defaultStyle: {
 			bgcolor: Color.SpecteraBlue,
 		},
-		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices[0].id,
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
-		],
+		options: [mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices)],
 		callback: async (feedback) => {
 			const device = getDeviceFromOptions(self.state, feedback.options)
 			return device?.micAudiolinkActive === true
@@ -1303,16 +1109,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		defaultStyle: {
 			bgcolor: Color.SpecteraGreen,
 		},
-		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices[0].id,
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
-		],
+		options: [mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices)],
 		callback: async (feedback) => {
 			const device = getDeviceFromOptions(self.state, feedback.options)
 			return device?.micTestToneEnabled === true
@@ -1327,14 +1124,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices[0].id,
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'number',
 				label: 'Level (dB)',
@@ -1361,14 +1151,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', sekMobileDeviceChoices),
 			{
 				type: 'number',
 				label: 'Volume (-100 to 27.5)',
@@ -1397,14 +1180,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', sekMobileDeviceChoices),
 			{
 				type: 'number',
 				label: 'Balance (-100 to 100)',
@@ -1434,14 +1210,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices[0].id,
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'number',
 				label: 'Gain (dB)',
@@ -1468,14 +1237,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices[0].id,
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Frequency',
@@ -1510,14 +1272,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', sekMobileDeviceChoices),
 			{
 				type: 'number',
 				label: 'Limit',
@@ -1546,14 +1301,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', sekMobileDeviceChoices),
 			{
 				type: 'number',
 				label: 'Max',
@@ -1582,14 +1330,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', sekMobileDeviceChoices),
 			{
 				type: 'number',
 				label: 'Min',
@@ -1618,14 +1359,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', sekMobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Selection',
@@ -1651,14 +1385,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', sekMobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Auto Value',
@@ -1684,14 +1411,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', sekMobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Emulation',
@@ -1769,14 +1489,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'number',
 				label: 'Mic LQI Threshold (0-4)',
@@ -1804,14 +1517,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', sekMobileDeviceChoices),
 			{
 				type: 'number',
 				label: 'IEM LQI Threshold (0-4)',
@@ -1839,14 +1545,7 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 			bgcolor: Color.SpecteraGreen,
 		},
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'number',
 				label: 'RSSI Threshold (dBm)',

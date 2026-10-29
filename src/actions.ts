@@ -46,6 +46,7 @@ import {
 	snapToStep,
 	COMMAND_COLOR_STATES,
 	DEFAULT_COMMAND_COLORS,
+	mobileDeviceOption,
 } from './utils.js'
 
 const REQUIRE_CONFIRMATION_OPTION = {
@@ -422,14 +423,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['mobileDeviceRfChannelId'] = {
 		name: 'Mobile Device - RF Channel',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'RF Channel',
@@ -450,14 +444,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['mobileDeviceIdentify'] = {
 		name: 'Mobile Device - Identify',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Identify',
@@ -482,14 +469,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	/* actions['mobileDeviceSleep'] = {
 		name: 'Mobile Device - Sleep',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Sleep',
@@ -514,14 +494,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['mobileDeviceCommandBehavior'] = {
 		name: 'Mobile Device - Command Behavior',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Command Behavior',
@@ -543,14 +516,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['mobileDeviceCommandColors'] = {
 		name: 'Mobile Device - Command Button Colors',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: skmMobileDeviceChoices.length > 0 ? skmMobileDeviceChoices[0].id : '',
-				choices: skmMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', skmMobileDeviceChoices),
 			...COMMAND_COLOR_STATES.map((state): SomeCompanionActionInputField => ({
 				type: 'colorpicker',
 				label: `${state.label} Color`,
@@ -575,14 +541,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['mobileDeviceConnectedStateColor'] = {
 		name: 'Mobile Device - Connected State LED Color',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'colorpicker',
 				label: 'Connected State Color',
@@ -605,14 +564,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['mobileDeviceHeadphoneVolume'] = {
 		name: 'Mobile Device - Headphone Volume',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', sekMobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Action',
@@ -667,14 +619,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['mobileDeviceHeadphoneBalance'] = {
 		name: 'Mobile Device - Headphone Balance',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', sekMobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Action',
@@ -725,14 +670,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['mobileDeviceMicPreampGain'] = {
 		name: 'Mobile Device - Mic Preamp Gain',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Action',
@@ -788,14 +726,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['mobileDeviceMicLowCutHz'] = {
 		name: 'Mobile Device - Mic Low Cut Hz',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Frequency',
@@ -823,14 +754,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['mobileDeviceCableEmulation'] = {
 		name: 'Mobile Device - Cable Emulation',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', sekMobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Cable Emulation',
@@ -852,14 +776,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['mobileDeviceMicLineSelection'] = {
 		name: 'Mobile Device - Mic/Line Selection',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', sekMobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Mode',
@@ -881,14 +798,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['mobileDeviceMicTestTone'] = {
 		name: 'Mobile Device - Mic Test Tone',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'checkbox',
 				label: 'Enable',
@@ -922,14 +832,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['mobileDeviceRename'] = {
 		name: 'Mobile Device - Rename',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'textinput',
 				label: 'Name',
@@ -957,14 +860,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['routeAudioInputToMobileDevice'] = {
 		name: 'Audio I/O - Route Input to Mobile Device',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', sekMobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Audio Input',
@@ -1006,16 +902,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 
 	actions['removeIemAudioLink'] = {
 		name: 'Audio I/O - Remove IEM Audio Link',
-		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
-		],
+		options: [mobileDeviceOption('serial', 'Mobile Device', sekMobileDeviceChoices)],
 		description: 'Remove an IEM Audio Link from a Mobile Device (IEM). ',
 		callback: async (action) => {
 			const device = getDeviceFromOptions(self.state, action.options)
@@ -1028,14 +915,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 		name: 'Mobile Device - Set IEM Audio Link Mode',
 		description: 'Set the mode of an active IEM audio link on an SEK.',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', sekMobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Link Mode',
@@ -1055,14 +935,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 		name: 'Mobile Device - Set Mic Audio Link Mode',
 		description: 'Set the mode of an active Mic audio link on a mobile device.',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Link Mode',
@@ -1081,14 +954,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['routeMobileDeviceToAudioOutput'] = {
 		name: 'Audio I/O - Route Mobile Device to Output',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Audio Output',
@@ -1137,14 +1003,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 		name: 'Audio I/O - Instrument Switch Mode',
 		description: 'Route a Mobile Device to an Audio Output, with controls over the routing behavior and link mode.',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Audio Output',
@@ -1282,22 +1141,8 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['copyAllMobileDeviceSettings'] = {
 		name: 'Mobile Device - Copy All Settings',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Source Mobile Device',
-				id: 'sourceSerial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
-			{
-				type: 'dropdown',
-				label: 'Target Mobile Device',
-				id: 'targetSerial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('sourceSerial', 'Source Mobile Device', mobileDeviceChoices),
+			mobileDeviceOption('targetSerial', 'Target Mobile Device', mobileDeviceChoices),
 			REQUIRE_CONFIRMATION_OPTION,
 		],
 		description:
@@ -1324,14 +1169,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['setMobileDeviceSettingsJson'] = {
 		name: 'Mobile Device - Set Settings From JSON',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Target Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Target Mobile Device', mobileDeviceChoices),
 			{
 				type: 'textinput',
 				label: 'Settings JSON',
@@ -1383,22 +1221,8 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['copyIemAudioLink'] = {
 		name: 'Audio I/O - Copy IEM Channels',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Source SEK',
-				id: 'sourceSerial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
-			{
-				type: 'dropdown',
-				label: 'Target SEK',
-				id: 'targetSerial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('sourceSerial', 'Source SEK', sekMobileDeviceChoices),
+			mobileDeviceOption('targetSerial', 'Target SEK', sekMobileDeviceChoices),
 		],
 		description: 'Copy the IEM Audio Channels from one SEK to another.',
 		callback: async (action) => {

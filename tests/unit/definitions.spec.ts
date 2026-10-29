@@ -4,6 +4,7 @@ import { UpdateFeedbacks } from '../../src/feedbacks.js'
 import { UpdateCompositeElements } from '../../src/graphics.js'
 import { SpecteraState } from '../../src/state.js'
 import { InputSource, InterfaceInputStatus, RfState } from '../../src/types.js'
+import { MOBILE_DEVICE_EXPRESSION_DESCRIPTION } from '../../src/utils.js'
 import { makeAudioInput, makeSekDevice, makeSkmDevice } from '../fixtures/devices.js'
 
 function makeInstance() {
@@ -52,6 +53,24 @@ describe('action definitions', () => {
 		await actions.rfFrequency.callback({ options: { rfChannel: 1, frequency: 520.5, requireConfirmation: false } })
 
 		expect(instance.api.setRfChannel).toHaveBeenCalledWith(1, { rfChannelId: 1, frequency: 521000 })
+	})
+
+	it('tells expression users that every device picker expects a serial number', () => {
+		const instance = makeInstance()
+		UpdateActions(instance as any)
+		UpdateFeedbacks(instance as any)
+		const definitions = [
+			...Object.values(registeredDefinitions(instance.setActionDefinitions)),
+			...Object.values(registeredDefinitions(instance.setFeedbackDefinitions)),
+		]
+		const devicePickers = definitions
+			.flatMap((def) => def.options as { id: string; expressionDescription?: string }[])
+			.filter((option) => /^(serial[12]?|sourceSerial|targetSerial)$/.test(option.id))
+
+		expect(devicePickers.length).toBeGreaterThan(50)
+		for (const option of devicePickers) {
+			expect(option.expressionDescription).toBe(MOBILE_DEVICE_EXPRESSION_DESCRIPTION)
+		}
 	})
 
 	it('defines numeric options as clamped number fields', () => {

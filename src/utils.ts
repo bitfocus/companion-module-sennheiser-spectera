@@ -155,6 +155,25 @@ export const rfChannelChoices = [
 	{ label: 'RF Channel 2', id: 1 },
 ]
 
+export const MOBILE_DEVICE_EXPRESSION_DESCRIPTION = 'Must return the mobile device serial number, e.g. "1445009476"'
+
+// Device picker shared by actions and feedbacks; the stored value is the device serial
+export function mobileDeviceOption<TKey extends string>(
+	id: TKey,
+	label: string,
+	choices: { id: string; label: string }[],
+): CompanionInputFieldDropdown<TKey, string> {
+	return {
+		type: 'dropdown',
+		label,
+		id,
+		default: choices[0].id,
+		choices,
+		allowCustom: true,
+		expressionDescription: MOBILE_DEVICE_EXPRESSION_DESCRIPTION,
+	}
+}
+
 export const DAD_OPTION = {
 	type: 'dropdown',
 	label: 'DAD',
