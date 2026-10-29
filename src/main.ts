@@ -10,7 +10,7 @@ import { UpdateVariableDefinitions } from './variables.js'
 import { UpgradeScripts } from './upgrades.js'
 import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
-import { SpecteraApi } from './api.js'
+import { SpecteraApi, connectFailureStatus } from './api.js'
 import { SpecteraState } from './state.js'
 import { UpdatePresets } from './presets.js'
 import { UpdateCompositeElements } from './graphics.js'
@@ -87,7 +87,7 @@ export default class SpecteraInstance extends InstanceBase<SpecteraInstanceTypes
 				this.updateStatus(InstanceStatus.Ok)
 				this.log('info', `Successfully connected to Spectera`)
 			} catch (err) {
-				this.updateStatus(InstanceStatus.AuthenticationFailure)
+				this.updateStatus(connectFailureStatus(err))
 				this.log('error', `Login failed: ${err instanceof Error ? err.message : String(err)} `)
 				this.api.scheduleReconnect()
 			}

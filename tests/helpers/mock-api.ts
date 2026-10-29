@@ -7,6 +7,7 @@ export interface MockSpecteraInstance {
 	log: Mock
 	checkFeedbacks: Mock
 	setVariableValues: Mock
+	updateStatus: Mock
 }
 
 export function makeApi(): {
@@ -19,6 +20,7 @@ export function makeApi(): {
 		log: vi.fn(),
 		checkFeedbacks: vi.fn(),
 		setVariableValues: vi.fn(),
+		updateStatus: vi.fn(),
 	}
 	const api = new SpecteraApi(instance as unknown as SpecteraInstance, state, '192.0.2.1', 'password')
 	return { api, state, instance }

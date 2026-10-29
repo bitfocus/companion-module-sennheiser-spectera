@@ -1,4 +1,6 @@
+import { InstanceStatus } from '@companion-module/base'
 import { afterEach, describe, expect, it, vi } from 'vitest'
+import { connectFailureStatus, HttpError } from '../../src/api.js'
 import { makeApi } from '../helpers/mock-api.js'
 
 describe('HTTP transport', () => {
@@ -47,5 +49,38 @@ describe('HTTP transport', () => {
 		await expect(api.sendRequest('GET', '/protected')).rejects.toThrow('HTTP 401: denied')
 		expect(instance.log).toHaveBeenCalledWith('error', 'API Request failed for GET /protected: HTTP 401: denied')
 		expect(instance.log).toHaveBeenCalledWith('debug', 'API Request failed for GET /protected: HTTP 401: denied')
+	})
+
+	it('throws an HttpError carrying the status code', async () => {
+		vi.stubGlobal('fetch', vi.fn().mockResolvedValue(new Response('denied', { status: 401 })))
+		const { api } = makeApi()
+
+		await expect(api.sendRequest('GET', '/protected')).rejects.toMatchObject({ status: 401 })
+	})
+})
+
+describe('connection failure status', () => {
+	it.each([
+		[new HttpError(401, ''), InstanceStatus.AuthenticationFailure],
+		[new HttpError(403, ''), InstanceStatus.AuthenticationFailure],
+		[new HttpError(500, ''), InstanceStatus.ConnectionFailure],
+		[new TypeError('fetch failed'), InstanceStatus.ConnectionFailure],
+		[new Error('The operation was aborted due to timeout'), InstanceStatus.ConnectionFailure],
+	])('maps %s to %s', (err, status) => {
+		expect(connectFailureStatus(err)).toBe(status)
+	})
+
+	it.each([
+		[new HttpError(401, ''), InstanceStatus.AuthenticationFailure],
+		[new TypeError('fetch failed'), InstanceStatus.ConnectionFailure],
+	])('keeps the matching status when a reconnect fails with %s', async (err, status) => {
+		const { api, instance } = makeApi()
+		const internals = api as unknown as { performLogin(): Promise<void>; runReconnect(): Promise<void> }
+		vi.spyOn(internals, 'performLogin').mockRejectedValue(err)
+		vi.spyOn(api, 'scheduleReconnect').mockImplementation(() => undefined)
+
+		await internals.runReconnect()
+
+		expect(instance.updateStatus).toHaveBeenCalledWith(status)
 	})
 })

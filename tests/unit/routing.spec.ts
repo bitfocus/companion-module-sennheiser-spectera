@@ -134,7 +134,8 @@ describe('IEM input routing', () => {
 		expect(setDevice).toHaveBeenNthCalledWith(1, 8, { iemAudiolinkId: -1 })
 		expect(setDevice.mock.invocationCallOrder[0]).toBeLessThan(createLink.mock.invocationCallOrder[0])
 		expect(setDevice).toHaveBeenLastCalledWith(8, { iemAudiolinkId: 30 })
-		expect(state.mobileDevices.get(9)?.type === MtType.SEK && state.mobileDevices.get(9)?.iemAudiolinkId).toBe(20)
+		const otherDevice = state.mobileDevices.get(9)
+		expect(otherDevice?.type === MtType.SEK && otherDevice.iemAudiolinkId).toBe(20)
 	})
 
 	it('serializes a double press so the second route reuses the first link', async () => {

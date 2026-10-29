@@ -82,6 +82,22 @@ function isActiveAudioLinkId(id: number | undefined): boolean {
 	return id !== undefined && id > -1
 }
 
+export class HttpError extends Error {
+	constructor(
+		readonly status: number,
+		body: string,
+	) {
+		super(`HTTP ${status}: ${body}`)
+	}
+}
+
+/** 401/403 mean the password (or its role) is wrong; anything else is treated as a connection problem. */
+export function connectFailureStatus(err: unknown): InstanceStatus {
+	return err instanceof HttpError && (err.status === 401 || err.status === 403)
+		? InstanceStatus.AuthenticationFailure
+		: InstanceStatus.ConnectionFailure
+}
+
 /**
  * Translate an audio input object coming off the Base Station into the module's canonical form.
  */
@@ -218,7 +234,7 @@ export class SpecteraApi extends EventEmitter {
 		if (!response.ok) {
 			const errorText = await response.text().catch(() => 'Unknown error')
 			this.instance.log('error', `API Request failed for ${method} ${path}: HTTP ${response.status}: ${errorText}`)
-			throw new Error(`HTTP ${response.status}: ${errorText}`)
+			throw new HttpError(response.status, errorText)
 		}
 
 		if (response.status === 204 || response.headers.get('content-length') === '0') {
@@ -548,7 +564,7 @@ export class SpecteraApi extends EventEmitter {
 			this.instance.log('info', 'Reconnected to Spectera successfully')
 		} catch (err) {
 			this.instance.log('debug', `Reconnect failed: ${err instanceof Error ? err.message : String(err)}`)
-			this.instance.updateStatus(InstanceStatus.ConnectionFailure)
+			this.instance.updateStatus(connectFailureStatus(err))
 			this.scheduleReconnect()
 		}
 	}

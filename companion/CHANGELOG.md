@@ -23,6 +23,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Audio meter variables and **Audio Level Threshold** feedback now update every 50 ms
 - Headphone volume, balance, mic preamp gain, test tone level and RF frequency are rounded to the nearest value the base station accepts (0.5 dB, 1 dB or 1 MHz steps). Blank or non-numeric values are skipped with a warning in the log instead of being sent
 - Interference, antenna LED color and RF binding feedbacks are only re-evaluated when their values actually change
+- A wrong password now shows an **Authentication Failure** status instead of a connection failure
 
 ### Fixed
 
