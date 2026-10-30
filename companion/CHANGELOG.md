@@ -5,7 +5,10 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [Unreleased]
+## [1.5.0]- 2026-10-30
+
+- **Requires Bitfocus Buttons 1.8 or newer, or Companion 4.3 or newer**
+- **Requires Spectera firmware v1.5.0 or newer**
 
 ### Added
 
@@ -18,8 +21,6 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
-- **Requires Bitfocus Buttons 1.8 or newer, or Companion 4.3 or newer**
-- **Requires Spectera firmware v1.5.0 or newer**
 - Audio meter variables and **Audio Level Threshold** feedback now update every 50 ms
 - Headphone volume, balance, mic preamp gain, test tone level and RF frequency are rounded to the nearest value the base station accepts (0.5 dB, 1 dB or 1 MHz steps). Blank or non-numeric values are skipped with a warning in the log instead of being sent
 - Interference, antenna LED color and RF binding feedbacks are only re-evaluated when their values actually change
