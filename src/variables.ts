@@ -1,6 +1,8 @@
+import type { CompanionVariableDefinitions } from '@companion-module/base'
 import type { SpecteraInstance } from './main.js'
 import type {
 	AudioInput,
+	AudioLink,
 	AudioOutput,
 	RfChannel,
 	Antenna,
@@ -11,11 +13,21 @@ import type {
 	BaseStationIdentity,
 	BaseStationState,
 	BaseStationSite,
+	AudioLevels,
 } from './types.js'
-import { MtType, RfState, RFChannels, RfStateStartup, MicLowCutHzSEK, MicLowCutHzSKM, MtState } from './types.js'
 import {
-	StateMap,
-	VariableValue,
+	MtType,
+	RfState,
+	RFChannels,
+	RfStateStartup,
+	MicLowCutHzSEK,
+	MicLowCutHzSKM,
+	MtState,
+	InputSource,
+} from './types.js'
+import {
+	type StateMap,
+	type VariableValue,
 	AudioNetworkStateMap,
 	MadiStateMap,
 	MadiInputStateMap,
@@ -25,7 +37,13 @@ import {
 	inputSourceLabels,
 	psuStatusLabels,
 } from './state_maps.js'
-import { formatBatteryRuntimeMinutes, getAntennaFrequency, getPortableMobileDeviceSettings } from './utils.js'
+import {
+	formatBatteryRuntimeMinutes,
+	getAntennaFrequency,
+	getPortableMobileDeviceSettings,
+	isStereoAudiolinkMode,
+	METERING_INTERFACES,
+} from './utils.js'
 
 const rfStateStartupLabels: Record<RfStateStartup, string> = {
 	[RfStateStartup.Active]: 'Active',
@@ -139,25 +157,18 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 		)
 	}
 
-	const interfaces = ['MADI 1', 'MADI 2', 'Dante']
-	const directions = ['In', 'Out']
-
-	for (const iface of interfaces) {
-		for (const dir of directions) {
-			const ifaceNameSnake = `${iface.replaceAll(' ', '_').toLowerCase()}_${dir.toLowerCase()}`
-
-			for (let i = 1; i <= 32; i++) {
-				variables.push(
-					{
-						variableId: `audio_level_${ifaceNameSnake}_${i}_peak`,
-						name: `Audio Level - ${iface} ${dir} Ch ${i} - Peak (dBFS)`,
-					},
-					{
-						variableId: `audio_level_${ifaceNameSnake}_${i}_rms`,
-						name: `Audio Level - ${iface} ${dir} Ch ${i} - RMS (dBFS)`,
-					},
-				)
-			}
+	for (const { varBase, name, direction } of METERING_INTERFACES) {
+		for (let i = 1; i <= 32; i++) {
+			variables.push(
+				{
+					variableId: `audio_level_${varBase}_${i}_peak`,
+					name: `Audio Level - ${name} ${direction} Ch ${i} - Peak (dBFS)`,
+				},
+				{
+					variableId: `audio_level_${varBase}_${i}_rms`,
+					name: `Audio Level - ${name} ${direction} Ch ${i} - RMS (dBFS)`,
+				},
+			)
 		}
 	}
 
@@ -388,6 +399,14 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 				name: `${deviceVariableLabel} - Mic LQI`,
 			},
 			{
+				variableId: `${deviceVariableId}_mic_level_rms`,
+				name: `${deviceVariableLabel} - Mic Level RMS (dBFS)`,
+			},
+			{
+				variableId: `${deviceVariableId}_mic_level_peak`,
+				name: `${deviceVariableLabel} - Mic Level Peak (dBFS)`,
+			},
+			{
 				variableId: `${deviceVariableId}_interference`,
 				name: `${deviceVariableLabel} - Interference`,
 			},
@@ -399,7 +418,7 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 				variableId: `${deviceVariableId}_rssi`,
 				name: `${deviceVariableLabel} - RSSI (dBm)`,
 			},
-			/* 
+			/*
 			{
 				variableId: `${deviceVariableId}_serial`,
 				name: `${deviceVariableLabel} - Serial`,
@@ -481,6 +500,26 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 					variableId: `${deviceVariableId}_iem_lqi`,
 					name: `${deviceVariableLabel} - IEM LQI`,
 				},
+				{
+					variableId: `${deviceVariableId}_iem_level_rms`,
+					name: `${deviceVariableLabel} - IEM Level Ch 1 RMS (dBFS)`,
+				},
+				{
+					variableId: `${deviceVariableId}_iem_level_peak`,
+					name: `${deviceVariableLabel} - IEM Level Ch 1 Peak (dBFS)`,
+				},
+				{
+					variableId: `${deviceVariableId}_iem_level_2_rms`,
+					name: `${deviceVariableLabel} - IEM Level Ch 2 RMS (dBFS)`,
+				},
+				{
+					variableId: `${deviceVariableId}_iem_level_2_peak`,
+					name: `${deviceVariableLabel} - IEM Level Ch 2 Peak (dBFS)`,
+				},
+				{
+					variableId: `${deviceVariableId}_iem_stereo`,
+					name: `${deviceVariableLabel} - IEM Link Is Stereo`,
+				},
 			)
 		} else if (device.type === MtType.SKM) {
 			variables.push(
@@ -499,7 +538,11 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 			)
 		}
 	}
-	self.setVariableDefinitions(variables)
+	const definitions: CompanionVariableDefinitions = {}
+	for (const { variableId, name } of variables) {
+		definitions[variableId] = { name }
+	}
+	self.setVariableDefinitions(definitions)
 }
 
 export function getAudioInputIemLinkDevices(input: AudioInput, mobileDevices: Map<number, MobileDevice>): string {
@@ -528,8 +571,10 @@ export function getAudioInputVariables(
  */
 export function getAudioOutputSourceName(output: AudioOutput, mobileDevices: Map<number, MobileDevice>): string {
 	if (output.micAudiolinkId < 0) return 'None'
-	const device = [...mobileDevices.values()].find((d) => d.micAudiolinkId === output.micAudiolinkId)
-	return device?.name ?? 'None'
+	for (const device of mobileDevices.values()) {
+		if (device.micAudiolinkId === output.micAudiolinkId) return device.name
+	}
+	return 'None'
 }
 
 export function getAudioOutputVariables(
@@ -603,6 +648,83 @@ export function getAntennaVariables(
 		[`dad_${port}_mismatch`]: antenna.bindings[0]?.mismatch,
 		//[`dad_${port}_version`]: antenna.version,
 	}
+}
+
+// Resolve a device's MIC (and IEM, for SEK) levels via current routing.
+type AudioLevelField = Exclude<keyof AudioLevels, 'updateCounter'>
+
+const OUTPUT_LEVEL_FIELDS = [
+	['aoIpEnableIfCommandIsDisabled', 'aoIpOut'],
+	['madi1EnableIfCommandIsDisabled', 'madi1Out'],
+	['madi2EnableIfCommandIsDisabled', 'madi2Out'],
+] as const satisfies ReadonlyArray<readonly [keyof AudioOutput, AudioLevelField]>
+
+const INPUT_LEVEL_FIELDS: Partial<Record<InputSource, AudioLevelField>> = {
+	[InputSource.Dante]: 'aoIpIn',
+	[InputSource['MADI 1']]: 'madi1In',
+	[InputSource['MADI 2']]: 'madi2In',
+}
+
+function findByLinkId<T, K extends keyof T>(items: Iterable<T>, key: K, linkId: T[K]): T | undefined {
+	for (const item of items) {
+		if (item[key] === linkId) return item
+	}
+	return undefined
+}
+
+export function getMobileDeviceLevelVariables(
+	device: MobileDevice,
+	audioOutputs: Map<number, AudioOutput>,
+	audioInputs: Map<number, AudioInput>,
+	audioLinks: Map<number, AudioLink>,
+	audioLevels: AudioLevels | undefined,
+): Record<string, VariableValue> {
+	const deviceVariableId = `${device.type}_${device.serial}`
+
+	// MIC (output side): device -> AudioOutput.micAudiolinkId -> outputId on an active out-interface.
+	const values: Record<string, VariableValue> = {
+		[`${deviceVariableId}_mic_level_rms`]: -127.5,
+		[`${deviceVariableId}_mic_level_peak`]: -127.5,
+	}
+	if (audioLevels && device.micAudiolinkId != null && device.micAudiolinkId >= 0) {
+		const output = findByLinkId(audioOutputs.values(), 'micAudiolinkId', device.micAudiolinkId)
+		if (output) {
+			const field = OUTPUT_LEVEL_FIELDS.find(([flag]) => output[flag] === 'On')?.[1]
+			const level = field ? audioLevels[field] : undefined
+			if (level && output.outputId < level.rms.length) {
+				values[`${deviceVariableId}_mic_level_rms`] = level.rms[output.outputId]
+				values[`${deviceVariableId}_mic_level_peak`] = level.peak[output.outputId]
+			}
+		}
+	}
+
+	// IEM (input side, SEK only): device -> AudioInput.iemAudiolinkId -> inputId on inputSource interface.
+	// A stereo link is only assigned to its (even) left input, so ch 2 comes from the implicit next input.
+	if (device.type === MtType.SEK) {
+		const stereo = isStereoAudiolinkMode(audioLinks.get(device.iemAudiolinkId ?? -1)?.modeId)
+		values[`${deviceVariableId}_iem_stereo`] = stereo
+		values[`${deviceVariableId}_iem_level_rms`] = -127.5
+		values[`${deviceVariableId}_iem_level_peak`] = -127.5
+		values[`${deviceVariableId}_iem_level_2_rms`] = -127.5
+		values[`${deviceVariableId}_iem_level_2_peak`] = -127.5
+		if (audioLevels && device.iemAudiolinkId != null && device.iemAudiolinkId >= 0) {
+			const input = findByLinkId(audioInputs.values(), 'iemAudiolinkId', device.iemAudiolinkId)
+			if (input) {
+				const field = INPUT_LEVEL_FIELDS[input.inputSource]
+				const level = field ? audioLevels[field] : undefined
+				if (level && input.inputId < level.rms.length) {
+					values[`${deviceVariableId}_iem_level_rms`] = level.rms[input.inputId]
+					values[`${deviceVariableId}_iem_level_peak`] = level.peak[input.inputId]
+				}
+				if (stereo && level && input.inputId + 1 < level.rms.length) {
+					values[`${deviceVariableId}_iem_level_2_rms`] = level.rms[input.inputId + 1]
+					values[`${deviceVariableId}_iem_level_2_peak`] = level.peak[input.inputId + 1]
+				}
+			}
+		}
+	}
+
+	return values
 }
 
 export function getMobileDeviceVariables(device: MobileDevice): Record<string, VariableValue> {
@@ -696,9 +818,9 @@ export function getFanVariables(fanId: string, state: FanState): Record<string, 
 
 export function getBaseStationIdentityVariables(identity: BaseStationIdentity): Record<string, VariableValue> {
 	return {
-		base_station_model: identity.product,
+		//base_station_model: identity.product,
 		base_station_serial: identity.serial,
-		base_station_version: identity.hardwareRevision,
+		//base_station_version: identity.hardwareRevision,
 	}
 }
 
@@ -718,75 +840,79 @@ export function getBaseStationSiteVariables(site: BaseStationSite): Record<strin
 }
 
 export function UpdateVariableValues(self: SpecteraInstance): void {
-	let values: Record<string, string | number | boolean | undefined> = {}
+	const values: Record<string, VariableValue> = {}
 
 	// Base Station Info
 	if (self.state.basestation.state) {
-		values = { ...values, ...getBaseStationStateVariables(self.state.basestation.state) }
+		Object.assign(values, getBaseStationStateVariables(self.state.basestation.state))
 	}
 	if (self.state.basestation.site) {
-		values = { ...values, ...getBaseStationSiteVariables(self.state.basestation.site) }
+		Object.assign(values, getBaseStationSiteVariables(self.state.basestation.site))
 	}
 	if (self.state.basestation.identity) {
-		values = { ...values, ...getBaseStationIdentityVariables(self.state.basestation.identity) }
+		Object.assign(values, getBaseStationIdentityVariables(self.state.basestation.identity))
 	}
 
 	// Health
-	values = { ...values, ...getPsuVariables(self.state.health.psu) }
-	values = { ...values, ...getTempVariables(self.state.health.temp) }
+	Object.assign(values, getPsuVariables(self.state.health.psu))
+	Object.assign(values, getTempVariables(self.state.health.temp))
 	for (const [fanId, fanState] of Object.entries(self.state.health.fans)) {
 		if (fanState) {
-			values = { ...values, ...getFanVariables(fanId, fanState) }
+			Object.assign(values, getFanVariables(fanId, fanState))
 		}
 	}
 
 	if (self.state.audioNetwork) {
-		values = { ...values, ...getVariablesFromMap(AudioNetworkStateMap, self.state.audioNetwork, 'dante_') }
+		Object.assign(values, getVariablesFromMap(AudioNetworkStateMap, self.state.audioNetwork, 'dante_'))
 	}
 	if (self.state.madi1) {
-		values = { ...values, ...getVariablesFromMap(MadiStateMap, self.state.madi1, 'madi_1_') }
-		values = { ...values, ...getVariablesFromMap(MadiInputStateMap, self.state.madi1.inputStatus, 'madi_1_') }
-		values = { ...values, ...getVariablesFromMap(MadiOutputStateMap, self.state.madi1.outputStatus, 'madi_1_') }
+		Object.assign(values, getVariablesFromMap(MadiStateMap, self.state.madi1, 'madi_1_'))
+		Object.assign(values, getVariablesFromMap(MadiInputStateMap, self.state.madi1.inputStatus, 'madi_1_'))
+		Object.assign(values, getVariablesFromMap(MadiOutputStateMap, self.state.madi1.outputStatus, 'madi_1_'))
 	}
 	if (self.state.madi2) {
-		values = { ...values, ...getVariablesFromMap(MadiStateMap, self.state.madi2, 'madi_2_') }
-		values = { ...values, ...getVariablesFromMap(MadiInputStateMap, self.state.madi2.inputStatus, 'madi_2_') }
-		values = { ...values, ...getVariablesFromMap(MadiOutputStateMap, self.state.madi2.outputStatus, 'madi_2_') }
+		Object.assign(values, getVariablesFromMap(MadiStateMap, self.state.madi2, 'madi_2_'))
+		Object.assign(values, getVariablesFromMap(MadiInputStateMap, self.state.madi2.inputStatus, 'madi_2_'))
+		Object.assign(values, getVariablesFromMap(MadiOutputStateMap, self.state.madi2.outputStatus, 'madi_2_'))
 	}
 	if (self.state.wordclock) {
-		values = {
-			...values,
-			...getVariablesFromMap(WordclockInputStateMap, self.state.wordclock.inputStatus, 'wordclock_'),
-		}
-		values = {
-			...values,
-			...getVariablesFromMap(WordclockOutputStateMap, self.state.wordclock.outputStatus, 'wordclock_'),
-		}
+		Object.assign(values, getVariablesFromMap(WordclockInputStateMap, self.state.wordclock.inputStatus, 'wordclock_'))
+		Object.assign(values, getVariablesFromMap(WordclockOutputStateMap, self.state.wordclock.outputStatus, 'wordclock_'))
 	}
 
 	// Audio Inputs
 	for (const input of self.state.audioInputs.values()) {
-		values = { ...values, ...getAudioInputVariables(input, self.state.mobileDevices) }
+		Object.assign(values, getAudioInputVariables(input, self.state.mobileDevices))
 	}
 
 	// Audio Outputs
 	for (const output of self.state.audioOutputs.values()) {
-		values = { ...values, ...getAudioOutputVariables(output, self.state.mobileDevices) }
+		Object.assign(values, getAudioOutputVariables(output, self.state.mobileDevices))
 	}
 
 	// RF Channels
 	for (const channel of self.state.rfChannels.values()) {
-		values = { ...values, ...getRfChannelVariables(channel) }
+		Object.assign(values, getRfChannelVariables(channel))
 	}
 
 	// Antennas
 	for (const antenna of self.state.antennas.values()) {
-		values = { ...values, ...getAntennaVariables(antenna, self.state.rfChannels) }
+		Object.assign(values, getAntennaVariables(antenna, self.state.rfChannels))
 	}
 
 	// Mobile Devices
 	for (const device of self.state.mobileDevices.values()) {
-		values = { ...values, ...getMobileDeviceVariables(device) }
+		Object.assign(
+			values,
+			getMobileDeviceVariables(device),
+			getMobileDeviceLevelVariables(
+				device,
+				self.state.audioOutputs,
+				self.state.audioInputs,
+				self.state.audioLinks,
+				self.state.audioLevels,
+			),
+		)
 	}
 
 	self.setVariableValues(values)

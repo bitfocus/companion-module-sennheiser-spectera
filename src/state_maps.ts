@@ -315,6 +315,7 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 		variable: 'mic_module',
 		valueFn: (v: unknown): VariableValue => (v as MicModule | undefined)?.name,
 	},
+	commandColors: { feedback: 'mobileDeviceCommandColor' },
 }
 
 export const PsuStateMap: StateMap<PsuState> = {

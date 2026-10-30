@@ -1,25 +1,47 @@
-import { combineRgb, type InputValue } from '@companion-module/base'
+import {
+	combineRgb,
+	type CompanionInputFieldDropdown,
+	type CompanionOptionValues,
+	type JsonValue,
+} from '@companion-module/base'
 import { SpecteraState } from './state.js'
 import {
-	Antenna,
+	type Antenna,
+	AntennaPortId,
+	type AudioLevels,
 	AudiolinkModeId,
 	CableEmulation,
 	CommandBehavior,
 	MicLineSelection,
 	MicLowCutHzSEK,
 	MicLowCutHzSKM,
-	MobileDevice,
+	type MobileDevice,
 	MtType,
-	RfChannel,
+	type RfChannel,
 	RFChannels,
 } from './types.js'
-import type { LedColors } from './types.js'
+import type { CommandColors, LedColors } from './types.js'
 
 export const DEFAULT_CONNECTED_STATE_COLOR = '#00A100'
 export const DEFAULT_LED_COLORS: LedColors = {
 	rfActive: '#00A100',
 	rfMuted: '#A18700',
 }
+
+/** Factory-reset SKM command button colors (API 18.3). */
+export const DEFAULT_COMMAND_COLORS: Required<CommandColors> = {
+	released: '#000000',
+	pressed: '#00A100',
+	unlatched: '#000000',
+	latched: '#00A100',
+}
+
+export const COMMAND_COLOR_STATES = [
+	{ id: 'released', label: 'Released' },
+	{ id: 'pressed', label: 'Pressed' },
+	{ id: 'unlatched', label: 'Unlatched' },
+	{ id: 'latched', label: 'Latched' },
+] as const satisfies readonly { id: keyof CommandColors; label: string }[]
 
 export const LED_COLOR_PRESETS = ['#000000', '#008700', '#00A100', '#00FF00', '#877200', '#A18700', '#FFD700'] as const
 
@@ -28,7 +50,7 @@ function toHexByte(value: number): string {
 }
 
 /** Normalize a Companion colorpicker value to #RRGGBB for the Spectera API. */
-export function normalizeHexColor(color: InputValue | undefined): string {
+export function normalizeHexColor(color: JsonValue | undefined): string {
 	if (color === undefined || color === null || color === '') return ''
 
 	if (typeof color === 'boolean' || Array.isArray(color)) return ''
@@ -39,6 +61,8 @@ export function normalizeHexColor(color: InputValue | undefined): string {
 		const b = color & 0xff
 		return `#${toHexByte(r)}${toHexByte(g)}${toHexByte(b)}`
 	}
+
+	if (typeof color !== 'string') return ''
 
 	const trimmed = color.trim()
 	if (trimmed.startsWith('#')) {
@@ -59,13 +83,13 @@ export function normalizeHexColor(color: InputValue | undefined): string {
 	return trimmed
 }
 
-export function colorsMatch(a: string | undefined, b: InputValue | undefined): boolean {
+export function colorsMatch(a: string | undefined, b: JsonValue | undefined): boolean {
 	if (!a || b === undefined || b === '') return false
 	return normalizeHexColor(a).toLowerCase() === normalizeHexColor(b).toLowerCase()
 }
 
 /** Convert a Spectera hex color or Companion colorpicker value to a Companion bgcolor number. */
-export function toCompanionColor(color: InputValue | undefined): number | undefined {
+export function toCompanionColor(color: JsonValue | undefined): number | undefined {
 	const hex = normalizeHexColor(color)
 	if (!hex.startsWith('#') || hex.length < 7) return undefined
 
@@ -83,11 +107,11 @@ export const Color = {
 	LightGray: combineRgb(72, 72, 72),
 	DarkGreen: combineRgb(75, 127, 76),
 	SpecteraDarkGray: combineRgb(40, 41, 46),
-	SpecteraLightGray: combineRgb(46, 48, 54),
 	SpecteraRed: combineRgb(244, 67, 54),
 	SpecteraGreen: combineRgb(102, 187, 106),
 	SpecteraBlue: combineRgb(0, 150, 214),
 	SpecteraYellow: combineRgb(255, 167, 38),
+	SpecteraPurple: combineRgb(131, 24, 219),
 }
 
 export const audioOutputChannelChoices = [
@@ -129,6 +153,56 @@ export const audioOutputStateChoices = [
 export const rfChannelChoices = [
 	{ label: 'RF Channel 1', id: 0 },
 	{ label: 'RF Channel 2', id: 1 },
+]
+
+export const MOBILE_DEVICE_EXPRESSION_DESCRIPTION = 'Must return the mobile device serial number, e.g. "1445009476"'
+
+// Device picker shared by actions and feedbacks; the stored value is the device serial
+export function mobileDeviceOption<TKey extends string>(
+	id: TKey,
+	label: string,
+	choices: { id: string; label: string }[],
+): CompanionInputFieldDropdown<TKey, string> {
+	return {
+		type: 'dropdown',
+		label,
+		id,
+		default: choices[0].id,
+		choices,
+		allowCustom: true,
+		expressionDescription: MOBILE_DEVICE_EXPRESSION_DESCRIPTION,
+	}
+}
+
+export const DAD_OPTION = {
+	type: 'dropdown',
+	label: 'DAD',
+	choices: getChoicesFromEnum(AntennaPortId),
+	default: AntennaPortId.A,
+	id: 'dad',
+} as const satisfies CompanionInputFieldDropdown
+
+// The six metering interfaces. `optionId` keeps the legacy `danteIn`/`danteOut` feedback values even
+// though the AoIP metering fields are named `aoIpIn`/`aoIpOut`.
+export const METERING_INTERFACES = [
+	{ optionId: 'danteIn', field: 'aoIpIn', varBase: 'dante_in', name: 'Dante', direction: 'In' },
+	{ optionId: 'danteOut', field: 'aoIpOut', varBase: 'dante_out', name: 'Dante', direction: 'Out' },
+	{ optionId: 'madi1In', field: 'madi1In', varBase: 'madi_1_in', name: 'MADI 1', direction: 'In' },
+	{ optionId: 'madi1Out', field: 'madi1Out', varBase: 'madi_1_out', name: 'MADI 1', direction: 'Out' },
+	{ optionId: 'madi2In', field: 'madi2In', varBase: 'madi_2_in', name: 'MADI 2', direction: 'In' },
+	{ optionId: 'madi2Out', field: 'madi2Out', varBase: 'madi_2_out', name: 'MADI 2', direction: 'Out' },
+] as const satisfies ReadonlyArray<{
+	optionId: string
+	field: Exclude<keyof AudioLevels, 'updateCounter'>
+	varBase: string
+	name: string
+	direction: 'In' | 'Out'
+}>
+
+export const dadRfBindingChoices = [
+	{ label: 'RF Channel 1', id: RFChannels['RF Channel 1'] },
+	{ label: 'RF Channel 2', id: RFChannels['RF Channel 2'] },
+	{ label: 'Scan', id: RFChannels.Scan },
 ]
 
 export const CONFIRMABLE_ACTIONS = [
@@ -197,6 +271,11 @@ export function getDeviceBySerial(state: SpecteraState, serial: string): MobileD
 	return undefined
 }
 
+// Looks up the device selected by an action/feedback's `serial` option.
+export function getDeviceFromOptions(state: SpecteraState, options: CompanionOptionValues): MobileDevice | undefined {
+	return getDeviceBySerial(state, options.serial as string)
+}
+
 //Portable Mobile Device Settings for JSON backups
 
 export interface PortableMobileDeviceSettings {
@@ -217,6 +296,8 @@ export interface PortableMobileDeviceSettings {
 	// SEK + SKM (different valid value sets per type)
 	micLowCutHz?: number
 	commandBehavior?: CommandBehavior
+	// SKM-only
+	commandColors?: CommandColors
 }
 
 const PORTABLE_SHARED_KEYS = [
@@ -238,7 +319,7 @@ const PORTABLE_SEK_KEYS = [
 	'commandBehavior',
 ] as const
 
-const PORTABLE_SKM_KEYS = ['micLowCutHz', 'commandBehavior'] as const
+const PORTABLE_SKM_KEYS = ['micLowCutHz', 'commandBehavior', 'commandColors'] as const
 
 //Every available key plus the `type`. Anything else is dropped.
 const PORTABLE_ALLOWED_KEYS = new Set<string>([
@@ -271,6 +352,7 @@ export function getPortableMobileDeviceSettings(device: MobileDevice): PortableM
 	} else if (device.type === MtType.SKM) {
 		settings.micLowCutHz = device.micLowCutHz
 		settings.commandBehavior = device.commandBehavior
+		settings.commandColors = device.commandColors
 	}
 
 	for (const key of Object.keys(settings) as (keyof PortableMobileDeviceSettings)[]) {
@@ -285,6 +367,11 @@ function isFiniteNumber(value: unknown): value is number {
 
 function clamp(value: number, min: number, max: number): number {
 	return Math.max(min, Math.min(max, value))
+}
+
+/** Round to the nearest multiple of `step` and clamp; the base station rejects off-step values with HTTP 400. */
+export function snapToStep(value: number, step: number, min: number, max: number): number {
+	return clamp(Math.round(value / step) * step, min, max)
 }
 
 //True when `value` is one of the enum's defined values (ignores numeric-enum reverse-map keys).
@@ -351,7 +438,7 @@ export function parseMobileDeviceSettingsJson(raw: string, target: MobileDevice)
 	}
 	if (obj.micPreampGain !== undefined) {
 		if (isFiniteNumber(obj.micPreampGain))
-			p.micPreampGain = clamp(obj.micPreampGain, target.type === MtType.SEK ? -6 : -10, 42)
+			p.micPreampGain = snapToStep(obj.micPreampGain, 1, target.type === MtType.SEK ? -6 : -10, 42)
 		else warnings.push('Ignoring micPreampGain: not a number.')
 	}
 	if (obj.rfChannelId !== undefined) {
@@ -363,22 +450,23 @@ export function parseMobileDeviceSettingsJson(raw: string, target: MobileDevice)
 		else warnings.push('Ignoring micTestToneEnabled: not a boolean.')
 	}
 	if (obj.micTestToneLevel !== undefined) {
-		if (isFiniteNumber(obj.micTestToneLevel)) p.micTestToneLevel = obj.micTestToneLevel
+		if (isFiniteNumber(obj.micTestToneLevel)) p.micTestToneLevel = snapToStep(obj.micTestToneLevel, 1, -60, 0)
 		else warnings.push('Ignoring micTestToneLevel: not a number.')
 	}
 
 	// ---- Type-specific settings ----
 	if (applyTypeSpecific && target.type === MtType.SEK) {
 		if (obj.headphoneVolume !== undefined) {
-			if (isFiniteNumber(obj.headphoneVolume)) p.headphoneVolume = clamp(obj.headphoneVolume, -100, 27.5)
+			if (isFiniteNumber(obj.headphoneVolume)) p.headphoneVolume = snapToStep(obj.headphoneVolume, 0.5, -100, 27.5)
 			else warnings.push('Ignoring headphoneVolume: not a number.')
 		}
 		if (obj.headphoneBalance !== undefined) {
-			if (isFiniteNumber(obj.headphoneBalance)) p.headphoneBalance = clamp(obj.headphoneBalance, -100, 100)
+			if (isFiniteNumber(obj.headphoneBalance)) p.headphoneBalance = snapToStep(obj.headphoneBalance, 1, -100, 100)
 			else warnings.push('Ignoring headphoneBalance: not a number.')
 		}
 		if (obj.headphoneVolumeLimit !== undefined) {
-			if (isFiniteNumber(obj.headphoneVolumeLimit)) p.headphoneVolumeLimit = clamp(obj.headphoneVolumeLimit, -100, 27.5)
+			if (isFiniteNumber(obj.headphoneVolumeLimit))
+				p.headphoneVolumeLimit = snapToStep(obj.headphoneVolumeLimit, 0.5, -100, 27.5)
 			else warnings.push('Ignoring headphoneVolumeLimit: not a number.')
 		}
 		if (obj.micLineSelection !== undefined) {
@@ -406,9 +494,29 @@ export function parseMobileDeviceSettingsJson(raw: string, target: MobileDevice)
 			if (isEnumValue(CommandBehavior, obj.commandBehavior)) p.commandBehavior = obj.commandBehavior
 			else warnings.push('Ignoring commandBehavior: invalid value.')
 		}
+		if (obj.commandColors !== undefined) {
+			const commandColors = parseCommandColors(obj.commandColors, warnings)
+			if (commandColors) p.commandColors = commandColors
+		}
 	}
 
 	return { payload, warnings }
+}
+
+function parseCommandColors(raw: unknown, warnings: string[]): CommandColors | undefined {
+	if (typeof raw !== 'object' || raw === null || Array.isArray(raw)) {
+		warnings.push('Ignoring commandColors: not an object.')
+		return undefined
+	}
+	const src = raw as Record<string, unknown>
+	const colors: CommandColors = {}
+	for (const { id } of COMMAND_COLOR_STATES) {
+		if (src[id] === undefined) continue
+		const color = typeof src[id] === 'string' ? normalizeHexColor(src[id]) : ''
+		if (color.startsWith('#') && color.length === 7) colors[id] = color
+		else warnings.push(`Ignoring commandColors.${id}: invalid color value.`)
+	}
+	return Object.keys(colors).length > 0 ? colors : undefined
 }
 
 //Mic link `modeId` from module state for this device only (not the selected output).
@@ -426,6 +534,30 @@ export function getExistingMicAudiolinkModeFromState(state: SpecteraState, devic
 
 // Offset added to stereo pair IDs to distinguish them from mono input IDs.
 export const STEREO_INPUT_OFFSET = 1000
+
+// A stereo link sits on an even audio input index and implicitly owns the next (odd) one as its right channel.
+export function isStereoAudiolinkMode(modeId: number | undefined): boolean {
+	if (modeId === undefined) return false
+	return String(AudiolinkModeId[modeId] ?? '').includes('(Stereo)')
+}
+
+// Audio inputs/outputs are static resources with a fixed count
+export const AUDIO_INPUT_COUNT = 32
+export const AUDIO_OUTPUT_COUNT = 32
+
+export function getAudioInputChoices(state: SpecteraState): { id: number; label: string }[] {
+	return Array.from({ length: AUDIO_INPUT_COUNT }, (_, id) => ({
+		id,
+		label: state.audioInputs.get(id)?.name || `Input ${id + 1}`,
+	}))
+}
+
+export function getAudioOutputChoices(): { id: number; label: string }[] {
+	return Array.from({ length: AUDIO_OUTPUT_COUNT }, (_, id) => ({
+		id,
+		label: `Output ${id + 1}`,
+	}))
+}
 
 export function getAudioLinkChoices(state: SpecteraState): { id: number; label: string }[] {
 	const sortedInputs = Array.from(state.audioInputs.values()).sort((a, b) => a.inputId - b.inputId)

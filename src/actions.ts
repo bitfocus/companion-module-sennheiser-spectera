@@ -1,7 +1,7 @@
 import type { SpecteraInstance } from './main.js'
-import type { CompanionActionDefinitions } from '@companion-module/base'
+import type { CompanionActionDefinitions, SomeCompanionActionInputField } from '@companion-module/base'
 import {
-	Antenna,
+	type Antenna,
 	AntennaPortId,
 	BandwidthMode,
 	CableEmulation,
@@ -17,6 +17,7 @@ import {
 	IemAudiolinkMode,
 	MicAudiolinkMode,
 	CommandBehavior,
+	type CommandColors,
 } from './types.js'
 import {
 	audioOutputChannelChoices,
@@ -25,19 +26,37 @@ import {
 	audioOutputCommandContextChoices,
 	type AudioOutputInterfaceId,
 	type AudioOutputCommandContext,
+	getAudioInputChoices,
+	getAudioOutputChoices,
 	getAudioLinkChoices,
 	getChoicesFromEnum,
 	getDeviceBySerial,
+	getDeviceFromOptions,
 	getMobileDeviceChoices,
 	parseMobileDeviceSettingsJson,
 	rfChannelChoices,
+	dadRfBindingChoices,
+	DAD_OPTION,
 	sanitizeMobileDeviceName,
 	STEREO_INPUT_OFFSET,
 	DEFAULT_CONNECTED_STATE_COLOR,
 	DEFAULT_LED_COLORS,
 	LED_COLOR_PRESETS,
 	normalizeHexColor,
+	snapToStep,
+	COMMAND_COLOR_STATES,
+	DEFAULT_COMMAND_COLORS,
+	mobileDeviceOption,
 } from './utils.js'
+
+const REQUIRE_CONFIRMATION_OPTION = {
+	type: 'checkbox',
+	label: 'Require Confirmation',
+	id: 'requireConfirmation',
+	default: false,
+	tooltip:
+		'This will require a double press of the button to confirm the action. It will timeout after 5 seconds if not confirmed.',
+} as const satisfies SomeCompanionActionInputField
 
 export function UpdateActions(self: SpecteraInstance): void {
 	const actions: CompanionActionDefinitions = {}
@@ -60,14 +79,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 				default: RfState.Active,
 				id: 'state',
 			},
-			{
-				type: 'checkbox',
-				label: 'Require Confirmation',
-				id: 'requireConfirmation',
-				default: false,
-				tooltip:
-					'This will require a double press of the button to confirm the action. It will timeout after 5 seconds if not confirmed.',
-			},
+			REQUIRE_CONFIRMATION_OPTION,
 		],
 		description: 'Set the RF Channel',
 		callback: async (action) => {
@@ -181,20 +193,17 @@ export function UpdateActions(self: SpecteraInstance): void {
 				id: 'rfChannel',
 			},
 			{
-				type: 'textinput',
+				type: 'number',
 				label: 'Frequency (MHz)',
-				default: '474',
+				default: 474,
+				min: 10,
+				max: 10000,
+				step: 1,
+				asInteger: true,
+				clampValues: true,
 				id: 'frequency',
-				useVariables: true,
 			},
-			{
-				type: 'checkbox',
-				label: 'Require Confirmation',
-				id: 'requireConfirmation',
-				default: false,
-				tooltip:
-					'This will require a double press of the button to confirm the action. It will timeout after 5 seconds if not confirmed.',
-			},
+			REQUIRE_CONFIRMATION_OPTION,
 		],
 		description: 'Set the RF Channel Frequency',
 		callback: async (action) => {
@@ -206,9 +215,10 @@ export function UpdateActions(self: SpecteraInstance): void {
 				})
 				if (!self.confirmAction(key)) return
 			}
+			const mhz = action.options.frequency as number
 			await self.api.setRfChannel(action.options.rfChannel as string, {
 				rfChannelId: action.options.rfChannel as number,
-				frequency: Number(action.options.frequency) * 1000,
+				frequency: snapToStep(mhz * 1000, 1000, 10000, 10000000),
 			})
 		},
 	}
@@ -219,10 +229,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			{
 				type: 'multidropdown',
 				label: 'Audio Input',
-				choices: Array.from(self.state.audioInputs.values()).map((i) => ({
-					id: i.inputId,
-					label: i.name || `Input ${i.inputId + 1}`,
-				})),
+				choices: getAudioInputChoices(self.state),
 				default: [0],
 				id: 'inputId',
 			},
@@ -242,6 +249,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 				],
 				default: 'On',
 				id: 'mode',
+				disableAutoExpression: true,
 			},
 			{
 				type: 'dropdown',
@@ -249,17 +257,11 @@ export function UpdateActions(self: SpecteraInstance): void {
 				choices: getChoicesFromEnum(InputSource),
 				default: InputSource.Dante,
 				id: 'toggleInterface',
+				disableAutoExpression: true,
 				isVisibleExpression: '$(options:mode) === "Toggle"',
 				tooltip: 'The secondary interface that will be moved to when the Toggle mode is selected.',
 			},
-			{
-				type: 'checkbox',
-				label: 'Require Confirmation',
-				id: 'requireConfirmation',
-				default: false,
-				tooltip:
-					'This will require a double press of the button to confirm the action. It will timeout after 5 seconds if not confirmed.',
-			},
+			REQUIRE_CONFIRMATION_OPTION,
 		],
 		description: 'Set the audio input interface (Dante, MADI 1, MADI 2).',
 		callback: async (action) => {
@@ -297,13 +299,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['dadConnectedStateColor'] = {
 		name: 'DAD - LED Colors',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'DAD',
-				choices: getChoicesFromEnum(AntennaPortId),
-				default: AntennaPortId.A,
-				id: 'dad',
-			},
+			DAD_OPTION,
 			{
 				type: 'colorpicker',
 				label: 'RF Active Color',
@@ -337,13 +333,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['dadIdentify'] = {
 		name: 'DAD - Identify',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'DAD',
-				choices: getChoicesFromEnum(AntennaPortId),
-				default: AntennaPortId.A,
-				id: 'dad',
-			},
+			DAD_OPTION,
 			{
 				type: 'dropdown',
 				label: 'Identify',
@@ -368,21 +358,11 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['dadRfBinding'] = {
 		name: 'DAD - RF Channel',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'DAD',
-				choices: getChoicesFromEnum(AntennaPortId),
-				default: AntennaPortId.A,
-				id: 'dad',
-			},
+			DAD_OPTION,
 			{
 				type: 'dropdown',
 				label: 'RF Channel',
-				choices: [
-					{ label: 'RF Channel 1', id: RFChannels['RF Channel 1'] },
-					{ label: 'RF Channel 2', id: RFChannels['RF Channel 2'] },
-					{ label: 'Scan', id: RFChannels.Scan },
-				],
+				choices: dadRfBindingChoices,
 				default: RFChannels['RF Channel 1'],
 				id: 'rfChannel',
 			},
@@ -397,14 +377,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 				default: 'On',
 				id: 'mode',
 			},
-			{
-				type: 'checkbox',
-				label: 'Require Confirmation',
-				id: 'requireConfirmation',
-				default: false,
-				tooltip:
-					'This will require a double press of the button to confirm the action. It will timeout after 5 seconds if not confirmed.',
-			},
+			REQUIRE_CONFIRMATION_OPTION,
 		],
 		description: 'Set the DAD RF Channel',
 		callback: async (action) => {
@@ -445,18 +418,12 @@ export function UpdateActions(self: SpecteraInstance): void {
 	//Mobile Device Actions
 	const mobileDeviceChoices = getMobileDeviceChoices(self.state)
 	const sekMobileDeviceChoices = getMobileDeviceChoices(self.state, MtType.SEK)
+	const skmMobileDeviceChoices = getMobileDeviceChoices(self.state, MtType.SKM)
 
 	actions['mobileDeviceRfChannelId'] = {
 		name: 'Mobile Device - RF Channel',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'RF Channel',
@@ -466,11 +433,9 @@ export function UpdateActions(self: SpecteraInstance): void {
 			},
 		],
 		description: 'Set the RF Channel for a Mobile Device',
-		callback: async (action, context) => {
-			if (!self.api) return
-			const serial = await context.parseVariablesInString(action.options.serial as string)
-			const device = getDeviceBySerial(self.state, serial)
-			if (!device) return
+		callback: async (action) => {
+			const device = getDeviceFromOptions(self.state, action.options)
+			if (!self.api || !device) return
 			const rfChannelId = action.options.rfChannel === -1 ? undefined : (action.options.rfChannel as number)
 			await self.api.setMobileDevice(device.mtUid, { rfChannelId })
 		},
@@ -479,14 +444,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['mobileDeviceIdentify'] = {
 		name: 'Mobile Device - Identify',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Identify',
@@ -499,11 +457,9 @@ export function UpdateActions(self: SpecteraInstance): void {
 			},
 		],
 		description: 'Set Identify for a Mobile Device',
-		callback: async (action, context) => {
-			if (!self.api) return
-			const serial = await context.parseVariablesInString(action.options.serial as string)
-			const device = getDeviceBySerial(self.state, serial)
-			if (!device) return
+		callback: async (action) => {
+			const device = getDeviceFromOptions(self.state, action.options)
+			if (!self.api || !device) return
 			await self.api.setMobileDevice(device.mtUid, {
 				identify: action.options.identify === 'true',
 			})
@@ -513,14 +469,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	/* actions['mobileDeviceSleep'] = {
 		name: 'Mobile Device - Sleep',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Sleep',
@@ -533,11 +482,9 @@ export function UpdateActions(self: SpecteraInstance): void {
 			},
 		],
 		description: 'Set Sleep state for a Mobile Device',
-		callback: async (action, context) => {
-			if (!self.api) return
-			const serial = await context.parseVariablesInString(action.options.serial as string)
-			const device = getDeviceBySerial(self.state, serial)
-			if (!device) return
+		callback: async (action) => {
+			const device = getDeviceFromOptions(self.state, action.options)
+			if (!self.api || !device) return
 			await self.api.setMobileDevice(device.mtUid, {
 				sleep: action.options.sleep === 'true',
 			})
@@ -547,14 +494,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['mobileDeviceCommandBehavior'] = {
 		name: 'Mobile Device - Command Behavior',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Command Behavior',
@@ -564,28 +504,44 @@ export function UpdateActions(self: SpecteraInstance): void {
 			},
 		],
 		description: 'Set Command Behavior for a Mobile Device',
-		callback: async (action, context) => {
-			if (!self.api) return
-			const serial = await context.parseVariablesInString(action.options.serial as string)
-			const device = getDeviceBySerial(self.state, serial)
-			if (!device) return
+		callback: async (action) => {
+			const device = getDeviceFromOptions(self.state, action.options)
+			if (!self.api || !device) return
 			await self.api.setMobileDevice(device.mtUid, {
 				commandBehavior: action.options.commandBehavior as CommandBehavior,
 			})
 		},
 	}
 
+	actions['mobileDeviceCommandColors'] = {
+		name: 'Mobile Device - Command Button Colors',
+		options: [
+			mobileDeviceOption('serial', 'Mobile Device', skmMobileDeviceChoices),
+			...COMMAND_COLOR_STATES.map((state): SomeCompanionActionInputField => ({
+				type: 'colorpicker',
+				label: `${state.label} Color`,
+				id: state.id,
+				default: DEFAULT_COMMAND_COLORS[state.id],
+				returnType: 'string',
+				presetColors: [...LED_COLOR_PRESETS],
+			})),
+		],
+		description: 'Set the Command button colors for each command state on an SKM (firmware 1.5.0+)',
+		callback: async (action) => {
+			const device = getDeviceFromOptions(self.state, action.options)
+			if (!self.api || !device || device.type !== MtType.SKM) return
+			const commandColors: CommandColors = {}
+			for (const state of COMMAND_COLOR_STATES) {
+				commandColors[state.id] = normalizeHexColor(action.options[state.id])
+			}
+			await self.api.setMobileDevice(device.mtUid, { commandColors })
+		},
+	}
+
 	actions['mobileDeviceConnectedStateColor'] = {
 		name: 'Mobile Device - Connected State LED Color',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'colorpicker',
 				label: 'Connected State Color',
@@ -596,11 +552,9 @@ export function UpdateActions(self: SpecteraInstance): void {
 			},
 		],
 		description: 'Set the Connected State LED color for a Mobile Device',
-		callback: async (action, context) => {
-			if (!self.api) return
-			const serial = await context.parseVariablesInString(action.options.serial as string)
-			const device = getDeviceBySerial(self.state, serial)
-			if (!device) return
+		callback: async (action) => {
+			const device = getDeviceFromOptions(self.state, action.options)
+			if (!self.api || !device) return
 			await self.api.setMobileDevice(device.mtUid, {
 				connectedStateColor: normalizeHexColor(action.options.connectedStateColor),
 			})
@@ -610,14 +564,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['mobileDeviceHeadphoneVolume'] = {
 		name: 'Mobile Device - Headphone Volume',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', sekMobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Action',
@@ -627,63 +574,52 @@ export function UpdateActions(self: SpecteraInstance): void {
 				],
 				default: 'set',
 				id: 'action',
+				disableAutoExpression: true,
 			},
 			{
-				type: 'textinput',
+				type: 'number',
 				label: 'Set Volume (-100 to 27.5)',
-				default: '-20',
+				default: -20,
+				min: -100,
+				max: 27.5,
+				step: 0.5,
+				clampValues: true,
 				id: 'volume',
-				useVariables: true,
 				isVisibleExpression: '$(options:action) === "set"',
 			},
 			{
-				type: 'textinput',
+				type: 'number',
 				label: 'Adjustment Amount',
-				default: '0.5',
+				default: 0.5,
+				min: -127.5,
+				max: 127.5,
+				step: 0.5,
+				clampValues: true,
 				id: 'adjustment',
-				useVariables: true,
 				isVisibleExpression: '$(options:action) === "adjust"',
 			},
 		],
 		description: 'Set Headphone Volume for a SEK Device',
-		callback: async (action, context) => {
-			if (!self.api) return
-			let volume = Number(action.options.volume)
-			const serial = await context.parseVariablesInString(action.options.serial as string)
-			const device = getDeviceBySerial(self.state, serial)
-
-			if (device && device.type === MtType.SEK) {
-				if (action.options.action === 'adjust') {
-					const prevVolume = device.headphoneVolume ?? 0
-					volume = prevVolume + Number(action.options.adjustment)
-				} else {
-					volume = Number(action.options.volume)
-				}
-
-				if (volume < -100) volume = -100
-				if (volume > 27.5) volume = 27.5
-				if (device.headphoneVolumeMax !== undefined && volume > device.headphoneVolumeMax) {
-					volume = device.headphoneVolumeMax
-				}
-				if (device.headphoneVolumeMin !== undefined && volume < device.headphoneVolumeMin) {
-					volume = device.headphoneVolumeMin
-				}
-				await self.api.setMobileDevice(device.mtUid, { headphoneVolume: volume })
+		callback: async (action) => {
+			const device = getDeviceFromOptions(self.state, action.options)
+			if (!self.api || device?.type !== MtType.SEK) return
+			const adjust = action.options.action === 'adjust'
+			const input = (adjust ? action.options.adjustment : action.options.volume) as number
+			let volume = snapToStep(adjust ? (device.headphoneVolume ?? 0) + input : input, 0.5, -100, 27.5)
+			if (device.headphoneVolumeMax !== undefined && volume > device.headphoneVolumeMax) {
+				volume = device.headphoneVolumeMax
 			}
+			if (device.headphoneVolumeMin !== undefined && volume < device.headphoneVolumeMin) {
+				volume = device.headphoneVolumeMin
+			}
+			await self.api.setMobileDevice(device.mtUid, { headphoneVolume: volume })
 		},
 	}
 
 	actions['mobileDeviceHeadphoneBalance'] = {
 		name: 'Mobile Device - Headphone Balance',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', sekMobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Action',
@@ -693,56 +629,48 @@ export function UpdateActions(self: SpecteraInstance): void {
 				],
 				default: 'set',
 				id: 'action',
+				disableAutoExpression: true,
 			},
 			{
-				type: 'textinput',
+				type: 'number',
 				label: 'Set Balance (-100 to 100)',
-				default: '0',
+				default: 0,
+				min: -100,
+				max: 100,
+				step: 1,
+				asInteger: true,
+				clampValues: true,
 				id: 'balance',
-				useVariables: true,
 				isVisibleExpression: '$(options:action) === "set"',
 			},
 			{
-				type: 'textinput',
+				type: 'number',
 				label: 'Adjustment Amount',
-				default: '1',
+				default: 1,
+				min: -200,
+				max: 200,
+				step: 1,
+				asInteger: true,
+				clampValues: true,
 				id: 'adjustment',
-				useVariables: true,
 				isVisibleExpression: '$(options:action) === "adjust"',
 			},
 		],
 		description: 'Set Headphone Balance for a SEK Device',
-		callback: async (action, context) => {
-			if (!self.api) return
-			let balance = Number(action.options.balance)
-			const serial = await context.parseVariablesInString(action.options.serial as string)
-			const device = getDeviceBySerial(self.state, serial)
-
-			if (device && device.type === MtType.SEK) {
-				if (action.options.action === 'adjust') {
-					const prevBalance = device?.headphoneBalance ?? 0
-					balance = prevBalance + Number(action.options.adjustment)
-				} else {
-					balance = Number(action.options.balance)
-				}
-				if (balance < -100) balance = -100
-				if (balance > 100) balance = 100
-				await self.api.setMobileDevice(device.mtUid, { headphoneBalance: balance })
-			}
+		callback: async (action) => {
+			const device = getDeviceFromOptions(self.state, action.options)
+			if (!self.api || device?.type !== MtType.SEK) return
+			const adjust = action.options.action === 'adjust'
+			const input = (adjust ? action.options.adjustment : action.options.balance) as number
+			const balance = snapToStep(adjust ? (device.headphoneBalance ?? 0) + input : input, 1, -100, 100)
+			await self.api.setMobileDevice(device.mtUid, { headphoneBalance: balance })
 		},
 	}
 
 	actions['mobileDeviceMicPreampGain'] = {
 		name: 'Mobile Device - Mic Preamp Gain',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Action',
@@ -752,63 +680,53 @@ export function UpdateActions(self: SpecteraInstance): void {
 				],
 				default: 'set',
 				id: 'action',
+				disableAutoExpression: true,
 			},
 			{
-				type: 'textinput',
+				type: 'number',
 				label: 'Set Gain (dB)',
-				default: '12',
+				default: 12,
+				min: -10,
+				max: 42,
+				step: 1,
+				asInteger: true,
+				clampValues: true,
 				id: 'gain',
-				useVariables: true,
 				isVisibleExpression: '$(options:action) === "set"',
 			},
 			{
-				type: 'textinput',
+				type: 'number',
 				label: 'Adjustment Amount (dB)',
-				default: '1',
+				default: 1,
+				min: -52,
+				max: 52,
+				step: 1,
+				asInteger: true,
+				clampValues: true,
 				id: 'adjustment',
-				useVariables: true,
 				isVisibleExpression: '$(options:action) === "adjust"',
 			},
 		],
 		description: 'Set Mic Preamp Gain for a Mobile Device',
-		callback: async (action, context) => {
-			if (!self.api) return
-			let gain = Number(action.options.gain)
-			const serial = await context.parseVariablesInString(action.options.serial as string)
-			const device = getDeviceBySerial(self.state, serial)
-
-			if (device) {
-				if (action.options.action === 'adjust') {
-					const prevGain = device?.micPreampGain ?? 0
-					gain = prevGain + Number(action.options.adjustment)
-				} else {
-					gain = Number(action.options.gain)
-				}
-				if (device.type === MtType.SEK) {
-					// SEK: Min -6, Max 42
-					if (gain < -6) gain = -6
-					if (gain > 42) gain = 42
-				} else if (device.type === MtType.SKM) {
-					// SKM: Min -10, Max 42
-					if (gain < -10) gain = -10
-					if (gain > 42) gain = 42
-				}
-				await self.api.setMobileDevice(device.mtUid, { micPreampGain: gain })
-			}
+		callback: async (action) => {
+			const device = getDeviceFromOptions(self.state, action.options)
+			if (!self.api || !device) return
+			const adjust = action.options.action === 'adjust'
+			const input = (adjust ? action.options.adjustment : action.options.gain) as number
+			const gain = snapToStep(
+				adjust ? (device.micPreampGain ?? 0) + input : input,
+				1,
+				device.type === MtType.SEK ? -6 : -10,
+				42,
+			)
+			await self.api.setMobileDevice(device.mtUid, { micPreampGain: gain })
 		},
 	}
 
 	actions['mobileDeviceMicLowCutHz'] = {
 		name: 'Mobile Device - Mic Low Cut Hz',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Frequency',
@@ -818,13 +736,10 @@ export function UpdateActions(self: SpecteraInstance): void {
 			},
 		],
 		description: 'Set Mic Low Cut Frequency for a Mobile Device',
-		callback: async (action, context) => {
-			if (!self.api) return
+		callback: async (action) => {
+			const device = getDeviceFromOptions(self.state, action.options)
+			if (!self.api || !device) return
 			let frequency = action.options.frequency as number
-			const serial = await context.parseVariablesInString(action.options.serial as string)
-			const device = getDeviceBySerial(self.state, serial)
-			if (!device) return
-
 			if (device.type === MtType.SKM) {
 				// SEK-only values (20=Off, 30Hz) are not valid for SKM; remap to SKM Off (60)
 				if (frequency === Number(MicLowCutHzSEK.Off) || frequency === 30) {
@@ -839,14 +754,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['mobileDeviceCableEmulation'] = {
 		name: 'Mobile Device - Cable Emulation',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', sekMobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Cable Emulation',
@@ -856,11 +764,9 @@ export function UpdateActions(self: SpecteraInstance): void {
 			},
 		],
 		description: 'Set Cable Emulation for a SEK Device',
-		callback: async (action, context) => {
-			if (!self.api) return
-			const serial = await context.parseVariablesInString(action.options.serial as string)
-			const device = getDeviceBySerial(self.state, serial)
-			if (!device) return
+		callback: async (action) => {
+			const device = getDeviceFromOptions(self.state, action.options)
+			if (!self.api || !device) return
 			await self.api.setMobileDevice(device.mtUid, {
 				cableEmulation: action.options.cableEmulation as CableEmulation,
 			})
@@ -870,14 +776,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['mobileDeviceMicLineSelection'] = {
 		name: 'Mobile Device - Mic/Line Selection',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', sekMobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Mode',
@@ -887,11 +786,9 @@ export function UpdateActions(self: SpecteraInstance): void {
 			},
 		],
 		description: 'Set Mic/Line Selection for a SEK Device',
-		callback: async (action, context) => {
-			if (!self.api) return
-			const serial = await context.parseVariablesInString(action.options.serial as string)
-			const device = getDeviceBySerial(self.state, serial)
-			if (!device) return
+		callback: async (action) => {
+			const device = getDeviceFromOptions(self.state, action.options)
+			if (!self.api || !device) return
 			await self.api.setMobileDevice(device.mtUid, {
 				micLineSelection: action.options.mode as MicLineSelection,
 			})
@@ -901,14 +798,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['mobileDeviceMicTestTone'] = {
 		name: 'Mobile Device - Mic Test Tone',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'checkbox',
 				label: 'Enable',
@@ -916,20 +806,22 @@ export function UpdateActions(self: SpecteraInstance): void {
 				id: 'enable',
 			},
 			{
-				type: 'textinput',
+				type: 'number',
 				label: 'Level (dB)',
-				default: '-20',
+				default: -20,
+				min: -60,
+				max: 0,
+				step: 1,
+				asInteger: true,
+				clampValues: true,
 				id: 'level',
-				useVariables: true,
 			},
 		],
 		description: 'Set Mic Test Tone for a Mobile Device',
-		callback: async (action, context) => {
-			if (!self.api) return
-			const serial = await context.parseVariablesInString(action.options.serial as string)
-			const device = getDeviceBySerial(self.state, serial)
-			if (!device) return
-			const level = Number(action.options.level)
+		callback: async (action) => {
+			const device = getDeviceFromOptions(self.state, action.options)
+			if (!self.api || !device) return
+			const level = snapToStep(action.options.level as number, 1, -60, 0)
 			await self.api.setMobileDevice(device.mtUid, {
 				micTestToneEnabled: action.options.enable as boolean,
 				micTestToneLevel: level,
@@ -940,14 +832,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['mobileDeviceRename'] = {
 		name: 'Mobile Device - Rename',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'textinput',
 				label: 'Name',
@@ -957,12 +842,10 @@ export function UpdateActions(self: SpecteraInstance): void {
 			},
 		],
 		description: 'Set Name for a Mobile Device',
-		callback: async (action, context) => {
-			if (!self.api) return
-			const serial = await context.parseVariablesInString(action.options.serial as string)
-			const device = getDeviceBySerial(self.state, serial)
-			if (!device) return
-			const rawName = await context.parseVariablesInString(action.options.name as string)
+		callback: async (action) => {
+			const device = getDeviceFromOptions(self.state, action.options)
+			if (!self.api || !device) return
+			const rawName = action.options.name as string
 			const sanitizedName = sanitizeMobileDeviceName(rawName)
 			await self.api.setMobileDevice(device.mtUid, {
 				name: sanitizedName,
@@ -977,20 +860,14 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['routeAudioInputToMobileDevice'] = {
 		name: 'Audio I/O - Route Input to Mobile Device',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', sekMobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Audio Input',
 				choices: audioLinkChoices,
 				default: audioLinkChoices.length > 0 ? audioLinkChoices[0].id : 0,
 				id: 'inputId',
+				disableAutoExpression: true,
 			},
 			{
 				type: 'dropdown',
@@ -998,6 +875,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 				choices: stereoModeChoices,
 				default: IemAudiolinkMode['LIVE (Stereo)'],
 				id: 'modeIdStereo',
+				disableAutoExpression: true,
 				isVisibleExpression: `$(options:inputId) >= ${STEREO_INPUT_OFFSET}`,
 			},
 			{
@@ -1006,15 +884,14 @@ export function UpdateActions(self: SpecteraInstance): void {
 				choices: monoModeChoices,
 				default: IemAudiolinkMode['LIVE (Mono)'],
 				id: 'modeIdMono',
+				disableAutoExpression: true,
 				isVisibleExpression: `$(options:inputId) < ${STEREO_INPUT_OFFSET}`,
 			},
 		],
 		description: 'Route an Audio Input to a Mobile Device (IEM). ',
-		callback: async (action, context) => {
-			if (!self.api) return
-			const serial = await context.parseVariablesInString(action.options.serial as string)
-			const device = getDeviceBySerial(self.state, serial)
-			if (!device) return
+		callback: async (action) => {
+			const device = getDeviceFromOptions(self.state, action.options)
+			if (!self.api || !device) return
 			const rawInputId = Number(action.options.inputId)
 			const isStereo = rawInputId >= STEREO_INPUT_OFFSET
 			const inputId = isStereo ? rawInputId - STEREO_INPUT_OFFSET : rawInputId
@@ -1025,22 +902,11 @@ export function UpdateActions(self: SpecteraInstance): void {
 
 	actions['removeIemAudioLink'] = {
 		name: 'Audio I/O - Remove IEM Audio Link',
-		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
-		],
+		options: [mobileDeviceOption('serial', 'Mobile Device', sekMobileDeviceChoices)],
 		description: 'Remove an IEM Audio Link from a Mobile Device (IEM). ',
-		callback: async (action, context) => {
-			if (!self.api) return
-			const serial = await context.parseVariablesInString(action.options.serial as string)
-			const device = getDeviceBySerial(self.state, serial)
-			if (!device) return
+		callback: async (action) => {
+			const device = getDeviceFromOptions(self.state, action.options)
+			if (!self.api || !device) return
 			await self.api.removeIemAudioLinkFromDevice(device.mtUid)
 		},
 	}
@@ -1049,14 +915,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 		name: 'Mobile Device - Set IEM Audio Link Mode',
 		description: 'Set the mode of an active IEM audio link on an SEK.',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', sekMobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Link Mode',
@@ -1065,11 +924,9 @@ export function UpdateActions(self: SpecteraInstance): void {
 				default: IemAudiolinkMode['LIVE (Stereo)'],
 			},
 		],
-		callback: async (action, context) => {
-			if (!self.api) return
-			const serial = await context.parseVariablesInString(action.options.serial as string)
-			const device = getDeviceBySerial(self.state, serial)
-			if (!device) return
+		callback: async (action) => {
+			const device = getDeviceFromOptions(self.state, action.options)
+			if (!self.api || !device) return
 			await self.api.setMobileDeviceAudioLinkMode(device.mtUid, 'iem', Number(action.options.modeId))
 		},
 	}
@@ -1078,14 +935,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 		name: 'Mobile Device - Set Mic Audio Link Mode',
 		description: 'Set the mode of an active Mic audio link on a mobile device.',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Link Mode',
@@ -1094,11 +944,9 @@ export function UpdateActions(self: SpecteraInstance): void {
 				default: MicAudiolinkMode['LIVE (Mono)'],
 			},
 		],
-		callback: async (action, context) => {
-			if (!self.api) return
-			const serial = await context.parseVariablesInString(action.options.serial as string)
-			const device = getDeviceBySerial(self.state, serial)
-			if (!device) return
+		callback: async (action) => {
+			const device = getDeviceFromOptions(self.state, action.options)
+			if (!self.api || !device) return
 			await self.api.setMobileDeviceAudioLinkMode(device.mtUid, 'mic', Number(action.options.modeId))
 		},
 	}
@@ -1106,21 +954,11 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['routeMobileDeviceToAudioOutput'] = {
 		name: 'Audio I/O - Route Mobile Device to Output',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Audio Output',
-				choices: Array.from(self.state.audioOutputs.values()).map((o) => ({
-					id: o.outputId,
-					label: `Output ${o.outputId + 1}`,
-				})),
+				choices: getAudioOutputChoices(),
 				default: 0,
 				id: 'outputId',
 			},
@@ -1133,11 +971,9 @@ export function UpdateActions(self: SpecteraInstance): void {
 			},
 		],
 		description: 'Route a Mobile Device (Mic) to an Audio Output. ',
-		callback: async (action, context) => {
-			if (!self.api) return
-			const serial = await context.parseVariablesInString(action.options.serial as string)
-			const device = getDeviceBySerial(self.state, serial)
-			if (!device) return
+		callback: async (action) => {
+			const device = getDeviceFromOptions(self.state, action.options)
+			if (!self.api || !device) return
 			const outputId = Number(action.options.outputId)
 			const modeId = Number(action.options.modeId)
 			await self.api.routeMobileDeviceToAudioOutput(device.mtUid, outputId, modeId)
@@ -1150,10 +986,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			{
 				type: 'dropdown',
 				label: 'Audio Output',
-				choices: Array.from(self.state.audioOutputs.values()).map((o) => ({
-					id: o.outputId,
-					label: `Output ${o.outputId + 1}`,
-				})),
+				choices: getAudioOutputChoices(),
 				default: 0,
 				id: 'outputId',
 			},
@@ -1170,21 +1003,11 @@ export function UpdateActions(self: SpecteraInstance): void {
 		name: 'Audio I/O - Instrument Switch Mode',
 		description: 'Route a Mobile Device to an Audio Output, with controls over the routing behavior and link mode.',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
 			{
 				type: 'dropdown',
 				label: 'Audio Output',
-				choices: Array.from(self.state.audioOutputs.values()).map((o) => ({
-					id: o.outputId,
-					label: `Output ${o.outputId + 1}`,
-				})),
+				choices: getAudioOutputChoices(),
 				default: 0,
 				id: 'outputId',
 			},
@@ -1216,18 +1039,15 @@ export function UpdateActions(self: SpecteraInstance): void {
 				tooltip: 'When enabled and the output already has a link from another device, the link mode is preserved.',
 			},
 		],
-		callback: async (action, context) => {
-			const api = self.api
-			if (!api) return
-			const serial = await context.parseVariablesInString(action.options.serial as string)
-			const device = getDeviceBySerial(self.state, serial)
-			if (!device) return
+		callback: async (action) => {
+			const device = getDeviceFromOptions(self.state, action.options)
+			if (!self.api || !device) return
 			const outputId = Number(action.options.outputId)
 			const behavior = (action.options.behavior as string | undefined) ?? 'toggle'
 			const defaultModeId = Number(action.options.modeId)
 			const useExisting = Boolean(action.options.useExisting)
 
-			await api.instrumentSwitchMobileDeviceToOutput(
+			await self.api.instrumentSwitchMobileDeviceToOutput(
 				device.mtUid,
 				outputId,
 				behavior as 'toggle' | 'on' | 'off',
@@ -1243,10 +1063,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 			{
 				type: 'multidropdown',
 				label: 'Audio Output',
-				choices: Array.from(self.state.audioOutputs.values()).map((o) => ({
-					id: o.outputId,
-					label: `Output ${o.outputId + 1}`,
-				})),
+				choices: getAudioOutputChoices(),
 				default: [0],
 				id: 'outputId',
 			},
@@ -1274,14 +1091,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 				id: 'mode',
 				tooltip: 'Mute/Talk only apply if the Command Mode is set to "Enabled".',
 			},
-			{
-				type: 'checkbox',
-				label: 'Require Confirmation',
-				id: 'requireConfirmation',
-				default: false,
-				tooltip:
-					'This will require a double press of the button to confirm the action. It will timeout after 5 seconds if not confirmed.',
-			},
+			REQUIRE_CONFIRMATION_OPTION,
 		],
 		description: 'Set the interface mode (Dante, MADI 1, MADI 2) for one or more audio outputs.',
 		callback: async (action) => {
@@ -1331,34 +1141,13 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['copyAllMobileDeviceSettings'] = {
 		name: 'Mobile Device - Copy All Settings',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Source Mobile Device',
-				id: 'sourceSerial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
-			{
-				type: 'dropdown',
-				label: 'Target Mobile Device',
-				id: 'targetSerial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
-			{
-				type: 'checkbox',
-				label: 'Require Confirmation',
-				id: 'requireConfirmation',
-				default: false,
-				tooltip:
-					'This will require a double press of the button to confirm the action. It will timeout after 5 seconds if not confirmed.',
-			},
+			mobileDeviceOption('sourceSerial', 'Source Mobile Device', mobileDeviceChoices),
+			mobileDeviceOption('targetSerial', 'Target Mobile Device', mobileDeviceChoices),
+			REQUIRE_CONFIRMATION_OPTION,
 		],
 		description:
 			'Copy all shared settings from one Mobile Device to another, including copying the IEM link and moving the mic links, if present.',
-		callback: async (action, context) => {
+		callback: async (action) => {
 			if (!self.api) return
 			if (action.options.requireConfirmation) {
 				const key = self.confirmationKey('copyAllMobileDeviceSettings', {
@@ -1367,8 +1156,8 @@ export function UpdateActions(self: SpecteraInstance): void {
 				})
 				if (!self.confirmAction(key)) return
 			}
-			const sourceSerial = await context.parseVariablesInString(action.options.sourceSerial as string)
-			const targetSerial = await context.parseVariablesInString(action.options.targetSerial as string)
+			const sourceSerial = action.options.sourceSerial as string
+			const targetSerial = action.options.targetSerial as string
 			const sourceDevice = getDeviceBySerial(self.state, sourceSerial)
 			const targetDevice = getDeviceBySerial(self.state, targetSerial)
 			if (!sourceDevice || !targetDevice) return
@@ -1380,14 +1169,7 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['setMobileDeviceSettingsJson'] = {
 		name: 'Mobile Device - Set Settings From JSON',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Target Mobile Device',
-				id: 'serial',
-				default: mobileDeviceChoices.length > 0 ? mobileDeviceChoices[0].id : '',
-				choices: mobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('serial', 'Target Mobile Device', mobileDeviceChoices),
 			{
 				type: 'textinput',
 				label: 'Settings JSON',
@@ -1397,27 +1179,20 @@ export function UpdateActions(self: SpecteraInstance): void {
 				tooltip:
 					'Paste the value of another mobile device’s "Settings (JSON)" variable, e.g. $(spectera:SEK_1234567890_settings_json).',
 			},
-			{
-				type: 'checkbox',
-				label: 'Require Confirmation',
-				id: 'requireConfirmation',
-				default: false,
-				tooltip:
-					'This will require a double press of the button to confirm the action. It will timeout after 5 seconds if not confirmed.',
-			},
+			REQUIRE_CONFIRMATION_OPTION,
 		],
 		description:
 			'Apply a set of mobile-device settings from a JSON string (typically a device’s Settings (JSON) variable).',
-		callback: async (action, context) => {
+		callback: async (action) => {
 			if (!self.api) return
-			const serial = await context.parseVariablesInString(action.options.serial as string)
+			const serial = action.options.serial as string
 			const device = getDeviceBySerial(self.state, serial)
 			if (!device) {
 				self.log('warn', `Set Settings From JSON: Mobile Device "${serial}" not found`)
 				return
 			}
 
-			const rawJson = await context.parseVariablesInString(action.options.json as string)
+			const rawJson = action.options.json as string
 			const { payload, warnings, error } = parseMobileDeviceSettingsJson(rawJson, device)
 
 			if (error) {
@@ -1446,28 +1221,14 @@ export function UpdateActions(self: SpecteraInstance): void {
 	actions['copyIemAudioLink'] = {
 		name: 'Audio I/O - Copy IEM Channels',
 		options: [
-			{
-				type: 'dropdown',
-				label: 'Source SEK',
-				id: 'sourceSerial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
-			{
-				type: 'dropdown',
-				label: 'Target SEK',
-				id: 'targetSerial',
-				default: sekMobileDeviceChoices.length > 0 ? sekMobileDeviceChoices[0].id : '',
-				choices: sekMobileDeviceChoices,
-				allowCustom: true,
-			},
+			mobileDeviceOption('sourceSerial', 'Source SEK', sekMobileDeviceChoices),
+			mobileDeviceOption('targetSerial', 'Target SEK', sekMobileDeviceChoices),
 		],
 		description: 'Copy the IEM Audio Channels from one SEK to another.',
-		callback: async (action, context) => {
+		callback: async (action) => {
 			if (!self.api) return
-			const sourceSerial = await context.parseVariablesInString(action.options.sourceSerial as string)
-			const targetSerial = await context.parseVariablesInString(action.options.targetSerial as string)
+			const sourceSerial = action.options.sourceSerial as string
+			const targetSerial = action.options.targetSerial as string
 			const sourceDevice = getDeviceBySerial(self.state, sourceSerial)
 			const targetDevice = getDeviceBySerial(self.state, targetSerial)
 			if (!sourceDevice || !targetDevice) return

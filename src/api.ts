@@ -1,4 +1,5 @@
 import EventEmitter from 'events'
+import { isDeepStrictEqual } from 'util'
 import PQueue from 'p-queue'
 import { InstanceStatus } from '@companion-module/base'
 import type { SpecteraInstance } from './main.js'
@@ -19,13 +20,18 @@ import type {
 	BaseStationIdentity,
 	SscVersion,
 	AudioLevels,
-	AudioLevel,
 	InterfaceStatusAudioNetwork,
 	InterfaceStatusMadi,
 	InterfaceStatusWordclock,
+	LinkedMt,
 } from './types.js'
-import { MtType } from './types.js'
-import { getAntennaFrequency, getExistingMicAudiolinkModeFromState, getPortableMobileDeviceSettings } from './utils.js'
+import { InputSource, MtType } from './types.js'
+import {
+	getAntennaFrequency,
+	getExistingMicAudiolinkModeFromState,
+	getPortableMobileDeviceSettings,
+	METERING_INTERFACES,
+} from './utils.js'
 import type { SpecteraState } from './state.js'
 import { Agent, Dispatcher } from 'undici'
 import {
@@ -34,13 +40,14 @@ import {
 	getAudioOutputSourceName,
 	getAudioOutputActiveChannels,
 	getAudioInputIemLinkDevices,
+	getMobileDeviceLevelVariables,
 } from './variables.js'
 import { UpdatePresets } from './presets.js'
 import { UpdateFeedbacks } from './feedbacks.js'
 import { UpdateActions } from './actions.js'
 import {
-	StateMap,
-	VariableValue,
+	type StateMap,
+	type VariableValue,
 	RfChannelStateMap,
 	AntennaStateMap,
 	AudioInputStateMap,
@@ -63,7 +70,7 @@ import {
 const REQUEST_INTERVAL_MS = 20
 
 /** API schema version this module targets */
-const EXPECTED_API_SCHEMA = '18.1'
+const EXPECTED_API_SCHEMA = '18.3'
 
 function parseSchemaVersion(schema: string): { major: number; minor: number } | null {
 	const match = /^(\d+)\.(\d+)/.exec(schema)
@@ -75,11 +82,35 @@ function isActiveAudioLinkId(id: number | undefined): boolean {
 	return id !== undefined && id > -1
 }
 
+export class HttpError extends Error {
+	constructor(
+		readonly status: number,
+		body: string,
+	) {
+		super(`HTTP ${status}: ${body}`)
+	}
+}
+
+/** 401/403 mean the password (or its role) is wrong; anything else is treated as a connection problem. */
+export function connectFailureStatus(err: unknown): InstanceStatus {
+	return err instanceof HttpError && (err.status === 401 || err.status === 403)
+		? InstanceStatus.AuthenticationFailure
+		: InstanceStatus.ConnectionFailure
+}
+
 /**
  * Translate an audio input object coming off the Base Station into the module's canonical form.
  */
+const LEGACY_INPUT_SOURCES: Record<string, InputSource> = {
+	dante: InputSource.Dante,
+	madi1: InputSource['MADI 1'],
+	madi2: InputSource['MADI 2'],
+}
+
 function normalizeAudioInput(raw: AudioInput & { source?: unknown }): AudioInput {
-	raw.inputSource = raw.inputSource ?? raw.source
+	if (raw.inputSource === undefined) {
+		raw.inputSource = LEGACY_INPUT_SOURCES[String(raw.source).toLowerCase()] ?? (raw.source as InputSource)
+	}
 	return raw
 }
 
@@ -97,9 +128,12 @@ export class SpecteraApi extends EventEmitter {
 	private sessionUUID: string | null = null
 	private staleSessionUUID: string | null = null
 	private readonly dispatcher: Dispatcher
-	private variableCache: Record<string, string | number | boolean | undefined> = {}
+	private variableCache: Record<string, VariableValue> = {}
 	private lastLevelUpdateTime = 0
-	private static readonly LEVEL_UPDATE_INTERVAL_MS = 150
+	private static readonly LEVEL_UPDATE_INTERVAL_MS = 50
+	private static readonly HEARTBEAT_CHECK_INTERVAL_MS = 2000
+	// /api/device/time pushes every second, so a quiet stream this long is dead
+	private static readonly SSE_STALE_TIMEOUT_MS = 10000
 	private isInitializing = false
 	private readonly requestQueue: { add: <T>(fn: () => Promise<T>) => Promise<T> }
 	private readonly routingQueue: { add: <T>(fn: () => Promise<T>) => Promise<T> }
@@ -109,6 +143,8 @@ export class SpecteraApi extends EventEmitter {
 	private heartbeatInterval: ReturnType<typeof setInterval> | null = null
 	private lastSSEEventTime = 0
 	private subscribeStartTime = 0
+	private structureRebuildTimer: ReturnType<typeof setTimeout> | null = null
+	private static readonly STRUCTURE_REBUILD_DEBOUNCE_MS = 250
 
 	private readonly subscriptionPaths = [
 		'/api/audio/inputs',
@@ -125,6 +161,7 @@ export class SpecteraApi extends EventEmitter {
 		'/api/device/identity',
 		'/api/device/state',
 		'/api/device/site',
+		'/api/device/time',
 		'/api/audio/metering',
 		'/api/audio/interface/aoip/status',
 		'/api/audio/interface/madi1/status',
@@ -160,10 +197,10 @@ export class SpecteraApi extends EventEmitter {
 		return `Basic ${Buffer.from(credentials).toString('base64')}`
 	}
 
-	async sendRequest<T>(method: string, path: string, body?: unknown, options?: { quiet?: boolean }): Promise<T> {
+	async sendRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
 		return this.requestQueue.add(async () => {
 			try {
-				return await this.executeRequest<T>(method, path, body, options)
+				return await this.executeRequest<T>(method, path, body)
 			} catch (err) {
 				this.instance.log(
 					'debug',
@@ -174,12 +211,7 @@ export class SpecteraApi extends EventEmitter {
 		})
 	}
 
-	private async executeRequest<T>(
-		method: string,
-		path: string,
-		body?: unknown,
-		requestOptions?: { quiet?: boolean },
-	): Promise<T> {
+	private async executeRequest<T>(method: string, path: string, body?: unknown): Promise<T> {
 		const url = `https://${this.host}:443/api${path}`
 		const options: RequestInit = {
 			method,
@@ -195,16 +227,14 @@ export class SpecteraApi extends EventEmitter {
 			options.body = JSON.stringify(body)
 		}
 
-		if (!requestOptions?.quiet) {
-			this.instance.log('debug', `API Request: ${method} ${path} ${body ? JSON.stringify(body) : ''}`)
-		}
+		this.instance.log('debug', `API Request: ${method} ${path} ${body ? JSON.stringify(body) : ''}`)
 
-		const response = await fetch(url, { ...options, dispatcher: this.dispatcher } as any)
+		const response = await fetch(url, { ...options, dispatcher: this.dispatcher })
 
 		if (!response.ok) {
 			const errorText = await response.text().catch(() => 'Unknown error')
 			this.instance.log('error', `API Request failed for ${method} ${path}: HTTP ${response.status}: ${errorText}`)
-			throw new Error(`HTTP ${response.status}: ${errorText}`)
+			throw new HttpError(response.status, errorText)
 		}
 
 		if (response.status === 204 || response.headers.get('content-length') === '0') {
@@ -375,10 +405,32 @@ export class SpecteraApi extends EventEmitter {
 		}
 	}
 
+	// Coalesce bursts of structure changes (e.g. resources streaming in at startup) into a single
+	// rebuild of the module definitions. Rebuilding on every structureChanged event floods the host
+	// with rapid setFeedback/Action/PresetDefinitions calls, which shows up as "updateFeedbacks Call
+	// timed out" while connecting.
+	private scheduleStructureRebuild(): void {
+		if (this.structureRebuildTimer) clearTimeout(this.structureRebuildTimer)
+		this.structureRebuildTimer = setTimeout(() => {
+			this.structureRebuildTimer = null
+			if (this.destroyed) return
+			UpdateVariableDefinitions(this.instance)
+			UpdatePresets(this.instance)
+			UpdateFeedbacks(this.instance)
+			UpdateActions(this.instance)
+			UpdateVariableValues(this.instance)
+		}, SpecteraApi.STRUCTURE_REBUILD_DEBOUNCE_MS)
+	}
+
 	async disconnect(): Promise<void> {
 		this.destroyed = true
 
 		this.stopHeartbeat()
+
+		if (this.structureRebuildTimer) {
+			clearTimeout(this.structureRebuildTimer)
+			this.structureRebuildTimer = null
+		}
 
 		if (this.reconnectTimer) {
 			clearTimeout(this.reconnectTimer)
@@ -409,29 +461,15 @@ export class SpecteraApi extends EventEmitter {
 
 	private startHeartbeat(): void {
 		this.stopHeartbeat()
-		this.heartbeatInterval = setInterval(() => void this.runHeartbeat(), 5000)
+		this.heartbeatInterval = setInterval(() => this.runHeartbeat(), SpecteraApi.HEARTBEAT_CHECK_INTERVAL_MS)
 	}
 
-	private async runHeartbeat(): Promise<void> {
-		if (this.destroyed) return
-		try {
-			// Quiet: this polls every 5s and would otherwise flood the debug log
-			await this.sendRequest('GET', '/device/state', undefined, { quiet: true })
-			// Detect silent SSE stream death — use subscribe start time as fallback
-			// when no SSE events have ever been received (lastSSEEventTime === 0)
-			const timeSinceActivity =
-				this.lastSSEEventTime > 0 ? Date.now() - this.lastSSEEventTime : Date.now() - this.subscribeStartTime
-			if (this.subscribeStartTime > 0 && timeSinceActivity > 60000) {
-				this.instance.log('debug', 'No SSE events received in 60s, reconnecting')
-				this.stopHeartbeat()
-				if (this.abortController) {
-					this.abortController.abort()
-					this.abortController = null
-				}
-				this.scheduleReconnect()
-				return
-			}
-		} catch (_err) {
+	private runHeartbeat(): void {
+		if (this.destroyed || this.subscribeStartTime === 0) return
+		// Fall back to the subscribe start time when no SSE events have ever been received
+		const timeSinceActivity =
+			this.lastSSEEventTime > 0 ? Date.now() - this.lastSSEEventTime : Date.now() - this.subscribeStartTime
+		if (timeSinceActivity > SpecteraApi.SSE_STALE_TIMEOUT_MS) {
 			this.instance.log('warn', 'Connection lost to Spectera, attempting to reconnect...')
 			this.stopHeartbeat()
 			if (this.abortController) {
@@ -488,7 +526,7 @@ export class SpecteraApi extends EventEmitter {
 						headers: { Authorization: this.getAuthHeader() },
 						signal: AbortSignal.timeout(5000),
 						dispatcher: this.dispatcher,
-					} as any)
+					})
 					this.instance.log('debug', `Cleaned up stale subscription session ${this.staleSessionUUID}`)
 				} catch (err) {
 					this.instance.log(
@@ -526,7 +564,7 @@ export class SpecteraApi extends EventEmitter {
 			this.instance.log('info', 'Reconnected to Spectera successfully')
 		} catch (err) {
 			this.instance.log('debug', `Reconnect failed: ${err instanceof Error ? err.message : String(err)}`)
-			this.instance.updateStatus(InstanceStatus.ConnectionFailure)
+			this.instance.updateStatus(connectFailureStatus(err))
 			this.scheduleReconnect()
 		}
 	}
@@ -552,7 +590,7 @@ export class SpecteraApi extends EventEmitter {
 		this.instance.log('debug', `API Request: GET ${url}`)
 
 		try {
-			const response = await fetch(url, { ...options, dispatcher: this.dispatcher } as any)
+			const response = await fetch(url, { ...options, dispatcher: this.dispatcher })
 			if (!response.ok) {
 				this.instance.log('warn', `Failed to start subscription: ${response.statusText}`)
 				throw new Error(`Failed to start subscription: ${response.statusText}`)
@@ -626,7 +664,7 @@ export class SpecteraApi extends EventEmitter {
 					this.instance.log('debug', `Subscription opened with sessionUUID: ${this.sessionUUID}`)
 					this.emit('subscribed', this.sessionUUID)
 				} else {
-					this.processInternalUpdate(eventType, jsonData)
+					this.processInternalUpdate(jsonData)
 				}
 			} catch (_e) {
 				this.instance.log('debug', `Failed to parse SSE data: ${data}`)
@@ -650,7 +688,8 @@ export class SpecteraApi extends EventEmitter {
 
 			const newValue = newState[key]
 
-			if (!oldState || oldState[key] !== newValue) {
+			// Deep compare: object fields (interference, ledColors, bindings…) arrive as new instances on every event
+			if (!oldState || !isDeepStrictEqual(oldState[key], newValue)) {
 				if (entry.feedback) {
 					const ids = Array.isArray(entry.feedback) ? entry.feedback : [entry.feedback]
 					for (const id of ids) feedbacksToCheck.add(id)
@@ -678,10 +717,7 @@ export class SpecteraApi extends EventEmitter {
 		}
 	}
 
-	private processAudioLevels(
-		levels: AudioLevels,
-		changedVariables: Record<string, string | number | boolean | undefined>,
-	): void {
+	private processAudioLevels(levels: AudioLevels, changedVariables: Record<string, VariableValue>): void {
 		this.state.updateAudioLevels(levels)
 
 		if (this.isInitializing) return
@@ -690,18 +726,8 @@ export class SpecteraApi extends EventEmitter {
 		if (now - this.lastLevelUpdateTime >= SpecteraApi.LEVEL_UPDATE_INTERVAL_MS) {
 			this.lastLevelUpdateTime = now
 
-			// Map each metering payload field to its the original variable names
-			const interfaces: { field: keyof AudioLevels; varBase: string }[] = [
-				{ field: 'madi1In', varBase: 'madi_1_in' },
-				{ field: 'madi2In', varBase: 'madi_2_in' },
-				{ field: 'aoIpIn', varBase: 'dante_in' },
-				{ field: 'madi1Out', varBase: 'madi_1_out' },
-				{ field: 'madi2Out', varBase: 'madi_2_out' },
-				{ field: 'aoIpOut', varBase: 'dante_out' },
-			]
-
-			for (const { field, varBase: ifaceName } of interfaces) {
-				const levelData = levels[field] as AudioLevel | undefined
+			for (const { field, varBase: ifaceName } of METERING_INTERFACES) {
+				const levelData = levels[field]
 				if (levelData) {
 					levelData.peak.forEach((val, index) => {
 						const varName = `audio_level_${ifaceName}_${index + 1}_peak`
@@ -719,14 +745,32 @@ export class SpecteraApi extends EventEmitter {
 					})
 				}
 			}
+
+			// Per-device MIC/IEM levels, resolved live so they track the device through routing changes.
+			for (const device of this.state.mobileDevices.values()) {
+				const deviceLevels = getMobileDeviceLevelVariables(
+					device,
+					this.state.audioOutputs,
+					this.state.audioInputs,
+					this.state.audioLinks,
+					levels,
+				)
+				for (const [varName, val] of Object.entries(deviceLevels)) {
+					if (this.variableCache[varName] !== val) {
+						changedVariables[varName] = val
+						this.variableCache[varName] = val
+					}
+				}
+			}
+
 			this.instance.checkFeedbacks('audioLevelThreshold')
 		}
 	}
 
-	private processInternalUpdate(_eventType: string, data: any): void {
+	private processInternalUpdate(data: any): void {
 		let structureChanged = false
 		const keys = Object.keys(data)
-		const changedVariables: Record<string, string | number | boolean | undefined> = {}
+		const changedVariables: Record<string, VariableValue> = {}
 		const feedbacksToCheck = new Set<string>()
 
 		for (const key of keys) {
@@ -766,16 +810,15 @@ export class SpecteraApi extends EventEmitter {
 				changedVariables[`audio_output_${displayId}_interfaces`] = getAudioOutputActiveChannels(value)
 				structureChanged = !oldState
 			} else if (key.startsWith('/api/audio/links/')) {
+				const match = key.match(/\/api\/audio\/links\/(\d+)/)
+				if (!match) continue
+				const linkId = parseInt(match[1], 10)
 				if (value === null) {
-					// Deletion
-					const match = key.match(/\/api\/audio\/links\/(\d+)/)
-					if (match && match[1]) {
-						const linkId = parseInt(match[1], 10)
-						this.state.removeAudioLink(linkId)
-						structureChanged = true
-					}
-				} else {
-					const oldState = this.state.audioLinks.get(value.audiolinkId)
+					this.state.removeAudioLink(linkId)
+					structureChanged = true
+				} else if (value.audiolinkId === linkId) {
+					// A new link is first announced with an empty `{}` before its full payload; skip that
+					const oldState = this.state.audioLinks.get(linkId)
 					this.state.updateAudioLink(value)
 					structureChanged = !oldState
 				}
@@ -1004,11 +1047,7 @@ export class SpecteraApi extends EventEmitter {
 		}
 
 		if (structureChanged && !this.isInitializing) {
-			UpdateVariableDefinitions(this.instance)
-			UpdatePresets(this.instance)
-			UpdateFeedbacks(this.instance)
-			UpdateActions(this.instance)
-			UpdateVariableValues(this.instance)
+			this.scheduleStructureRebuild()
 		}
 
 		if (!this.isInitializing) {
@@ -1023,7 +1062,7 @@ export class SpecteraApi extends EventEmitter {
 			}
 
 			if (feedbacksToCheck.size > 0) {
-				this.instance.checkFeedbacks(...Array.from(feedbacksToCheck))
+				this.instance.checkFeedbacks(...(Array.from(feedbacksToCheck) as [string, ...string[]]))
 			}
 		}
 	}
@@ -1159,7 +1198,7 @@ export class SpecteraApi extends EventEmitter {
 		return this.sendRequest<InterfaceStatusWordclock>('GET', '/audio/interface/wordclock/status')
 	}
 
-	async createAudioLink(config: { modeId: number; rfChannelId: number }): Promise<number> {
+	async createAudioLink(config: { modeId: number; rfChannelId: number; linkedMt: LinkedMt }): Promise<number> {
 		const result = await this.sendRequest<AudioLink>('POST', '/audio/links', config)
 		return result.audiolinkId
 	}
@@ -1283,6 +1322,18 @@ export class SpecteraApi extends EventEmitter {
 	}
 
 	async routeAudioInputToMobileDevice(inputId: number, mtUid: number, modeId: number): Promise<void> {
+		return this.routingQueue.add(async () => {
+			await this._routeAudioInputToMobileDevice(inputId, mtUid, modeId)
+		})
+	}
+
+	// Apply a write the base station just accepted through the SSE path, so the next queued routing step sees it
+	// (and variables/feedbacks update) even if the matching SSE event hasn't arrived yet.
+	private applyAcceptedUpdate(path: string, value: object): void {
+		this.processInternalUpdate({ [path]: value })
+	}
+
+	private async _routeAudioInputToMobileDevice(inputId: number, mtUid: number, modeId: number): Promise<void> {
 		const audioInput = this.state.audioInputs.get(inputId)
 		const mobileDevice = this.state.mobileDevices.get(mtUid)
 
@@ -1294,6 +1345,7 @@ export class SpecteraApi extends EventEmitter {
 		const prevDeviceIemLinkId = mobileDevice.type === MtType.SEK ? mobileDevice.iemAudiolinkId : undefined
 
 		let audiolinkId = audioInput.iemAudiolinkId
+		let createdAudioLink = false
 
 		if (audiolinkId < 0) {
 			// Create new Audio Link
@@ -1305,21 +1357,37 @@ export class SpecteraApi extends EventEmitter {
 			// Cleanup before creating new link, in case base station is at 100% utilization
 			if (isActiveAudioLinkId(prevDeviceIemLinkId) && prevDeviceIemLinkId !== audiolinkId) {
 				await this.cleanupAudioLink(prevDeviceIemLinkId, { mobileDeviceUids: new Set([mtUid]) }, 'Audio Routing')
+				// A shared link survives cleanup, but the base station rejects (409) a linkedMt create for a device
+				// that still holds an IEM link, so detach this device from it first
+				const current = this.state.mobileDevices.get(mtUid)
+				if (current?.type === MtType.SEK && current.iemAudiolinkId === prevDeviceIemLinkId) {
+					try {
+						await this.setMobileDevice(mtUid, { iemAudiolinkId: -1 })
+						this.applyAcceptedUpdate(`/api/mts/paired/all/${mtUid}`, { ...current, iemAudiolinkId: -1 })
+					} catch (error) {
+						this.instance.log('warn', `Audio Routing: Failed to detach device from shared Audio Link: ${error}`)
+						return
+					}
+				}
 			}
 
 			try {
 				audiolinkId = await this.createAudioLink({
 					modeId: modeId,
 					rfChannelId: mobileDevice.rfChannelId,
+					linkedMt: { type: 'iem', mtUid },
 				})
+				createdAudioLink = true
 				this.instance.log('debug', `Created new Audio Link ${audiolinkId}`)
 
 				// Assign to Audio Input first
 				await this.setAudioInput(inputId, {
 					iemAudiolinkId: audiolinkId,
 				})
+				this.applyAcceptedUpdate(`/api/audio/inputs/${inputId}`, { ...audioInput, iemAudiolinkId: audiolinkId })
 			} catch (error) {
 				this.instance.log('error', `Audio Routing: Failed to create Audio Link: ${error}`)
+				if (createdAudioLink) await this.cleanupAudioLink(audiolinkId, {}, 'Audio Routing rollback')
 				return
 			}
 		} else {
@@ -1334,6 +1402,7 @@ export class SpecteraApi extends EventEmitter {
 			await this.setMobileDevice(mtUid, {
 				iemAudiolinkId: audiolinkId,
 			})
+			this.applyAcceptedUpdate(`/api/mts/paired/all/${mtUid}`, { ...mobileDevice, iemAudiolinkId: audiolinkId })
 			this.instance.log(
 				'debug',
 				`Routed Audio Input ${inputId} to Mobile Device ${mtUid} via Audio Link ${audiolinkId}`,
@@ -1359,6 +1428,7 @@ export class SpecteraApi extends EventEmitter {
 		}
 
 		let audiolinkId = mobileDevice.micAudiolinkId
+		let createdAudioLink = false
 		if (isActiveAudioLinkId(audiolinkId)) {
 			const existingId = audiolinkId!
 			this.instance.log('debug', `Routing: Using existing Audio Link ${existingId} from Mobile Device`)
@@ -1381,7 +1451,9 @@ export class SpecteraApi extends EventEmitter {
 				audiolinkId = await this.createAudioLink({
 					modeId: modeId,
 					rfChannelId: mobileDevice.rfChannelId,
+					linkedMt: { type: 'mic', mtUid },
 				})
+				createdAudioLink = true
 				this.instance.log('debug', `Created new Audio Link ${audiolinkId}`)
 			} catch (error) {
 				this.instance.log('warn', `Audio Routing: Failed to create Audio Link: ${error}`)
@@ -1426,12 +1498,14 @@ export class SpecteraApi extends EventEmitter {
 			}
 		}
 
+		let deviceAssigned = mobileDevice.micAudiolinkId === audiolinkId
 		try {
 			if (mobileDevice.micAudiolinkId !== audiolinkId) {
 				await this.setMobileDevice(mtUid, {
 					micAudiolinkId: audiolinkId,
 				})
 				mobileDevice.micAudiolinkId = audiolinkId ?? -1 // Optimistic update
+				deviceAssigned = true
 			}
 		} catch (error) {
 			this.instance.log('warn', `Audio Routing: Failed to assign Audio Link to Mobile Device: ${error}`)
@@ -1450,6 +1524,9 @@ export class SpecteraApi extends EventEmitter {
 			)
 		} catch (error) {
 			this.instance.log('warn', `Audio Routing: Failed to assign Audio Link to Audio Output: ${error}`)
+			if (createdAudioLink && !deviceAssigned) {
+				await this.cleanupAudioLink(audiolinkId, {}, 'Audio Routing rollback')
+			}
 		}
 	}
 
@@ -1677,6 +1754,12 @@ export class SpecteraApi extends EventEmitter {
 	}
 
 	async copyIemAudioLink(sourceMtUid: number, targetMtUid: number): Promise<void> {
+		return this.routingQueue.add(async () => {
+			await this._copyIemAudioLink(sourceMtUid, targetMtUid)
+		})
+	}
+
+	private async _copyIemAudioLink(sourceMtUid: number, targetMtUid: number): Promise<void> {
 		const sourceDevice = this.state.mobileDevices.get(sourceMtUid)
 		const targetDevice = this.state.mobileDevices.get(targetMtUid)
 
@@ -1696,9 +1779,11 @@ export class SpecteraApi extends EventEmitter {
 			await this.setMobileDevice(targetMtUid, {
 				iemAudiolinkId: iemAudiolinkId,
 			})
+			this.applyAcceptedUpdate(`/api/mts/paired/all/${targetMtUid}`, { ...targetDevice, iemAudiolinkId })
 			this.instance.log('debug', `Copied IEM Mix from ${sourceMtUid} to ${targetMtUid}`)
 		} catch (error) {
 			this.instance.log('warn', `Copy IEM Mix: Failed to assign Audio Link: ${error}`)
+			return
 		}
 
 		if (isActiveAudioLinkId(prevTargetIemLinkId) && prevTargetIemLinkId !== iemAudiolinkId) {

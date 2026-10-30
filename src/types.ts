@@ -70,9 +70,10 @@ export enum InputSource {
 }
 
 export enum TempStatus {
-	Normal = 'Normal',
-	Warning = 'Warning',
-	Critical = 'Critical',
+	Normal = 'normal',
+	Low = 'low',
+	High = 'high',
+	Critical = 'critical',
 }
 
 export interface LedColors {
@@ -177,6 +178,12 @@ export interface AudioLink {
 	modeId: AudiolinkModeId
 }
 
+/** Create-time hint for `POST /api/audio/links` (API 18.3+); not stored on the Audio Link. */
+export interface LinkedMt {
+	type: 'iem' | 'mic'
+	mtUid: number
+}
+
 export interface AudioInput {
 	inputId: number
 	iemAudiolinkId: number
@@ -202,17 +209,22 @@ export interface AudioOutput {
 
 export interface RfChannel {
 	rfChannelId: number
+	/**
+	 * Default: max allowed power for the leftmost licensed frequency region; 50 mW with no active license.
+	 */
 	txPower: TxPower
 	/**
 	 * Frequency in kHz.
 	 * Min: 10000, Max: 10000000, Step: 1000.
-	 * Default: 474000.
+	 * Default: leftmost frequency of the leftmost licensed region plus half its max bandwidth;
+	 * 474000 with no active license.
 	 */
 	frequency: number
 	/**
 	 * Bandwidth of the modulated signal in kHz.
 	 * Limited to country specific license.
 	 * Values: 6000 (6 MHz), 8000 (8 MHz), 10000 (10 MHz)
+	 * Default: max allowed bandwidth for the leftmost licensed region; 8000 with no active license.
 	 */
 	bandwidthMode: BandwidthMode
 	rfRestrictionViolation?: boolean
@@ -294,11 +306,20 @@ export interface SEKDevice extends MobileDeviceBase {
 	iemLqi?: number
 }
 
+/** Command button colors per `commandState` (SKM only, API 18.3+). */
+export interface CommandColors {
+	released?: string
+	pressed?: string
+	unlatched?: string
+	latched?: string
+}
+
 export interface SKMDevice extends MobileDeviceBase {
 	type: MtType.SKM
 	micPreampGain: number
 	micLowCutHz: MicLowCutHzSKM
 	micModule?: MicModule
+	commandColors?: CommandColors
 }
 
 export enum MicModuleName {
@@ -408,7 +429,7 @@ export interface TempState {
 
 export interface FanState {
 	fanId: string
-	errorState: { value: boolean }
+	errorState: { value: string }
 }
 
 export interface HealthState {
@@ -422,6 +443,11 @@ export interface BaseStationIdentity {
 	hardwareRevision: string
 	serial: string
 	vendor: string
+	/** API 18.3+ */
+	variant?: {
+		articleNumber?: string
+		articleName?: string
+	}
 }
 
 export interface SscVersion {

@@ -1,14 +1,37 @@
-import { InstanceBase, runEntrypoint, InstanceStatus, SomeCompanionConfigField } from '@companion-module/base'
+import {
+	InstanceBase,
+	type InstanceTypes,
+	type CompanionCompositeElementSchema,
+	InstanceStatus,
+	type SomeCompanionConfigField,
+} from '@companion-module/base'
 import { GetConfigFields, type ModuleConfig, type ModuleSecrets } from './config.js'
 import { UpdateVariableDefinitions } from './variables.js'
 import { UpgradeScripts } from './upgrades.js'
 import { UpdateActions } from './actions.js'
 import { UpdateFeedbacks } from './feedbacks.js'
-import { SpecteraApi } from './api.js'
+import { SpecteraApi, connectFailureStatus } from './api.js'
 import { SpecteraState } from './state.js'
 import { UpdatePresets } from './presets.js'
+import { UpdateCompositeElements } from './graphics.js'
 
-export class SpecteraInstance extends InstanceBase<ModuleConfig, ModuleSecrets> {
+export interface SpecteraInstanceTypes extends InstanceTypes {
+	config: ModuleConfig
+	secrets: ModuleSecrets
+	compositeElements: {
+		audioMeter: CompanionCompositeElementSchema<{
+			channelMode: string
+			ch1Level: string
+			ch1Peak: string
+			ch2Level: string
+			ch2Peak: string
+		}>
+		rssiMeter: CompanionCompositeElementSchema<{ rssi: string }>
+		signalBars: CompanionCompositeElementSchema<{ bars: string }>
+	}
+}
+
+export default class SpecteraInstance extends InstanceBase<SpecteraInstanceTypes> {
 	config!: ModuleConfig
 	secrets!: ModuleSecrets
 	api?: SpecteraApi
@@ -29,6 +52,7 @@ export class SpecteraInstance extends InstanceBase<ModuleConfig, ModuleSecrets> 
 			this.log('error', `Error initializing API: ${e}`)
 		})
 
+		this.updateCompositeElements()
 		this.updateActions()
 		this.updateFeedbacks()
 		this.updateVariableDefinitions()
@@ -63,7 +87,7 @@ export class SpecteraInstance extends InstanceBase<ModuleConfig, ModuleSecrets> 
 				this.updateStatus(InstanceStatus.Ok)
 				this.log('info', `Successfully connected to Spectera`)
 			} catch (err) {
-				this.updateStatus(InstanceStatus.ConnectionFailure)
+				this.updateStatus(connectFailureStatus(err))
 				this.log('error', `Login failed: ${err instanceof Error ? err.message : String(err)} `)
 				this.api.scheduleReconnect()
 			}
@@ -94,6 +118,10 @@ export class SpecteraInstance extends InstanceBase<ModuleConfig, ModuleSecrets> 
 		UpdatePresets(this)
 	}
 
+	updateCompositeElements(): void {
+		UpdateCompositeElements(this)
+	}
+
 	//Module Confirmation Functions
 	public confirmationKey(actionId: string, options: Record<string, unknown>): string {
 		const parts = Object.entries(options)
@@ -121,4 +149,4 @@ export class SpecteraInstance extends InstanceBase<ModuleConfig, ModuleSecrets> 
 	}
 }
 
-runEntrypoint(SpecteraInstance, UpgradeScripts)
+export { UpgradeScripts, SpecteraInstance }
