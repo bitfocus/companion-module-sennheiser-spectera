@@ -7,7 +7,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [1.5.0]- 2026-10-30
 
-- **Requires Bitfocus Buttons 1.8 or newer, or Companion 4.3 or newer**
+- **Requires Bitfocus Buttons 1.8 or newer, or Companion 5.0 or newer**
 - **Requires Spectera firmware v1.5.0 or newer**
 
 ### Added
