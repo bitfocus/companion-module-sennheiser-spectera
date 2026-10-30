@@ -15,8 +15,17 @@ describe('preset generation', () => {
 		const { structure, presets } = generatePresets()
 
 		expect(structure.map((section: any) => section.id)).toEqual(
-			expect.arrayContaining(['rf-configuration', 'audio-inputs', 'audio-outputs', 'base-station', 'audio-meters']),
+			expect.arrayContaining([
+				'rf-configuration',
+				'audio-inputs',
+				'audio-outputs',
+				'base-station',
+				'audio-meters-dante',
+				'audio-meters-madi-1',
+				'audio-meters-madi-2',
+			]),
 		)
+		expect(structure.map((section: any) => section.id)).not.toContain('audio-meters')
 		expect(presets.rf0SetActive.steps[0].down[0]).toMatchObject({
 			actionId: 'setRfChannelState',
 			options: { rfChannel: 0 },
@@ -44,6 +53,32 @@ describe('preset generation', () => {
 			},
 		})
 		expect(presets.dante_outMeterStereo1).toBeUndefined()
+		expect(presets.dante_inMeter32.elements[2].options).toMatchObject({
+			channelMode: 'mono',
+			ch1Level: { value: '$(spectera:audio_level_dante_in_32_rms)' },
+		})
+		expect(presets.dante_inMeter33).toBeUndefined()
+		expect(presets.dante_inMeterStereo31.elements[2].options).toMatchObject({
+			channelMode: 'stereo',
+			ch1Level: { value: '$(spectera:audio_level_dante_in_31_rms)' },
+			ch2Level: { value: '$(spectera:audio_level_dante_in_32_rms)' },
+		})
+		expect(presets.dante_outMeter32).toBeDefined()
+		expect(presets.madi_1_inMeter32).toBeDefined()
+		expect(presets.madi_2_outMeter32).toBeDefined()
+	})
+
+	it('puts each interface meter banks in its own section', () => {
+		const { structure } = generatePresets()
+		const section = structure.find((s: any) => s.id === 'audio-meters-madi-1')
+
+		expect(section.name).toBe('Audio Meters - MADI 1')
+		expect(section.definitions.map((group: any) => group.name)).toEqual([
+			'MADI 1 IN - Meters (Mono)',
+			'MADI 1 IN - Meters (Stereo)',
+			'MADI 1 OUT - Meters (Mono)',
+		])
+		expect(section.definitions.flatMap((group: any) => group.presets)).toHaveLength(32 + 16 + 32)
 	})
 
 	it('uses current state to build routing and device-specific presets', () => {

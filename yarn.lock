@@ -69,6 +69,19 @@ __metadata:
   languageName: node
   linkType: hard
 
+"@companion-app/expressions@npm:^1.1.1":
+  version: 1.1.1
+  resolution: "@companion-app/expressions@npm:1.1.1"
+  dependencies:
+    acorn: "npm:^8.17.0"
+    colord-for-expressions: "npm:colord@^2.10.0"
+    jsonpath-plus: "npm:^10.4.0"
+    type-fest: "npm:^5.8.0"
+    unicode-segmenter: "npm:^0.17.2"
+  checksum: 10c0/2571e50fde31233416f2e8327e9691c6ef891a94e3c88aa599af21ff4f0f8d1379673e58ca39bf027acfa17807827a04571f2f433fc533559f3a5fa41a19430b
+  languageName: node
+  linkType: hard
+
 "@companion-module/base@npm:^2.1.3":
   version: 2.1.3
   resolution: "@companion-module/base@npm:2.1.3"
@@ -447,6 +460,24 @@ __metadata:
     "@jridgewell/resolve-uri": "npm:^3.1.0"
     "@jridgewell/sourcemap-codec": "npm:^1.4.14"
   checksum: 10c0/4b30ec8cd56c5fd9a661f088230af01e0c1a3888d11ffb6b47639700f71225be21d1f7e168048d6d4f9449207b978a235c07c8f15c07705685d16dc06280e9d9
+  languageName: node
+  linkType: hard
+
+"@jsep-plugin/assignment@npm:^1.3.0":
+  version: 1.4.0
+  resolution: "@jsep-plugin/assignment@npm:1.4.0"
+  peerDependencies:
+    jsep: ^0.4.0||^1.0.0
+  checksum: 10c0/218984d0c5dab6ba96a6930169d537d291e012caa644cc35d3e04175bae271898eaef250c42561ef20a678d9426fe2a3da08e7f84caf4e8c8c36c535f7a8f9e8
+  languageName: node
+  linkType: hard
+
+"@jsep-plugin/regex@npm:^1.0.4":
+  version: 1.1.0
+  resolution: "@jsep-plugin/regex@npm:1.1.0"
+  peerDependencies:
+    jsep: ^0.4.0||^1.0.0
+  checksum: 10c0/b698b3729de70a3de8140f0dedf1ee6c9017cc09fb841f82e91973d7ad59294f599acc0a4c933adb6ed2ad1db27b92315296d8be12999f420859745738601615
   languageName: node
   linkType: hard
 
@@ -906,7 +937,7 @@ __metadata:
   languageName: node
   linkType: hard
 
-"acorn@npm:^8.16.0":
+"acorn@npm:^8.16.0, acorn@npm:^8.17.0":
   version: 8.19.0
   resolution: "acorn@npm:8.19.0"
   bin:
@@ -1001,6 +1032,13 @@ __metadata:
   version: 3.0.0
   resolution: "chownr@npm:3.0.0"
   checksum: 10c0/43925b87700f7e3893296c8e9c56cc58f926411cce3a6e5898136daaf08f08b9a8eb76d37d3267e707d0dcc17aed2e2ebdf5848c0c3ce95cf910a919935c1b10
+  languageName: node
+  linkType: hard
+
+"colord-for-expressions@npm:colord@^2.10.0":
+  version: 2.10.0
+  resolution: "colord@npm:2.10.0"
+  checksum: 10c0/2f5d1d1759124f593deca17bbbab8a88bdc3ab68bbcc88db76c1192d9a5d575db202badde044bf61789561fa0ed7a9eb895382becad1af27ec65934c216e9e04
   languageName: node
   linkType: hard
 
@@ -1699,6 +1737,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"jsep@npm:^1.4.0":
+  version: 1.6.0
+  resolution: "jsep@npm:1.6.0"
+  checksum: 10c0/68b706c9f8873599ecf9c408b063ce661d1f53e5bceb6c25bf59448c73b1b8d4906ee40f892ccf32d83c6dba70b3aae495f00f3855fa0049025a07eadcd672ea
+  languageName: node
+  linkType: hard
+
 "json-schema-traverse@npm:^0.4.1":
   version: 0.4.1
   resolution: "json-schema-traverse@npm:0.4.1"
@@ -1710,6 +1755,20 @@ __metadata:
   version: 1.0.1
   resolution: "json-stable-stringify-without-jsonify@npm:1.0.1"
   checksum: 10c0/cb168b61fd4de83e58d09aaa6425ef71001bae30d260e2c57e7d09a5fd82223e2f22a042dedaab8db23b7d9ae46854b08bb1f91675a8be11c5cffebef5fb66a5
+  languageName: node
+  linkType: hard
+
+"jsonpath-plus@npm:^10.4.0":
+  version: 10.4.0
+  resolution: "jsonpath-plus@npm:10.4.0"
+  dependencies:
+    "@jsep-plugin/assignment": "npm:^1.3.0"
+    "@jsep-plugin/regex": "npm:^1.0.4"
+    jsep: "npm:^1.4.0"
+  bin:
+    jsonpath: bin/jsonpath-cli.js
+    jsonpath-plus: bin/jsonpath-cli.js
+  checksum: 10c0/500ace17c7b8d084f9e1284e96761722600909b8ddc1f3a5b18f9152ad9e1d63a61e3d713abd6d7141d4b61e1f632f1eb67b57be6a220b17b215b95ba050af07
   languageName: node
   linkType: hard
 
@@ -2293,6 +2352,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "sennheiser-spectera@workspace:."
   dependencies:
+    "@companion-app/expressions": "npm:^1.1.1"
     "@companion-module/base": "npm:^2.1.3"
     "@companion-module/tools": "npm:^3.2.0"
     "@types/node": "npm:^26.6.5"
@@ -2403,6 +2463,13 @@ __metadata:
   languageName: node
   linkType: hard
 
+"tagged-tag@npm:^1.0.0":
+  version: 1.0.0
+  resolution: "tagged-tag@npm:1.0.0"
+  checksum: 10c0/91d25c9ffb86a91f20522cefb2cbec9b64caa1febe27ad0df52f08993ff60888022d771e868e6416cf2e72dab68449d2139e8709ba009b74c6c7ecd4000048d1
+  languageName: node
+  linkType: hard
+
 "tapable@npm:^2.3.3":
   version: 2.3.3
   resolution: "tapable@npm:2.3.3"
@@ -2479,6 +2546,15 @@ __metadata:
   languageName: node
   linkType: hard
 
+"type-fest@npm:^5.8.0":
+  version: 5.10.0
+  resolution: "type-fest@npm:5.10.0"
+  dependencies:
+    tagged-tag: "npm:^1.0.0"
+  checksum: 10c0/313c5d0e37a3f1cc82e942f3228f897623c8b54a63a8a95532d0c2c21ab200793caa70bd8904a83fd713eb28d87ba32468b09b345ef6efa25cecb345b467226f
+  languageName: node
+  linkType: hard
+
 "typescript-eslint@npm:^8.72.0":
   version: 8.72.0
   resolution: "typescript-eslint@npm:8.72.0"
@@ -2532,6 +2608,13 @@ __metadata:
   version: 8.10.0
   resolution: "undici@npm:8.10.0"
   checksum: 10c0/37ae2b1db8f65c3a003504e2040e96887b99f9db16ba07dcf49c37ed8b7f8c72f4452f2d46f52f7c9e49518fe8325e3b5e7e02ac3a2424886bd67d4b62a0ecab
+  languageName: node
+  linkType: hard
+
+"unicode-segmenter@npm:^0.17.2":
+  version: 0.17.3
+  resolution: "unicode-segmenter@npm:0.17.3"
+  checksum: 10c0/4f960da725c953f706d17b556397d9c8226abf6590425fa43aed5ecfab64d795db87fb0cb086d73dbd80149e3cf33df439a9640fe88e6bac56261a8c938f832f
   languageName: node
   linkType: hard
 

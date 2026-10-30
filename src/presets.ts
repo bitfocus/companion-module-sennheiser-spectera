@@ -8,6 +8,7 @@ import {
 } from '@companion-module/base'
 import { SpecteraInstance, type SpecteraInstanceTypes } from './main.js'
 import {
+	AUDIO_INPUT_COUNT,
 	audioOutputChannelChoices,
 	Color,
 	getExistingMicAudiolinkModeFromState,
@@ -150,7 +151,7 @@ function buildChannelMeterBank(presets: Record<string, RawPresetEntry>, opts: Ch
 	presets[`${variableBase}${stereo ? 'Stereo' : 'Mono'}MetersHeader`] = {
 		type: 'text',
 		category,
-		name: `${label} - Meters (${stereo ? 'Stereo ' : 'Mono'})`,
+		name: `${label} - Meters (${stereo ? 'Stereo' : 'Mono'})`,
 		text: '',
 	}
 
@@ -3463,15 +3464,15 @@ export function UpdatePresets(self: SpecteraInstance): void {
 
 	//Layered Presets - Audio Meters
 	// One mono bank + one stereo (paired-channel) bank per "in" interface, and a mono-only bank per
-	// "out" interface. All banks share the single "Audio Meters" section (like SEKs/SKMs), split into
-	// groups by each bank's own header - not separate top-level sections.
-	const AUDIO_METERS_CATEGORY = 'Audio Meters'
+	// "out" interface. Each interface gets its own section, split into groups by each bank's header: the UI
+	// renders live previews for every preset in an expanded section, so one section holding every bank
+	// (240 meters) can saturate Companion while it is open.
 	for (const iface of METERING_INTERFACES) {
 		const base = {
 			variableBase: iface.varBase,
 			label: `${iface.name} ${iface.direction.toUpperCase()}`,
-			category: AUDIO_METERS_CATEGORY,
-			channelCount: 8,
+			category: `Audio Meters - ${iface.name}`,
+			channelCount: AUDIO_INPUT_COUNT,
 		}
 		buildChannelMeterBank(presets, { ...base, mode: 'mono' })
 		if (iface.direction === 'In') buildChannelMeterBank(presets, { ...base, mode: 'stereo' })

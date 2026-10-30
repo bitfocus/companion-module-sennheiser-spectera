@@ -1,7 +1,7 @@
 import { describe, expect, it, vi } from 'vitest'
 import { UpdateActions } from '../../src/actions.js'
 import { UpdateFeedbacks } from '../../src/feedbacks.js'
-import { UpdateCompositeElements } from '../../src/graphics.js'
+import { dbToPercentExpression, UpdateCompositeElements } from '../../src/graphics.js'
 import { SpecteraState } from '../../src/state.js'
 import { InputSource, InterfaceInputStatus, RfState } from '../../src/types.js'
 import { MOBILE_DEVICE_EXPRESSION_DESCRIPTION } from '../../src/utils.js'
@@ -289,7 +289,7 @@ describe('composite element definitions', () => {
 		expect(Object.keys(elements)).toEqual(['signalBars', 'audioMeter', 'rssiMeter'])
 		expect(elements.signalBars.elements).toHaveLength(8)
 		expect(elements.audioMeter.elements).toHaveLength(4)
-		expect(elements.audioMeter.elements[0].value.value).toContain('max(0, min(100')
+		expect(elements.audioMeter.elements[0].value.value).toBe(dbToPercentExpression('$(options:ch1Level)'))
 		expect(elements.audioMeter.elements[2].enabled.value).toContain('stereo')
 		expect(elements.rssiMeter.elements[0]).toMatchObject({ min: -90, max: -30, origin: -90 })
 	})

@@ -34,6 +34,7 @@
 		"undici": "^8.12.3"
 	},
 	"devDependencies": {
+		"@companion-app/expressions": "^1.1.1",
 		"@companion-module/tools": "^3.2.0",
 		"@types/node": "^26.6.5",
 		"@vitest/coverage-v8": "^4.1.12",

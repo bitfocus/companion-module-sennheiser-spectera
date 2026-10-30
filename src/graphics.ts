@@ -29,7 +29,7 @@ const PEAK_YELLOW_AT_DB = -12
 const PEAK_RED_AT_DB = -3
 
 // Piecewise-linear dB -> percent (0-100) over SCALE_POINTS, clamped at the ends. Build-time only.
-function dbToPercent(db: number): number {
+export function dbToPercent(db: number): number {
 	const [minDb] = SCALE_POINTS[0]
 	const [maxDb] = SCALE_POINTS[SCALE_POINTS.length - 1]
 	if (db <= minDb) return SCALE_POINTS[0][1]
@@ -44,16 +44,23 @@ function dbToPercent(db: number): number {
 	return 100
 }
 
-// Runtime version of dbToPercent against an option/variable reference: nested ternary over SCALE_POINTS, clamped to 0-100.
-function dbToPercentExpression(dbExpr: string): string {
-	let expr = `${SCALE_POINTS[SCALE_POINTS.length - 1][1]}`
-	for (let i = SCALE_POINTS.length - 2; i >= 0; i--) {
-		const [db0, pct0] = SCALE_POINTS[i]
-		const [db1, pct1] = SCALE_POINTS[i + 1]
-		const interp = `${pct0} + ((${dbExpr}) - (${db0})) * (${pct1} - ${pct0}) / (${db1} - (${db0}))`
-		expr = `(${dbExpr}) <= (${db1}) ? (${interp}) : (${expr})`
-	}
-	return `max(0, min(100, ${expr}))`
+// Runtime version of dbToPercent against an option/variable reference. Companion re-parses this on every
+// render, so it reads the level once and walks SCALE_POINTS in a loop rather than unrolling a ternary per
+// segment. A non-numeric level fails `db > minDb` and draws an empty meter.
+export function dbToPercentExpression(dbExpr: string): string {
+	const [minDb, minPct] = SCALE_POINTS[0]
+	const [maxDb, maxPct] = SCALE_POINTS[SCALE_POINTS.length - 1]
+	return [
+		`const db = ${dbExpr}`,
+		`if (!(db > ${minDb})) return ${minPct}`,
+		`if (db >= ${maxDb}) return ${maxPct}`,
+		`const p = ${JSON.stringify(SCALE_POINTS)}`,
+		`let i = 1`,
+		`while (db > p[i][0]) i++`,
+		`const a = p[i - 1]`,
+		`const b = p[i]`,
+		`a[1] + ((db - a[0]) * (b[1] - a[1])) / (b[0] - a[0])`,
+	].join('\n')
 }
 
 // Expression resolving to the color of the highest ascending stop whose threshold <= value, else baseColor.
