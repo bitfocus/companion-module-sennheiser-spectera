@@ -14,8 +14,11 @@ import type {
 	BaseStationState,
 	BaseStationSite,
 	AudioLevels,
+	AudioOutputIfCommandIsEnabled,
 } from './types.js'
 import {
+	CommandBehavior,
+	CommandState,
 	MtType,
 	RfState,
 	RFChannels,
@@ -38,6 +41,7 @@ import {
 	psuStatusLabels,
 } from './state_maps.js'
 import {
+	audioOutputInterfaceProps,
 	formatBatteryRuntimeMinutes,
 	getAntennaFrequency,
 	getPortableMobileDeviceSettings,
@@ -566,15 +570,32 @@ export function getAudioInputVariables(
 	}
 }
 
+function findMicLinkDevice(output: AudioOutput, mobileDevices: Map<number, MobileDevice>): MobileDevice | undefined {
+	if (output.micAudiolinkId < 0) return undefined
+	return findByLinkId(mobileDevices.values(), 'micAudiolinkId', output.micAudiolinkId)
+}
+
 /**
  * Resolve the linked mobile device name for an audio output from its micAudiolinkId.
  */
 export function getAudioOutputSourceName(output: AudioOutput, mobileDevices: Map<number, MobileDevice>): string {
-	if (output.micAudiolinkId < 0) return 'None'
-	for (const device of mobileDevices.values()) {
-		if (device.micAudiolinkId === output.micAudiolinkId) return device.name
-	}
-	return 'None'
+	return findMicLinkDevice(output, mobileDevices)?.name ?? 'None'
+}
+
+function isCommandEnabled(device: MobileDevice | undefined): boolean {
+	return device?.commandBehavior !== undefined && device.commandBehavior !== CommandBehavior.Disabled
+}
+
+function isCommandActive(device: MobileDevice): boolean {
+	return device.commandState === CommandState.Pressed || device.commandState === CommandState.Latched
+}
+
+/**
+ * Whether the base station routes this output by its `*IfCommandIsEnabled` properties, which it does
+ * while the linked device has a Command behavior (Momentary/Latching) set.
+ */
+export function isAudioOutputCommandEnabled(output: AudioOutput, mobileDevices: Map<number, MobileDevice>): boolean {
+	return isCommandEnabled(findMicLinkDevice(output, mobileDevices))
 }
 
 export function getAudioOutputVariables(
@@ -585,18 +606,49 @@ export function getAudioOutputVariables(
 	return {
 		[`audio_output_${displayId}_mic_link_id`]: output.micAudiolinkId,
 		[`audio_output_${displayId}_source`]: getAudioOutputSourceName(output, mobileDevices),
-		[`audio_output_${displayId}_interfaces`]: getAudioOutputActiveChannels(output),
+		[`audio_output_${displayId}_interfaces`]: getAudioOutputActiveChannels(
+			output,
+			isAudioOutputCommandEnabled(output, mobileDevices),
+		),
 	}
 }
 
+type AudioLevelField = Exclude<keyof AudioLevels, 'updateCounter'>
+
+const OUTPUT_INTERFACES = [
+	{ label: 'Dante', levelField: 'aoIpOut', props: audioOutputInterfaceProps.commandModeAudioNetwork },
+	{ label: 'MADI 1', levelField: 'madi1Out', props: audioOutputInterfaceProps.commandModeMadi1 },
+	{ label: 'MADI 2', levelField: 'madi2Out', props: audioOutputInterfaceProps.commandModeMadi2 },
+] as const satisfies ReadonlyArray<{
+	label: string
+	levelField: AudioLevelField
+	props: (typeof audioOutputInterfaceProps)[keyof typeof audioOutputInterfaceProps]
+}>
+
+// Output metering is post-gate: Mute passes audio only while the button is inactive and Talk only while it is
+// active, so prefer whichever is passing audio right now and fall back to the gated one.
+const ROUTED_OUTPUT_MODES_INACTIVE: readonly AudioOutputIfCommandIsEnabled[] = ['On', 'Mute', 'Talk']
+const ROUTED_OUTPUT_MODES_ACTIVE: readonly AudioOutputIfCommandIsEnabled[] = ['On', 'Talk', 'Mute']
+
+function getOutputInterfaceMode(
+	output: AudioOutput,
+	iface: (typeof OUTPUT_INTERFACES)[number],
+	commandEnabled: boolean,
+): AudioOutputIfCommandIsEnabled {
+	return output[iface.props[commandEnabled ? 'enabled' : 'disabled']] as AudioOutputIfCommandIsEnabled
+}
+
 /**
- * Comma-separated list of active (On) channel names for one audio output.
+ * Comma-separated list of the interfaces an audio output is routed to, under the routing set that
+ * applies (command enabled or disabled). Command-controlled interfaces are suffixed with their mode.
  */
-export function getAudioOutputActiveChannels(output: AudioOutput): string {
+export function getAudioOutputActiveChannels(output: AudioOutput, commandEnabled: boolean): string {
 	const active: string[] = []
-	if (output.aoIpEnableIfCommandIsDisabled === 'On') active.push('Dante')
-	if (output.madi1EnableIfCommandIsDisabled === 'On') active.push('MADI 1')
-	if (output.madi2EnableIfCommandIsDisabled === 'On') active.push('MADI 2')
+	for (const iface of OUTPUT_INTERFACES) {
+		const mode = getOutputInterfaceMode(output, iface, commandEnabled)
+		if (mode === 'On') active.push(iface.label)
+		else if (mode === 'Mute' || mode === 'Talk') active.push(`${iface.label} (${mode})`)
+	}
 	return active.length ? active.join(', ') : 'None'
 }
 
@@ -651,13 +703,15 @@ export function getAntennaVariables(
 }
 
 // Resolve a device's MIC (and IEM, for SEK) levels via current routing.
-type AudioLevelField = Exclude<keyof AudioLevels, 'updateCounter'>
-
-const OUTPUT_LEVEL_FIELDS = [
-	['aoIpEnableIfCommandIsDisabled', 'aoIpOut'],
-	['madi1EnableIfCommandIsDisabled', 'madi1Out'],
-	['madi2EnableIfCommandIsDisabled', 'madi2Out'],
-] as const satisfies ReadonlyArray<readonly [keyof AudioOutput, AudioLevelField]>
+function getOutputLevelField(output: AudioOutput, device: MobileDevice): AudioLevelField | undefined {
+	const commandEnabled = isCommandEnabled(device)
+	const modes = commandEnabled && isCommandActive(device) ? ROUTED_OUTPUT_MODES_ACTIVE : ROUTED_OUTPUT_MODES_INACTIVE
+	for (const mode of modes) {
+		const iface = OUTPUT_INTERFACES.find((i) => getOutputInterfaceMode(output, i, commandEnabled) === mode)
+		if (iface) return iface.levelField
+	}
+	return undefined
+}
 
 const INPUT_LEVEL_FIELDS: Partial<Record<InputSource, AudioLevelField>> = {
 	[InputSource.Dante]: 'aoIpIn',
@@ -689,7 +743,7 @@ export function getMobileDeviceLevelVariables(
 	if (audioLevels && device.micAudiolinkId != null && device.micAudiolinkId >= 0) {
 		const output = findByLinkId(audioOutputs.values(), 'micAudiolinkId', device.micAudiolinkId)
 		if (output) {
-			const field = OUTPUT_LEVEL_FIELDS.find(([flag]) => output[flag] === 'On')?.[1]
+			const field = getOutputLevelField(output, device)
 			const level = field ? audioLevels[field] : undefined
 			if (level && output.outputId < level.rms.length) {
 				values[`${deviceVariableId}_mic_level_rms`] = level.rms[output.outputId]
