@@ -41,6 +41,7 @@ import {
 	getAudioOutputActiveChannels,
 	getAudioInputIemLinkDevices,
 	getMobileDeviceLevelVariables,
+	isAudioOutputCommandEnabled,
 } from './variables.js'
 import { UpdatePresets } from './presets.js'
 import { UpdateFeedbacks } from './feedbacks.js'
@@ -807,7 +808,10 @@ export class SpecteraApi extends EventEmitter {
 					feedbacksToCheck,
 				)
 				changedVariables[`audio_output_${displayId}_source`] = getAudioOutputSourceName(value, this.state.mobileDevices)
-				changedVariables[`audio_output_${displayId}_interfaces`] = getAudioOutputActiveChannels(value)
+				changedVariables[`audio_output_${displayId}_interfaces`] = getAudioOutputActiveChannels(
+					value,
+					isAudioOutputCommandEnabled(value, this.state.mobileDevices),
+				)
 				structureChanged = !oldState
 			} else if (key.startsWith('/api/audio/links/')) {
 				const match = key.match(/\/api\/audio\/links\/(\d+)/)
@@ -911,6 +915,23 @@ export class SpecteraApi extends EventEmitter {
 						this.variableCache[settingsJsonVar] = settingsJsonVal
 					}
 					structureChanged = !oldState || oldState.name !== value.name
+					// The device's Command behavior picks which routing set its MIC output uses
+					if (
+						oldState?.commandBehavior !== value.commandBehavior ||
+						oldState?.micAudiolinkId !== value.micAudiolinkId
+					) {
+						for (const output of this.state.audioOutputs.values()) {
+							if (
+								output.micAudiolinkId >= 0 &&
+								(output.micAudiolinkId === value.micAudiolinkId || output.micAudiolinkId === oldState?.micAudiolinkId)
+							) {
+								changedVariables[`audio_output_${output.outputId + 1}_interfaces`] = getAudioOutputActiveChannels(
+									output,
+									isAudioOutputCommandEnabled(output, this.state.mobileDevices),
+								)
+							}
+						}
+					}
 					// Recompute iem_link_devices for any audio input affected by this device's link change
 					const oldIemLinkId = oldState?.type === MtType.SEK ? oldState.iemAudiolinkId : undefined
 					const newIemLinkId = value.iemAudiolinkId

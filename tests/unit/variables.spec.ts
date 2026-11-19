@@ -1,6 +1,10 @@
 import { describe, expect, it } from 'vitest'
-import { AudiolinkModeId, InputSource, type AudioLevels, type AudioLink } from '../../src/types.js'
-import { getAudioOutputActiveChannels, getMobileDeviceLevelVariables } from '../../src/variables.js'
+import { AudiolinkModeId, CommandBehavior, InputSource, type AudioLevels, type AudioLink } from '../../src/types.js'
+import {
+	getAudioOutputActiveChannels,
+	getMobileDeviceLevelVariables,
+	isAudioOutputCommandEnabled,
+} from '../../src/variables.js'
 import { makeAudioInput, makeAudioOutput, makeSekDevice, makeSkmDevice } from '../fixtures/devices.js'
 
 function makeAudioLinks(...links: AudioLink[]): Map<number, AudioLink> {
@@ -109,6 +113,81 @@ describe('mobile device audio-level variables', () => {
 		})
 	})
 
+	describe('MIC metering with Command enabled', () => {
+		// Mirrors a live base station: Dante only without Command, MADI 2 only with it.
+		const output = makeAudioOutput({
+			outputId: 1,
+			micAudiolinkId: 2,
+			aoIpEnableIfCommandIsDisabled: 'On',
+			madi1EnableIfCommandIsDisabled: 'Off',
+			madi2EnableIfCommandIsDisabled: 'Off',
+			aoIpEnableIfCommandIsEnabled: 'Off',
+			madi1EnableIfCommandIsEnabled: 'Off',
+			madi2EnableIfCommandIsEnabled: 'On',
+		})
+		const levels: AudioLevels = {
+			updateCounter: 1,
+			aoIpOut: { rms: [-127.5, -127.5], peak: [-127.5, -127.5] },
+			madi2Out: { rms: [-127.5, -23], peak: [-127.5, -20] },
+		}
+
+		it.each([CommandBehavior.Momentary, CommandBehavior.Latching])(
+			'reads the command-enabled routing when the behavior is %s',
+			(commandBehavior) => {
+				const device = makeSkmDevice({ serial: 'SKM-123', micAudiolinkId: 2, commandBehavior })
+
+				expect(getMobileDeviceLevelVariables(device, new Map([[1, output]]), new Map(), new Map(), levels)).toEqual({
+					'SKM_SKM-123_mic_level_rms': -23,
+					'SKM_SKM-123_mic_level_peak': -20,
+				})
+			},
+		)
+
+		it('reads the command-disabled routing when the behavior is Disabled', () => {
+			const device = makeSkmDevice({ serial: 'SKM-123', micAudiolinkId: 2, commandBehavior: CommandBehavior.Disabled })
+
+			expect(getMobileDeviceLevelVariables(device, new Map([[1, output]]), new Map(), new Map(), levels)).toEqual({
+				'SKM_SKM-123_mic_level_rms': -127.5,
+				'SKM_SKM-123_mic_level_peak': -127.5,
+			})
+		})
+
+		it('prefers an On interface over Mute, and Mute over Talk', () => {
+			const device = makeSkmDevice({ serial: 'SKM-123', micAudiolinkId: 2, commandBehavior: CommandBehavior.Latching })
+			const routed = (dante: 'Off' | 'Mute' | 'Talk', madi1: 'Off' | 'On' | 'Mute') =>
+				new Map([
+					[
+						1,
+						makeAudioOutput({
+							outputId: 1,
+							micAudiolinkId: 2,
+							aoIpEnableIfCommandIsEnabled: dante,
+							madi1EnableIfCommandIsEnabled: madi1,
+							madi2EnableIfCommandIsEnabled: 'Off',
+						}),
+					],
+				])
+			const meters: AudioLevels = {
+				updateCounter: 1,
+				aoIpOut: { rms: [0, -10], peak: [0, -5] },
+				madi1Out: { rms: [0, -30], peak: [0, -25] },
+			}
+
+			expect(getMobileDeviceLevelVariables(device, routed('Talk', 'On'), new Map(), new Map(), meters)).toMatchObject({
+				'SKM_SKM-123_mic_level_rms': -30,
+			})
+			expect(getMobileDeviceLevelVariables(device, routed('Talk', 'Mute'), new Map(), new Map(), meters)).toMatchObject(
+				{ 'SKM_SKM-123_mic_level_rms': -30 },
+			)
+			expect(getMobileDeviceLevelVariables(device, routed('Mute', 'Off'), new Map(), new Map(), meters)).toMatchObject({
+				'SKM_SKM-123_mic_level_rms': -10,
+			})
+			expect(getMobileDeviceLevelVariables(device, routed('Talk', 'Off'), new Map(), new Map(), meters)).toMatchObject({
+				'SKM_SKM-123_mic_level_rms': -10,
+			})
+		})
+	})
+
 	it('does not publish IEM level variables for an SKM', () => {
 		const device = makeSkmDevice({ serial: 'SKM-123' })
 
@@ -132,6 +211,41 @@ describe('audio output active-channel display', () => {
 			madi2EnableIfCommandIsDisabled: madi2,
 		})
 
-		expect(getAudioOutputActiveChannels(output)).toBe(expected)
+		expect(getAudioOutputActiveChannels(output, false)).toBe(expected)
+	})
+
+	it('lists the command-enabled routing with Mute/Talk modes when Command is enabled', () => {
+		const output = makeAudioOutput({
+			aoIpEnableIfCommandIsDisabled: 'On',
+			madi1EnableIfCommandIsDisabled: 'On',
+			madi2EnableIfCommandIsDisabled: 'On',
+			aoIpEnableIfCommandIsEnabled: 'Off',
+			madi1EnableIfCommandIsEnabled: 'Talk',
+			madi2EnableIfCommandIsEnabled: 'On',
+		})
+
+		expect(getAudioOutputActiveChannels(output, true)).toBe('MADI 1 (Talk), MADI 2')
+	})
+})
+
+describe('audio output command routing', () => {
+	const output = makeAudioOutput({ outputId: 0, micAudiolinkId: 5 })
+
+	it.each([
+		[CommandBehavior.Disabled, false],
+		[CommandBehavior.Momentary, true],
+		[CommandBehavior.Latching, true],
+		[undefined, false],
+	] as const)('treats a linked device with behavior %s as command enabled: %s', (commandBehavior, expected) => {
+		const devices = new Map([[1, makeSekDevice({ micAudiolinkId: 5, commandBehavior })]])
+
+		expect(isAudioOutputCommandEnabled(output, devices)).toBe(expected)
+	})
+
+	it('is not command enabled without a linked device', () => {
+		const devices = new Map([[1, makeSekDevice({ micAudiolinkId: 6, commandBehavior: CommandBehavior.Latching })]])
+
+		expect(isAudioOutputCommandEnabled(output, devices)).toBe(false)
+		expect(isAudioOutputCommandEnabled(makeAudioOutput({ micAudiolinkId: -1 }), devices)).toBe(false)
 	})
 })
