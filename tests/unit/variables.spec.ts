@@ -1,5 +1,12 @@
 import { describe, expect, it } from 'vitest'
-import { AudiolinkModeId, CommandBehavior, InputSource, type AudioLevels, type AudioLink } from '../../src/types.js'
+import {
+	AudiolinkModeId,
+	CommandBehavior,
+	CommandState,
+	InputSource,
+	type AudioLevels,
+	type AudioLink,
+} from '../../src/types.js'
 import {
 	getAudioOutputActiveChannels,
 	getMobileDeviceLevelVariables,
@@ -152,7 +159,42 @@ describe('mobile device audio-level variables', () => {
 			})
 		})
 
-		it('prefers an On interface over Mute, and Mute over Talk', () => {
+		it.each([
+			[CommandBehavior.Latching, CommandState.Unlatched, -10],
+			[CommandBehavior.Latching, CommandState.Latched, -30],
+			[CommandBehavior.Momentary, CommandState.Released, -10],
+			[CommandBehavior.Momentary, CommandState.Pressed, -30],
+			[CommandBehavior.Latching, CommandState.Unknown, -10],
+		] as const)(
+			'with Dante on Mute and MADI 2 on Talk, %s/%s meters the interface passing audio',
+			(commandBehavior, commandState, expectedRms) => {
+				const device = makeSkmDevice({ serial: 'SKM-123', micAudiolinkId: 2, commandBehavior, commandState })
+				const outputs = new Map([
+					[
+						1,
+						makeAudioOutput({
+							outputId: 1,
+							micAudiolinkId: 2,
+							aoIpEnableIfCommandIsEnabled: 'Mute',
+							madi1EnableIfCommandIsEnabled: 'Off',
+							madi2EnableIfCommandIsEnabled: 'Talk',
+						}),
+					],
+				])
+				const meters: AudioLevels = {
+					updateCounter: 1,
+					aoIpOut: { rms: [0, -10], peak: [0, -5] },
+					madi2Out: { rms: [0, -30], peak: [0, -25] },
+				}
+
+				expect(getMobileDeviceLevelVariables(device, outputs, new Map(), new Map(), meters)).toEqual({
+					'SKM_SKM-123_mic_level_rms': expectedRms,
+					'SKM_SKM-123_mic_level_peak': expectedRms + 5,
+				})
+			},
+		)
+
+		it('prefers an On interface over Mute, and Mute over Talk while the button is inactive', () => {
 			const device = makeSkmDevice({ serial: 'SKM-123', micAudiolinkId: 2, commandBehavior: CommandBehavior.Latching })
 			const routed = (dante: 'Off' | 'Mute' | 'Talk', madi1: 'Off' | 'On' | 'Mute') =>
 				new Map([

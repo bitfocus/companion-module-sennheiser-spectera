@@ -18,6 +18,7 @@ import type {
 } from './types.js'
 import {
 	CommandBehavior,
+	CommandState,
 	MtType,
 	RfState,
 	RFChannels,
@@ -585,6 +586,10 @@ function isCommandEnabled(device: MobileDevice | undefined): boolean {
 	return device?.commandBehavior !== undefined && device.commandBehavior !== CommandBehavior.Disabled
 }
 
+function isCommandActive(device: MobileDevice): boolean {
+	return device.commandState === CommandState.Pressed || device.commandState === CommandState.Latched
+}
+
 /**
  * Whether the base station routes this output by its `*IfCommandIsEnabled` properties, which it does
  * while the linked device has a Command behavior (Momentary/Latching) set.
@@ -620,8 +625,10 @@ const OUTPUT_INTERFACES = [
 	props: (typeof audioOutputInterfaceProps)[keyof typeof audioOutputInterfaceProps]
 }>
 
-// Mute passes audio except while the button is active, Talk only while it is, so prefer them in that order.
-const ROUTED_OUTPUT_MODES: readonly AudioOutputIfCommandIsEnabled[] = ['On', 'Mute', 'Talk']
+// Output metering is post-gate: Mute passes audio only while the button is inactive and Talk only while it is
+// active, so prefer whichever is passing audio right now and fall back to the gated one.
+const ROUTED_OUTPUT_MODES_INACTIVE: readonly AudioOutputIfCommandIsEnabled[] = ['On', 'Mute', 'Talk']
+const ROUTED_OUTPUT_MODES_ACTIVE: readonly AudioOutputIfCommandIsEnabled[] = ['On', 'Talk', 'Mute']
 
 function getOutputInterfaceMode(
 	output: AudioOutput,
@@ -696,8 +703,10 @@ export function getAntennaVariables(
 }
 
 // Resolve a device's MIC (and IEM, for SEK) levels via current routing.
-function getOutputLevelField(output: AudioOutput, commandEnabled: boolean): AudioLevelField | undefined {
-	for (const mode of ROUTED_OUTPUT_MODES) {
+function getOutputLevelField(output: AudioOutput, device: MobileDevice): AudioLevelField | undefined {
+	const commandEnabled = isCommandEnabled(device)
+	const modes = commandEnabled && isCommandActive(device) ? ROUTED_OUTPUT_MODES_ACTIVE : ROUTED_OUTPUT_MODES_INACTIVE
+	for (const mode of modes) {
 		const iface = OUTPUT_INTERFACES.find((i) => getOutputInterfaceMode(output, i, commandEnabled) === mode)
 		if (iface) return iface.levelField
 	}
@@ -734,7 +743,7 @@ export function getMobileDeviceLevelVariables(
 	if (audioLevels && device.micAudiolinkId != null && device.micAudiolinkId >= 0) {
 		const output = findByLinkId(audioOutputs.values(), 'micAudiolinkId', device.micAudiolinkId)
 		if (output) {
-			const field = getOutputLevelField(output, isCommandEnabled(device))
+			const field = getOutputLevelField(output, device)
 			const level = field ? audioLevels[field] : undefined
 			if (level && output.outputId < level.rms.length) {
 				values[`${deviceVariableId}_mic_level_rms`] = level.rms[output.outputId]
