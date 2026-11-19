@@ -5,7 +5,19 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
-## [1.5.0]- 2026-10-30
+## [Unreleased]
+
+### Changed
+
+- **Audio Output Interfaces** variable (`audio_output_N_interfaces`) now lists the routing that applies while the linked mobile device has a Command Behavior set, with Command-controlled interfaces marked by their mode, e.g. `MADI 1 (Talk)`
+
+### Fixed
+
+- Mobile device MIC level variables and Status (Meters) presets stuck at -127.5 when the device has a Command Behavior (Momentary or Latching) and its Command-enabled output routing differs from the Command-disabled routing ([#37](https://github.com/bitfocus/companion-module-sennheiser-spectera/issues/37))
+- Mobile device MIC level going silent when the Command button is pressed or latched while Mute and Talk are routed to different interfaces. The meter now follows the interface that is passing audio
+- **Audio Output Interfaces** variable not updating when a mobile device's Command Behavior or MIC link changed
+
+## [1.5.0] - 2026-10-30
 
 - **Requires Bitfocus Buttons 1.8 or newer, or Companion 5.0 or newer**
 - **Requires Spectera firmware v1.5.0 or newer**
