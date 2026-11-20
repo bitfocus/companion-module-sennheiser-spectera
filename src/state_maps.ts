@@ -13,7 +13,6 @@ import type {
 	SEKDevice,
 	SKMDevice,
 	MobileDeviceBase,
-	AudioLink,
 	InterferenceDetail,
 	MicModule,
 	InterfaceStatusAudioNetwork,
@@ -25,7 +24,6 @@ import {
 	RfStateStartup,
 	RFChannels,
 	PsuStatus,
-	AudiolinkModeId,
 	MicLowCutHzSEK,
 	MicLowCutHzSKM,
 	MtType,
@@ -59,7 +57,6 @@ const toBindingLabel = (v: unknown): VariableValue => {
 	const binding = (v as AntennaBinding[])?.[0]?.binding
 	return Object.keys(RFChannels).find((key) => RFChannels[key as keyof typeof RFChannels] === binding) ?? 'None'
 }
-const toAudioLinkModeLabel = (v: unknown): VariableValue => AudiolinkModeId[v as number] ?? 'Unknown'
 const toMicLowCutLabel = (v: unknown, state: SEKDevice | SKMDevice): VariableValue => {
 	if (state.type === MtType.SEK) {
 		return v === MicLowCutHzSEK.Off ? 'Off' : (v as number)
@@ -215,7 +212,7 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 	swUpdatePossible: { variable: 'sw_update_possible', valueFn: passthrough },
 	swUpdateProgress: { variable: 'sw_update_progress', valueFn: passthrough },
 	micAudiolinkId: {
-		feedback: 'mobileDeviceMicAudiolinkId',
+		feedback: ['mobileDeviceMicAudiolinkId', 'mobileDeviceMicAudiolinkMode'],
 		variable: 'mic_audiolink_id',
 		valueFn: passthrough,
 	},
@@ -270,7 +267,7 @@ export const MobileDeviceStateMap: StateMap<SEKDevice & SKMDevice> = {
 		valueFn: toMicLowCutLabel,
 	},
 	iemAudiolinkId: {
-		feedback: ['iemAudioInputLinked', 'iemAudioInputNoLinkId'],
+		feedback: ['iemAudioInputLinked', 'iemAudioInputNoLinkId', 'iemAudioLinkMode'],
 		variable: 'iem_audiolink_id',
 		valueFn: passthrough,
 	},
@@ -351,12 +348,6 @@ export const BaseStationSiteMap: StateMap<BaseStationSite> = {
 	deviceName: { variable: 'base_station_name', valueFn: passthrough },
 	location: { variable: 'base_station_location', valueFn: passthrough },
 	position: { variable: 'base_station_position', valueFn: passthrough },
-}
-
-export const AudioLinkStateMap: StateMap<AudioLink> = {
-	audiolinkId: { variable: 'id', valueFn: passthrough },
-	rfChannelId: { variable: 'rf_channel_id', valueFn: passthrough },
-	modeId: { variable: 'mode', valueFn: toAudioLinkModeLabel },
 }
 
 export const AudioNetworkStateMap: StateMap<InterfaceStatusAudioNetwork> = {
