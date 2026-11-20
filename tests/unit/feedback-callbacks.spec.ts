@@ -3,6 +3,7 @@ import { UpdateFeedbacks } from '../../src/feedbacks.js'
 import { SpecteraState } from '../../src/state.js'
 import {
 	AntennaPortId,
+	AudiolinkModeId,
 	BandwidthMode,
 	CableEmulation,
 	CommandBehavior,
@@ -166,6 +167,29 @@ describe('mobile-device feedback callbacks', () => {
 			['mobileDeviceRSSI', { serial, rssiThreshold: -70 }],
 		] as const
 		for (const [id, options] of cases) await expect(result(feedbacks, id, options)).resolves.toBe(true)
+	})
+
+	it('matches the Mic and IEM audio link modes, treating a missing link as None', async () => {
+		const { state, feedbacks } = makeFeedbacks()
+		state.updateAudioLink({ audiolinkId: 10, rfChannelId: 0, modeId: AudiolinkModeId['RAW (Mono)'] })
+		state.updateAudioLink({ audiolinkId: 20, rfChannelId: 0, modeId: AudiolinkModeId['LIVE (Stereo)'] })
+		const serial = 'SEK-001'
+
+		await expect(
+			result(feedbacks, 'mobileDeviceMicAudiolinkMode', { serial, modeId: AudiolinkModeId['RAW (Mono)'] }),
+		).resolves.toBe(true)
+		await expect(
+			result(feedbacks, 'mobileDeviceMicAudiolinkMode', { serial, modeId: AudiolinkModeId['LIVE (Mono)'] }),
+		).resolves.toBe(false)
+		await expect(
+			result(feedbacks, 'iemAudioLinkMode', { serial, modeId: AudiolinkModeId['LIVE (Stereo)'] }),
+		).resolves.toBe(true)
+		await expect(
+			result(feedbacks, 'mobileDeviceMicAudiolinkMode', { serial: 'SKM-003', modeId: AudiolinkModeId.None }),
+		).resolves.toBe(true)
+		await expect(
+			result(feedbacks, 'iemAudioLinkMode', { serial: 'SKM-003', modeId: AudiolinkModeId.None }),
+		).resolves.toBe(false)
 	})
 
 	it('matches SEK settings and returns the current LED color', async () => {

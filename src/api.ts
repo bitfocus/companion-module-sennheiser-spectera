@@ -41,6 +41,7 @@ import {
 	getAudioOutputActiveChannels,
 	getAudioInputIemLinkDevices,
 	getMobileDeviceLevelVariables,
+	getMobileDeviceLinkModeVariables,
 	isAudioOutputCommandEnabled,
 } from './variables.js'
 import { UpdatePresets } from './presets.js'
@@ -756,15 +757,22 @@ export class SpecteraApi extends EventEmitter {
 					this.state.audioLinks,
 					levels,
 				)
-				for (const [varName, val] of Object.entries(deviceLevels)) {
-					if (this.variableCache[varName] !== val) {
-						changedVariables[varName] = val
-						this.variableCache[varName] = val
-					}
-				}
+				this.setChangedVariables(deviceLevels, changedVariables)
 			}
 
 			this.instance.checkFeedbacks('audioLevelThreshold')
+		}
+	}
+
+	private setChangedVariables(
+		values: Record<string, VariableValue>,
+		changedVariables: Record<string, VariableValue>,
+	): void {
+		for (const [varName, val] of Object.entries(values)) {
+			if (this.variableCache[varName] !== val) {
+				changedVariables[varName] = val
+				this.variableCache[varName] = val
+			}
 		}
 	}
 
@@ -817,6 +825,7 @@ export class SpecteraApi extends EventEmitter {
 				const match = key.match(/\/api\/audio\/links\/(\d+)/)
 				if (!match) continue
 				const linkId = parseInt(match[1], 10)
+				const oldModeId = this.state.audioLinks.get(linkId)?.modeId
 				if (value === null) {
 					this.state.removeAudioLink(linkId)
 					structureChanged = true
@@ -825,6 +834,18 @@ export class SpecteraApi extends EventEmitter {
 					const oldState = this.state.audioLinks.get(linkId)
 					this.state.updateAudioLink(value)
 					structureChanged = !oldState
+				}
+				if (this.state.audioLinks.get(linkId)?.modeId !== oldModeId) {
+					for (const device of this.state.mobileDevices.values()) {
+						if (device.micAudiolinkId === linkId || (device.type === MtType.SEK && device.iemAudiolinkId === linkId)) {
+							this.setChangedVariables(
+								getMobileDeviceLinkModeVariables(device, this.state.audioLinks),
+								changedVariables,
+							)
+						}
+					}
+					feedbacksToCheck.add('mobileDeviceMicAudiolinkMode')
+					feedbacksToCheck.add('iemAudioLinkMode')
 				}
 			} else if (key.startsWith('/api/rf/channels/')) {
 				const oldState = this.state.rfChannels.get(value.rfChannelId)
@@ -906,6 +927,7 @@ export class SpecteraApi extends EventEmitter {
 						changedVariables,
 						feedbacksToCheck,
 					)
+					this.setChangedVariables(getMobileDeviceLinkModeVariables(value, this.state.audioLinks), changedVariables)
 					// settings_json is a composite of many fields and isn't in MobileDeviceStateMap, so
 					// recompute it here whenever the device changes to keep the exported snapshot current.
 					const settingsJsonVar = `${prefix}settings_json`

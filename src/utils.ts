@@ -9,6 +9,7 @@ import {
 	type Antenna,
 	AntennaPortId,
 	type AudioLevels,
+	type AudioLink,
 	AudiolinkModeId,
 	CableEmulation,
 	CommandBehavior,
@@ -530,6 +531,20 @@ export function getExistingMicAudiolinkModeFromState(state: SpecteraState, devic
 		}
 	}
 	return undefined
+}
+
+/** Mode of the given audio link, or `None` when there is no active link or it isn't known yet. */
+export function getAudiolinkModeId(
+	audioLinks: Map<number, AudioLink>,
+	audiolinkId: number | undefined,
+): AudiolinkModeId {
+	if (audiolinkId === undefined || audiolinkId < 0) return AudiolinkModeId.None
+	return audioLinks.get(audiolinkId)?.modeId ?? AudiolinkModeId.None
+}
+
+export function getAudiolinkModeLabel(audioLinks: Map<number, AudioLink>, audiolinkId: number | undefined): string {
+	const modeId = getAudiolinkModeId(audioLinks, audiolinkId)
+	return AudiolinkModeId[modeId] ?? 'Unknown'
 }
 
 // Offset added to stereo pair IDs to distinguish them from mono input IDs.

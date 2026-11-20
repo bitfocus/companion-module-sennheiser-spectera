@@ -7,6 +7,11 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Added
+
+- Mobile device audio link mode variables: `*_mic_audiolink_mode` for all devices and `*_iem_audiolink_mode` for SEK, e.g. `LIVE (Mono)` or `RAW Low Latency (Mono)` (`None` when unlinked)
+- **Mobile Device - Mic Audio Link Mode** and **Mobile Device - IEM Audio Link Mode** feedbacks to style buttons by the current link mode
+
 ### Changed
 
 - **Audio Output Interfaces** variable (`audio_output_N_interfaces`) now lists the routing that applies while the linked mobile device has a Command Behavior set, with Command-controlled interfaces marked by their mode, e.g. `MADI 1 (Talk)`

@@ -24,6 +24,9 @@ import {
 	CommandBehavior,
 	CommandState,
 	type CommandColors,
+	AudiolinkModeId,
+	IemAudiolinkMode,
+	MicAudiolinkMode,
 } from './types.js'
 import {
 	audioOutputChannelChoices,
@@ -38,6 +41,7 @@ import {
 	getDeviceFromOptions,
 	getMobileDeviceChoices,
 	getAudioLinkChoices,
+	getAudiolinkModeId,
 	getAudioInputChoices,
 	getAudioOutputChoices,
 	rfChannelChoices,
@@ -641,6 +645,33 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		},
 	}
 
+	feedbacks['iemAudioLinkMode'] = {
+		type: 'boolean',
+		name: 'Mobile Device - IEM Audio Link Mode',
+		description: 'Indicates if the IEM audio link is in the selected mode',
+		defaultStyle: {
+			bgcolor: Color.SpecteraGreen,
+		},
+		options: [
+			mobileDeviceOption('serial', 'SEK', sekMobileDeviceChoices),
+			{
+				type: 'dropdown',
+				label: 'Link Mode',
+				id: 'modeId',
+				choices: getChoicesFromEnum(IemAudiolinkMode),
+				default: IemAudiolinkMode['LIVE (Stereo)'],
+			},
+		],
+		callback: async (feedback) => {
+			const device = getDeviceFromOptions(self.state, feedback.options)
+			if (device?.type !== MtType.SEK) return false
+			return (
+				getAudiolinkModeId(self.state.audioLinks, device.iemAudiolinkId) ===
+				(Number(feedback.options.modeId) as AudiolinkModeId)
+			)
+		},
+	}
+
 	feedbacks['iemAudioInputLinked'] = {
 		type: 'boolean',
 		name: 'Mobile Device - IEM Audio Input Linked',
@@ -1099,6 +1130,33 @@ export function UpdateFeedbacks(self: SpecteraInstance): void {
 		callback: async (feedback) => {
 			const device = getDeviceFromOptions(self.state, feedback.options)
 			return device?.micAudiolinkActive === true
+		},
+	}
+
+	feedbacks['mobileDeviceMicAudiolinkMode'] = {
+		type: 'boolean',
+		name: 'Mobile Device - Mic Audio Link Mode',
+		description: 'Check if the Mic Audio Link is in the selected mode',
+		defaultStyle: {
+			bgcolor: Color.SpecteraBlue,
+		},
+		options: [
+			mobileDeviceOption('serial', 'Mobile Device', mobileDeviceChoices),
+			{
+				type: 'dropdown',
+				label: 'Link Mode',
+				id: 'modeId',
+				choices: getChoicesFromEnum(MicAudiolinkMode),
+				default: MicAudiolinkMode['LIVE (Mono)'],
+			},
+		],
+		callback: async (feedback) => {
+			const device = getDeviceFromOptions(self.state, feedback.options)
+			if (!device) return false
+			return (
+				getAudiolinkModeId(self.state.audioLinks, device.micAudiolinkId) ===
+				(Number(feedback.options.modeId) as AudiolinkModeId)
+			)
 		},
 	}
 

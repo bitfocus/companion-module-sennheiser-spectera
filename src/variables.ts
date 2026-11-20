@@ -44,6 +44,7 @@ import {
 	audioOutputInterfaceProps,
 	formatBatteryRuntimeMinutes,
 	getAntennaFrequency,
+	getAudiolinkModeLabel,
 	getPortableMobileDeviceSettings,
 	isStereoAudiolinkMode,
 	METERING_INTERFACES,
@@ -383,6 +384,10 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 				name: `${deviceVariableLabel} - Mic AudioLink Active`,
 			},
 			{
+				variableId: `${deviceVariableId}_mic_audiolink_mode`,
+				name: `${deviceVariableLabel} - Mic AudioLink Mode`,
+			},
+			{
 				variableId: `${deviceVariableId}_mic_test_tone_enabled`,
 				name: `${deviceVariableLabel} - Mic Test Tone Enabled`,
 			},
@@ -475,6 +480,10 @@ export function UpdateVariableDefinitions(self: SpecteraInstance): void {
 				{
 					variableId: `${deviceVariableId}_iem_audiolink_active`,
 					name: `${deviceVariableLabel} - IEM AudioLink Active`,
+				},
+				{
+					variableId: `${deviceVariableId}_iem_audiolink_mode`,
+					name: `${deviceVariableLabel} - IEM AudioLink Mode`,
 				},
 				{
 					variableId: `${deviceVariableId}_headphone_plug_state`,
@@ -781,6 +790,20 @@ export function getMobileDeviceLevelVariables(
 	return values
 }
 
+export function getMobileDeviceLinkModeVariables(
+	device: MobileDevice,
+	audioLinks: Map<number, AudioLink>,
+): Record<string, VariableValue> {
+	const deviceVariableId = `${device.type}_${device.serial}`
+	const values: Record<string, VariableValue> = {
+		[`${deviceVariableId}_mic_audiolink_mode`]: getAudiolinkModeLabel(audioLinks, device.micAudiolinkId),
+	}
+	if (device.type === MtType.SEK) {
+		values[`${deviceVariableId}_iem_audiolink_mode`] = getAudiolinkModeLabel(audioLinks, device.iemAudiolinkId)
+	}
+	return values
+}
+
 export function getMobileDeviceVariables(device: MobileDevice): Record<string, VariableValue> {
 	const type = device.type
 	const serial = device.serial
@@ -959,6 +982,7 @@ export function UpdateVariableValues(self: SpecteraInstance): void {
 		Object.assign(
 			values,
 			getMobileDeviceVariables(device),
+			getMobileDeviceLinkModeVariables(device, self.state.audioLinks),
 			getMobileDeviceLevelVariables(
 				device,
 				self.state.audioOutputs,

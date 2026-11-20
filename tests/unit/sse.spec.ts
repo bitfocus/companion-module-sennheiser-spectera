@@ -1,6 +1,6 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { InputSource, Interference, RfState, RfStateStartup, BandwidthMode, TxPower } from '../../src/types.js'
-import { makeAudioOutput, makeSkmDevice } from '../fixtures/devices.js'
+import { makeAudioOutput, makeSekDevice, makeSkmDevice } from '../fixtures/devices.js'
 import { makeApi } from '../helpers/mock-api.js'
 
 const rebuildMocks = vi.hoisted(() => ({
@@ -155,6 +155,48 @@ describe('SSE event processing', () => {
 		asSseTestApi(api).handleSSEEvent(event({ '/api/audio/links/0': { audiolinkId: 0, rfChannelId: 0, modeId: 4 } }))
 
 		expect([...state.audioLinks.entries()]).toEqual([[0, { audiolinkId: 0, rfChannelId: 0, modeId: 4 }]])
+	})
+
+	it("updates linked devices' mode variables and feedbacks when an audio link mode changes", () => {
+		const { api, state, instance } = makeApi()
+		state.updateAudioLink({ audiolinkId: 5, rfChannelId: 0, modeId: 4 })
+		state.updateMobileDevice(makeSekDevice({ mtUid: 1, serial: 'S1', micAudiolinkId: 6, iemAudiolinkId: 5 }))
+		state.updateMobileDevice(makeSkmDevice({ mtUid: 2, serial: 'K1', micAudiolinkId: 5 }))
+		state.updateMobileDevice(makeSkmDevice({ mtUid: 3, serial: 'K2', micAudiolinkId: 7 }))
+
+		asSseTestApi(api).handleSSEEvent(event({ '/api/audio/links/5': { audiolinkId: 5, rfChannelId: 0, modeId: 10 } }))
+
+		expect(instance.setVariableValues).toHaveBeenCalledWith({
+			SEK_S1_mic_audiolink_mode: 'None',
+			SEK_S1_iem_audiolink_mode: 'RAW (Mono)',
+			SKM_K1_mic_audiolink_mode: 'RAW (Mono)',
+		})
+		expect(instance.checkFeedbacks).toHaveBeenCalledWith('mobileDeviceMicAudiolinkMode', 'iemAudioLinkMode')
+
+		vi.mocked(instance.checkFeedbacks).mockClear()
+		asSseTestApi(api).handleSSEEvent(event({ '/api/audio/links/5': { audiolinkId: 5, rfChannelId: 1, modeId: 10 } }))
+		expect(instance.checkFeedbacks).not.toHaveBeenCalledWith('mobileDeviceMicAudiolinkMode', 'iemAudioLinkMode')
+
+		asSseTestApi(api).handleSSEEvent(event({ '/api/audio/links/5': null }))
+		expect(instance.setVariableValues).toHaveBeenLastCalledWith({
+			SEK_S1_iem_audiolink_mode: 'None',
+			SKM_K1_mic_audiolink_mode: 'None',
+		})
+	})
+
+	it("updates a device's mode variable when it moves to another audio link", () => {
+		const { api, state, instance } = makeApi()
+		state.updateAudioLink({ audiolinkId: 5, rfChannelId: 0, modeId: 4 })
+		state.updateAudioLink({ audiolinkId: 6, rfChannelId: 0, modeId: 11 })
+		const device = makeSkmDevice({ mtUid: 2, serial: 'K1', micAudiolinkId: 5 })
+		state.updateMobileDevice(device)
+
+		asSseTestApi(api).handleSSEEvent(event({ '/api/mts/paired/all/2': { ...device, micAudiolinkId: 6 } }))
+
+		expect(instance.setVariableValues).toHaveBeenCalledWith(
+			expect.objectContaining({ SKM_K1_mic_audiolink_mode: 'RAW Low Latency (Mono)' }),
+		)
+		expect(vi.mocked(instance.checkFeedbacks).mock.calls.flat()).toContain('mobileDeviceMicAudiolinkMode')
 	})
 
 	it('removes deleted resources and coalesces structural rebuilds', () => {

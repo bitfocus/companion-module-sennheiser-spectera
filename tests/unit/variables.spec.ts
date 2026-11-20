@@ -10,6 +10,7 @@ import {
 import {
 	getAudioOutputActiveChannels,
 	getMobileDeviceLevelVariables,
+	getMobileDeviceLinkModeVariables,
 	isAudioOutputCommandEnabled,
 } from '../../src/variables.js'
 import { makeAudioInput, makeAudioOutput, makeSekDevice, makeSkmDevice } from '../fixtures/devices.js'
@@ -289,5 +290,30 @@ describe('audio output command routing', () => {
 
 		expect(isAudioOutputCommandEnabled(output, devices)).toBe(false)
 		expect(isAudioOutputCommandEnabled(makeAudioOutput({ micAudiolinkId: -1 }), devices)).toBe(false)
+	})
+})
+
+describe('mobile device audio link mode variables', () => {
+	const links = makeAudioLinks(
+		{ audiolinkId: 10, rfChannelId: 0, modeId: AudiolinkModeId['RAW Low Latency (Mono)'] },
+		{ audiolinkId: 20, rfChannelId: 0, modeId: AudiolinkModeId['LIVE (Stereo)'] },
+	)
+
+	it('labels the Mic and IEM link modes of an SEK', () => {
+		const device = makeSekDevice({ serial: 'S1', micAudiolinkId: 10, iemAudiolinkId: 20 })
+
+		expect(getMobileDeviceLinkModeVariables(device, links)).toEqual({
+			SEK_S1_mic_audiolink_mode: 'RAW Low Latency (Mono)',
+			SEK_S1_iem_audiolink_mode: 'LIVE (Stereo)',
+		})
+	})
+
+	it('reports None for unlinked or unknown links and omits IEM for an SKM', () => {
+		expect(
+			getMobileDeviceLinkModeVariables(makeSekDevice({ serial: 'S2', micAudiolinkId: -1, iemAudiolinkId: 99 }), links),
+		).toEqual({ SEK_S2_mic_audiolink_mode: 'None', SEK_S2_iem_audiolink_mode: 'None' })
+		expect(getMobileDeviceLinkModeVariables(makeSkmDevice({ serial: 'K1', micAudiolinkId: 10 }), links)).toEqual({
+			SKM_K1_mic_audiolink_mode: 'RAW Low Latency (Mono)',
+		})
 	})
 })
